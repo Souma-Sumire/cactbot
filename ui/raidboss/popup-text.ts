@@ -565,7 +565,9 @@ export class PopupText {
   protected infoText: HTMLElement | null;
   protected alertText: HTMLElement | null;
   protected alarmText: HTMLElement | null;
-  protected parserLang: Lang;
+  protected get parserLang(): Lang {
+    return this.options.ParserLanguage ?? 'en';
+  }
   protected displayLang: Lang;
   protected ttsEngine?: BrowserTTSEngine;
   protected ttsSay: (text: string) => void;
@@ -601,7 +603,6 @@ export class PopupText {
     this.alertText = document.getElementById('popup-text-alert');
     this.alarmText = document.getElementById('popup-text-alarm');
 
-    this.parserLang = this.options.ParserLanguage ?? 'en';
     this.displayLang = this.options.AlertsLanguage ?? this.options.DisplayLanguage ??
       this.options.ParserLanguage ?? 'en';
 
