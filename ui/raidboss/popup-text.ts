@@ -42,6 +42,8 @@ import { PerTriggerAutoConfig, PerTriggerOption, RaidbossOptions } from './raidb
 import { TimelineLoader } from './timeline';
 import { TimelineReplacement } from './timeline_parser';
 
+let count = 0;
+
 const isRaidbossLooseTimelineTrigger = (
   trigger: ProcessedTrigger,
 ): trigger is ProcessedTimelineTrigger => {
@@ -582,12 +584,14 @@ export class PopupText {
     file: string;
     func: DataInitializeFunc<RaidbossData>;
   }[] = [];
+  protected count: number;
 
   constructor(
     protected options: RaidbossOptions,
     protected timelineLoader: TimelineLoader,
     protected raidbossDataFiles: RaidbossFileData,
   ) {
+    this.count = count++;
     this.options = options;
     this.partyTracker = new PartyTracker(options);
     this.timelineLoader = timelineLoader;
@@ -921,6 +925,8 @@ export class PopupText {
                   ).params,
                 );
                 trigger.localNetRegex = Regexes.parse(re);
+                console.log(`count:${this.count},lang:${this.parserLang}`);
+                console.debug(`localNetRegex: ${trigger.localNetRegex.toString()}`);
               }
             }
           }
