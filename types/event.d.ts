@@ -524,6 +524,31 @@ type CactbotChooseDirectoryHandler = (msg: {
   call: 'cactbotChooseDirectory';
 }) => { data: string } | undefined;
 
+export type PostNamazuCall =
+  | 'DoTextCommand'
+  | 'command'
+  | 'DoWaymarks'
+  | 'place'
+  | 'mark'
+  | 'DoInsertPreset'
+  | 'preset'
+  | 'DoQueueActions'
+  | 'queue';
+
+type PostNamazuHandler = (msg: {
+  call: 'PostNamazu';
+  c: PostNamazuCall;
+  p: string;
+  d?: number;
+}) => Promise<void>;
+
+type GetLanguageHandler = (msg: { call: 'getLanguage' }) => {
+  language: string;
+  languageId: string;
+  region: string;
+  regionId: string;
+};
+
 export type OverlayHandlerAll = {
   'broadcast': BroadcastHandler;
   'subscribe': SubscribeHandler;
@@ -537,6 +562,8 @@ export type OverlayHandlerAll = {
   'cactbotSaveData': CactbotSaveDataHandler;
   'cactbotLoadData': CactbotLoadDataHandler;
   'cactbotChooseDirectory': CactbotChooseDirectoryHandler;
+  'postNamazu': PostNamazuHandler;
+  'getLanguage': GetLanguageHandler;
 };
 
 export type OverlayHandlerTypes = keyof OverlayHandlerAll;

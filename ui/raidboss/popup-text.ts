@@ -708,7 +708,7 @@ export class PopupText {
       if (triggerSet.id === undefined)
         return true;
       if (this.triggerSetsById[triggerSet.id] !== undefined) {
-        console.log(
+        console.debug(
           `${
             triggerSet.filename ?? '???'
           } has duplicate triggerSet id ${triggerSet.id}, ignoring triggers`,
@@ -948,7 +948,7 @@ export class PopupText {
 
       if (set.overrideTimelineFile) {
         const filename = set.filename !== undefined ? `'${set.filename}'` : '(user file)';
-        console.log(`Overriding timeline from ${filename}.`);
+        console.debug(`Overriding timeline from ${filename}.`);
 
         // If the timeline file override is set, all previously loaded timeline info is dropped.
         // Styles, triggers, and translations are kept, as they may still apply to the new one.

@@ -1,7 +1,10 @@
+import { RaidbossData as Data } from '../types/data';
 import {
   OverlayHandlerRequests,
   OverlayHandlerResponseTypes,
+  Party,
   PluginCombatantState,
+  PostNamazuCall,
 } from '../types/event';
 import { Job, Role } from '../types/job';
 import { NetMatches } from '../types/net_matches';
@@ -10,6 +13,40 @@ import { OutputStrings } from '../types/trigger';
 import { actorControlType, gameLogCodes } from './netregexes';
 import Outputs from './outputs';
 import { callOverlayHandler } from './overlay_plugin_api';
+
+let isRaidemulator = false;
+try {
+  isRaidemulator = /raidemulator\.html/.test(location.href);
+} catch {
+  console.error('Failed to determine if raidemulator is running');
+}
+
+export type RP =
+  | 'MT'
+  | 'ST'
+  | 'T3'
+  | 'T4'
+  | 'T5'
+  | 'T6'
+  | 'T7'
+  | 'T8'
+  | 'H1'
+  | 'H2'
+  | 'H3'
+  | 'H4'
+  | 'H5'
+  | 'H6'
+  | 'H7'
+  | 'H8'
+  | 'D1'
+  | 'D2'
+  | 'D3'
+  | 'D4'
+  | 'D5'
+  | 'D6'
+  | 'D7'
+  | 'D8'
+  | 'unknown';
 
 // TODO: it'd be nice to not repeat job names, but at least Record enforces that all are set.
 const nameToJobEnum: Record<Job, number> = {
@@ -461,6 +498,93 @@ export const Directions = {
   },
 };
 
+let soumaParty: (Party & { rp: RP })[] = [];
+
+const createMyParty = (party: Party[]) => {
+  soumaParty = party.filter((v) => v.inParty).map((v) => {
+    return {
+      ...v,
+      rp: 'unknown',
+    };
+  });
+  defaultSort();
+};
+
+const defaultSort = () => {
+  const sort = [
+    '21', // 战
+    '32', // 暗
+    '37', // 枪
+    '19', // 骑
+    '33', // 占
+    '24', // 白
+    '40', // 贤
+    '28', // 学
+    '41', // 蛇
+    '34', // 侍
+    '30', // 忍
+    '39', // 钐
+    '22', // 龙
+    '20', // 僧
+    '38', // 舞
+    '23', // 诗
+    '31', // 机
+    '42', // 绘
+    '25', // 黑
+    '27', // 召
+    '35', // 赤
+    '36', // 青
+  ];
+  const createRPArr = (r: string, l: number) =>
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    Array(l)
+      .fill(r)
+      // eslint-disable-next-line max-len
+      // eslint-disable-next-line @typescript-eslint/restrict-plus-operands, @typescript-eslint/no-unsafe-return
+      .map((v, i) => v + ++i);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const tRP = ['MT', 'ST', ...createRPArr('T', 14)];
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const hRP = [...createRPArr('H', 16)];
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const dRP = [...createRPArr('D', 16)];
+  const role = {
+    tank: [1, 3, 19, 21, 32, 37],
+    healer: [6, 24, 28, 33, 40],
+    dps: [2, 4, 5, 7, 20, 22, 23, 25, 26, 27, 29, 30, 31, 34, 35, 36, 38, 39, 41, 42],
+  };
+  let t = 0;
+  let h = 0;
+  let d = 0;
+  soumaParty = soumaParty.sort(
+    (a, b) => sort.indexOf(a.job.toString()) - sort.indexOf(b.job.toString()),
+  );
+  soumaParty.forEach((v) => {
+    if (role.tank.includes(Number(v.job)))
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      v.rp = tRP[t++];
+    else if (role.healer.includes(Number(v.job)))
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      v.rp = hRP[h++];
+    else if (role.dps.includes(Number(v.job)))
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      v.rp = dRP[d++];
+    else {
+      console.error(`未知职业：${v.job}`);
+      v.rp = 'unknown';
+    }
+  });
+};
+
+const checkParty = (data: Data) => {
+  if (
+    soumaParty.map((v) => v.id).sort().join('') !==
+      data.party.details.map((v) => v.id).sort().join('')
+  ) {
+    createMyParty(data.party.details);
+  }
+};
+
 const Util = {
   jobEnumToJob: (id: number) => {
     const job = allJobs.find((job: Job) => nameToJobEnum[job] === id);
@@ -519,6 +643,63 @@ const Util = {
 
     const idx = name.indexOf(' ');
     return idx < 0 ? name : name.slice(0, idx);
+  },
+  souma: {
+    // 只有开发环境、或build产物（固定队用）才会进入这些函数，
+    // 普通用户通过 user 文件夹里面的 js 文件加载时，会走‘与悬浮窗通信’的那套逻辑
+    getRpByName: (data: Data, name: string): RP => {
+      checkParty(data);
+      const res = soumaParty.find((v) => v.name === name)?.rp ?? 'unknown';
+      if (res === 'unknown')
+        console.error(`找不到角色：${name}`);
+      return res;
+    },
+    // getRpByHexId,
+    getNameByRp: (data: Data, rp: RP): string => {
+      checkParty(data);
+      return soumaParty.find((v) => v.rp === rp)?.name ?? 'unknown';
+    },
+    getRpById: (data: Data, id: number): RP => {
+      checkParty(data);
+      return soumaParty.find((v) => parseInt(v.id, 16) === id)?.rp ?? 'unknown';
+    },
+
+    getDecIdByRp: (data: Data, rp: RP): number => {
+      checkParty(data);
+      return parseInt(soumaParty.find((v) => v.rp === rp)?.id ?? '0', 16);
+    },
+    // getNameByHexId,
+    // getHexIdByRp,
+    // getHexIdByName,
+    // mark,
+    // doTextCommand,
+    // clearMark,
+    doQueueActions: (actions: { c: PostNamazuCall; p: string; d?: number }[]) => {
+      if (isRaidemulator) {
+        console.debug(`尝试执行队列：${JSON.stringify(actions)}`);
+        return;
+      }
+      void callOverlayHandler({
+        call: 'PostNamazu',
+        c: 'queue',
+        p: JSON.stringify(actions),
+      });
+    },
+    mark: (actorHexID: number, markType: string, localOnly: boolean) => {
+      if (isRaidemulator) {
+        console.debug(`尝试标记${markType}给${actorHexID}`);
+        return;
+      }
+      void callOverlayHandler({
+        call: 'PostNamazu',
+        c: 'mark',
+        p: JSON.stringify({
+          ActorID: actorHexID,
+          MarkType: markType,
+          LocalOnly: localOnly,
+        }),
+      });
+    },
   },
 } as const;
 

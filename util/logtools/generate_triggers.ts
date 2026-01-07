@@ -25,6 +25,13 @@ const hexSort = (left: string | number, right: string | number) => {
   return leftNum - rightNum;
 };
 
+const formatOffset = (ms: number): string => {
+  const totalSeconds = ms / 1000;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
+
 // How long (in ms) for a line to be offset based on encounter start
 // to be considered the same instance across encounters
 const timeOffsetAllowance = 2000;
@@ -111,11 +118,35 @@ type XIVAPINpcYellResponse = {
 type XIVAPIBattleTalk2Response = XIVAPINpcYellResponse;
 
 type TriggerSuggestTypes = typeof triggerSuggestOptions[number];
-type TriggerSuggestTypesFull =
-  | TriggerSuggestTypes
-  | `AoE (circle, range = ${number})`
-  | `Rectangle AoE, CastType = ${number}`
-  | 'Plus AoE';
+type TriggerSuggestTypesFull = string;
+
+const triggerSuggestTranslations: Record<TriggerSuggestTypes, string> = {
+  'AoE': '范围伤害 (AoE)',
+  'Donut (in)': '月环 (内) (Donut (in))',
+  'Plus (out intercards)': '十字 (外/斜角) (Plus (out intercards))',
+  'Circle (out)': '钢铁 (外) (Circle (out))',
+  'Away from Front (cone)': '扇形 (避开正面) (Away from Front (cone))',
+  'Tankbuster': '死刑 (Tankbuster)',
+  'Stack': '分摊 (Stack)',
+  'Healer Groups': '治疗组分摊 (Healer Groups)',
+  'Partner Stacks': '双人分摊 (Partner Stacks)',
+  'Spread': '分散 (Spread)',
+  'Knockback': '击退 (Knockback)',
+  'Custom Separate': '自定义 (单一) (Custom Separate)',
+  'Custom Joined': '自定义 (组合) (Custom Joined)',
+  'Skip': '跳过 (Skip)',
+};
+
+const headmarkerTriggerSuggestTranslations: Record<HeadmarkerTriggerSuggestTypes, string> = {
+  'Tankbuster': '死刑 (Tankbuster)',
+  'Stack': '分摊 (Stack)',
+  'Healer Groups': '治疗组分摊 (Healer Groups)',
+  'Partner Stacks': '双人分摊 (Partner Stacks)',
+  'Spread': '分散 (Spread)',
+  'Knockback': '击退 (Knockback)',
+  'Custom': '自定义 (Custom)',
+  'Skip': '跳过 (Skip)',
+};
 
 type GenerateTriggersArgs = {
   'files': string[] | null;
@@ -666,7 +697,7 @@ const mapEffectData = {`;
         ),
       ].sort(hexSort);
       mapEffectTable += `
-  // Offsets: ${allOffsets.join()}
+  // Offsets: ${allOffsets.map(formatOffset).join(', ')}
   '${location}': {
     'location': '${location}',`;
 
@@ -681,7 +712,7 @@ const mapEffectData = {`;
         ].sort(numberSort);
         const flagsKey = flags.match(/^0*?800040*?$/) ? `'clear${i}'` : `'flags${i}'`;
         mapEffectTable += `
-    // Offsets: ${flagOffsets.join()}
+    // Offsets: ${flagOffsets.map(formatOffset).join(', ')}
     ${flagsKey}: '${flags}',`;
       }
 
@@ -759,7 +790,7 @@ const npcYellData = {`;
         ),
       ].sort(hexSort);
       npcYellTable += `
-  // Offsets: ${allOffsets.join()}
+  // Offsets: ${allOffsets.map(formatOffset).join(', ')}
   '${yellId}': {
     'yellId': '${yellId}',
     'text': ${
@@ -842,7 +873,7 @@ const battleTalk2Data = {`;
         ),
       ].sort(hexSort);
       battleTalk2Table += `
-  // Offsets: ${allOffsets.join()}
+  // Offsets: ${allOffsets.map(formatOffset).join(', ')}
   '${textId}': {
     'textId': '${textId}',
     'text': ${
@@ -950,9 +981,13 @@ const generateActorSetPosTableFromTriggerInfo = (triggerInfo: TriggerInfo[]) => 
   // TODO: `actorSetPosMap` is still a little too big.
   // We can probably filter more instances out, or compress the data somehow.
   if (actorSetPosMap.byPosition.length > 0) {
+    const formattedByPosition = actorSetPosMap.byPosition.map((entry) => ({
+      ...entry,
+      offsets: entry.offsets.map(formatOffset),
+    }));
     actorSetPosTable += `
 
-const actorSetPosPositionMap = ${JSON.stringify(actorSetPosMap.byPosition, undefined, 2)} as const;
+const actorSetPosPositionMap = ${JSON.stringify(formattedByPosition, undefined, 2)} as const;
 `;
   }
   return actorSetPosTable;
@@ -1032,7 +1067,7 @@ const headMarkerData = {
         row.row_id === parseInt(headmarker, 16)
       )?.fields
         .Unknown0 ?? 'Unknown';
-      headMarkerTable += `  // Offsets: ${allOffsets.join()}
+      headMarkerTable += `  // Offsets: ${allOffsets.map(formatOffset).join(', ')}
   // Vfx Path: ${vfxPath}
   '${headmarker}': '${headmarker}',
 `;
@@ -1073,16 +1108,16 @@ const headMarkerData = {
         {
           type: 'list',
           name: 'action',
-          message: `Headmarker Information:
-ID: ${headmarker},
-VFX: ${vfxPath},
-On Player: ${onAPlayer ? 'Yes' : 'No'},
-Line Count: ${instances.length},
-Offsets: ${allOffsets.sort(numberSort).join(', ')}
+          message: `Headmarker 信息 (Headmarker Information):
+ID (ID): ${headmarker},
+VFX (VFX): ${vfxPath},
+玩家目标 (On Player): ${onAPlayer ? '是 (Yes)' : '否 (No)'},
+行数 (Line Count): ${instances.length},
+偏移 (Offsets): ${allOffsets.sort(numberSort).map(formatOffset).join(', ')}
 `,
-          choices: triggerSuggestOptions.map((e) => {
+          choices: headmarkerTriggerSuggestOptions.map((e) => {
             return {
-              name: e,
+              name: headmarkerTriggerSuggestTranslations[e],
               value: e,
             };
           }),
@@ -1285,30 +1320,32 @@ const generateTriggersTextFromTriggerInfo = async (
             if (abilityInfo.fields.EffectRange >= 35) {
               castTypeSuggestions.add('AoE');
               castTypeFullSuggestions.add(
-                `AoE (circle, range = ${abilityInfo.fields.EffectRange})`,
+                `范围伤害 (圆圈, 距离 = ${abilityInfo.fields.EffectRange}) (AoE (circle, range = ${abilityInfo.fields.EffectRange}))`,
               );
             }
             castTypeSuggestions.add('Circle (out)');
-            castTypeFullSuggestions.add('Circle (out)');
+            castTypeFullSuggestions.add('钢铁 (外) (Circle (out))');
             break;
           case 3: // Cone, size modified by hitbox
           case 13: // Cone
             castTypeSuggestions.add('Away from Front (cone)');
-            castTypeFullSuggestions.add('Away from Front (cone)');
+            castTypeFullSuggestions.add('扇形 (避开正面) (Away from Front (cone))');
             break;
           case 4: // Rectangle, size modified by hitbox
           case 12: // Rectangle
           case 8: // Charging rectangle
             castTypeSuggestions.add('Custom Separate');
-            castTypeFullSuggestions.add(`Rectangle AoE, CastType = ${abilityInfo.fields.CastType}`);
+            castTypeFullSuggestions.add(
+              `长方形范围伤害, CastType = ${abilityInfo.fields.CastType} (Rectangle AoE, CastType = ${abilityInfo.fields.CastType})`,
+            );
             break;
           case 10: // Donut
             castTypeSuggestions.add('Donut (in)');
-            castTypeFullSuggestions.add('Donut (in)');
+            castTypeFullSuggestions.add('月环 (内) (Donut (in))');
             break;
           case 11: // Plus
             castTypeSuggestions.add('Custom Joined');
-            castTypeFullSuggestions.add(`Plus AoE`);
+            castTypeFullSuggestions.add(`十字范围伤害 (Plus AoE)`);
             break;
         }
       }
@@ -1338,24 +1375,24 @@ const generateTriggersTextFromTriggerInfo = async (
       {
         type: 'list',
         name: 'action',
-        message: `Ability Information:
-Name: ${abilityName},
-IDs: ${mapInfo.ids.join(', ')},
-Sources: ${
+        message: `技能信息 (Ability Information):
+名称 (Name): ${abilityName},
+ID (IDs): ${mapInfo.ids.join(', ')},
+来源 (Sources): ${
           [
             ...new Set(mapInfo.fights.flatMap((fight) =>
               fight.instances.map((instance) => instance.groups?.source ?? '')
             )),
           ].sort().join(', ')
         },
-Line Types: ${abilityLineTypes.sort(numberSort).join(', ')},
-Line Count: ${instances.length},
-Offsets: ${mapInfo.offsets.sort(numberSort).join(', ')},
-CastInfo Hints: ${[...castTypeFullSuggestions].join(', ')}
+行类型 (Line Types): ${abilityLineTypes.sort(numberSort).join(', ')},
+行数 (Line Count): ${instances.length},
+偏移 (Offsets): ${mapInfo.offsets.sort(numberSort).map(formatOffset).join(', ')},
+技能信息提示 (CastInfo Hints): ${[...castTypeFullSuggestions].join(', ')}
 `,
         choices: triggerSuggestOptions.map((e) => {
           return {
-            name: e,
+            name: triggerSuggestTranslations[e],
             value: e,
           };
         }),
