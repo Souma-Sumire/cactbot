@@ -1,10 +1,10 @@
 /* eslint-disable no-tabs */
 import Conditions from '../../../../../resources/conditions';
-import Outputs from '../../../../../resources/outputs';
 import { Responses } from '../../../../../resources/responses';
 import { Directions } from '../../../../../resources/util';
 import ZoneId from '../../../../../resources/zone_id';
 import { RaidbossData } from '../../../../../types/data';
+import { NetMatches } from '../../../../../types/net_matches';
 import { TriggerSet } from '../../../../../types/trigger';
 
 type Attrs = 'fire' | 'water';
@@ -13,12 +13,15 @@ type Types = 'spread' | 'stack' | 'tankbuster';
 type Phase = 'p1' | 'p5';
 type P5Role = 'healer' | 'melee' | 'caster';
 
+const center = { x: 100, y: 100 };
+
 export interface Data extends RaidbossData {
   sActorPositions: { [id: string]: { x: number; y: number; heading: number } };
   sMapEffects: { waymark: string; attr: Attrs; type: Types }[];
   sBuff?: Attrs;
   sPhase: Phase;
   sP5Role: [P5Role, P5Role, P5Role];
+  sSurf: NetMatches['StartsUsingExtra'][];
 }
 
 const superJumpBase64 =
@@ -125,8 +128,6 @@ hideall "--sync--"
 246.1 "火蛇夺浪" # Ability { id: "B381" } #Red Hot（Boss）
 257.8 "空中旋火" # Ability { id: "B5C0" } #Red Hot（Boss）
 258.6 "双重旋水" # Ability { id: "B5DD" } #Deep Blue（Boss）
-259.2 "双重旋水" # Ability { id: "B5DE" } #Deep Blue（Boss）
-261.8 "双重旋水" # Ability { id: "B5DF" } #Deep Blue（Boss）
 263.9 "惊涛骇浪" # Ability { id: "B5CB" } #Deep Blue（Boss）
 270 "炽焰冲击" # Ability { id: "B580" } #Red Hot（Boss）
 276.5 "浪尖转体" # Ability { id: "B891" } #Deep Blue（Boss）
@@ -209,6 +210,7 @@ hideall "--sync--"
       sBuff: undefined,
       sPhase: 'p1',
       sP5Role: ['healer', 'melee', 'caster'],
+      sSurf: [],
     };
   },
   triggers: [
@@ -240,15 +242,21 @@ hideall "--sync--"
       id: 'souma r10s 连线',
       type: 'Tether',
       netRegex: { 'id': '0174' },
-      delaySeconds: 2,
-      durationSeconds: 18,
+      delaySeconds: 3,
+      durationSeconds: 7,
+      suppressSeconds: 5,
       infoText: (data, matches, output) => {
         const actor = data.sActorPositions[matches.targetId];
         if (!actor) {
-          console.error(`Actor ${matches.targetId} not found`);
+          console.error(matches.timestamp, `Actor ${matches.targetId} not found`);
           return output.unknown!();
         }
-        const dir = Directions.xyTo4DirNum(actor.x, actor.y, 100, 100);
+        const dir = Directions.xyTo4DirNum(actor.x, actor.y, center.x, center.y);
+        const sports = !!data.sBuff;
+        if (sports) {
+          const dirText = Directions.outputFromCardinalNum((dir + 2) % 4);
+          return output.sports!({ dir: output[dirText]!() });
+        }
         const dirText = Directions.outputFromCardinalNum(dir);
         return output.text!({ dir: output[dirText]!() });
       },
@@ -260,23 +268,11 @@ hideall "--sync--"
         unknown: {
           en: '稍后击退',
         },
+        sports: {
+          en: '稍后 ${dir} 两侧',
+        },
       },
     },
-    // {
-    //   id: 'souma r10s 水泡阶段水连线',
-    //   type: 'Tether',
-    //   netRegex: { 'id': ['0011', '0039'], 'capture': true },
-    //   condition: Conditions.targetIsYou(),
-    //   durationSeconds: 5,
-    //   alertText: (_data, matches, output) => {
-    //     const attr = matches.id === '0011' ? 'fire' : 'water';
-    //     return output[attr]!();
-    //   },
-    //   outputStrings: {
-    //     fire: { en: '火,穿过水泡' },
-    //     water: { en: '水,避开水泡' },
-    //   },
-    // },
     {
       id: 'souma r10s 水泡阶段水连线',
       type: 'HeadMarker',
@@ -334,11 +330,12 @@ hideall "--sync--"
       id: 'souma r10s 交错旋水',
       type: 'StartsUsing',
       netRegex: { id: 'B5E0', capture: false },
+      condition: (data) => data.sBuff !== 'fire',
       durationSeconds: 8,
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
-          en: '水波 => 原地不动',
+          en: '水波 => 原地',
         },
       },
     },
@@ -351,7 +348,7 @@ hideall "--sync--"
       alertText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: {
-          en: '水波 => 移动躲开',
+          en: '水波 => 要转',
         },
       },
     },
@@ -369,12 +366,6 @@ hideall "--sync--"
         fire: { en: '引导面向+AoE' },
       },
     },
-    // {
-    //   id: 'souma r10s 旋绕巨火',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'B5C2', capture: true },
-    //   response: Responses.stackMarkerOn(),
-    // },
     {
       id: 'souma r10s 斗志昂扬',
       type: 'StartsUsing',
@@ -389,24 +380,36 @@ hideall "--sync--"
       response: (data, _matches, output) => {
         output.responseOutputStrings = {
           text: { en: '靠近BOSS' },
-          tank: { en: '引导超级跳' },
+          tank: { en: '超级跳' },
         };
-        if (data.role === 'tank' && data.sBuff !== 'fire') {
+        if (data.role === 'tank') {
           if (data.triggerSetConfig.soumaM10Ssuperjump === true) {
             if (!window.location.href.includes('raidemulator.html')) {
               const audio = new Audio(superJumpBase64);
-              audio.volume = 0.5;
+              audio.volume = 0.6;
               void audio.play();
               return;
             }
           }
           return {
-            alertText: output.tank!(),
+            alarmText: output.tank!(),
           };
         }
         return {
           infoText: output.text!(),
         };
+      },
+    },
+    {
+      id: 'souma r10s p5超级buff',
+      type: 'GainsEffect',
+      netRegex: { effectId: ['12DB', '12DC'], capture: true },
+      condition: (data, matches) => matches.target === data.me,
+      infoText: (_data, matches, output) =>
+        output[matches.effectId === '12DB' ? 'fire' : 'water']!(),
+      outputStrings: {
+        fire: { en: '火' },
+        water: { en: '水' },
       },
     },
     {
@@ -416,6 +419,15 @@ hideall "--sync--"
       condition: (data, matches) => matches.target === data.me,
       run: (data, matches) => {
         data.sBuff = matches.effectId === '136E' ? 'fire' : 'water';
+      },
+    },
+    {
+      id: 'souma r10s lose buff',
+      type: 'LosesEffect',
+      netRegex: { effectId: ['136E', '136F'], capture: true },
+      condition: (data, matches) => matches.target === data.me,
+      run: (data) => {
+        data.sBuff = undefined;
       },
     },
     {
@@ -540,45 +552,40 @@ hideall "--sync--"
       },
     },
     {
-      id: 'souma r10s 火蛇夺浪',
+      id: 'souma r10s 水/火蛇夺浪',
       type: 'StartsUsing',
-      netRegex: { id: 'B381', capture: false },
+      netRegex: { id: ['B381', 'B382'], capture: false },
+      suppressSeconds: 1,
       response: Responses.aoe(),
     },
-    {
-      id: 'souma r10s 水蛇夺浪',
-      type: 'StartsUsing',
-      netRegex: { id: 'B382', capture: false },
-      response: Responses.aoe(),
-    },
-    {
-      id: 'souma r10s 浪尖转体',
-      type: 'StartsUsingExtra',
-      netRegex: { id: 'B891', capture: true },
-      infoText: (_data, matches, output) => {
-        const dirNum = Directions.xyTo4DirNum(
-          parseFloat(matches.x),
-          parseFloat(matches.y),
-          100,
-          100,
-        );
-        const dirs: { [dir: number]: string } = {
-          0: output.north!(),
-          1: output.east!(),
-          2: output.south!(),
-          3: output.west!(),
-        };
-        return output.text!({ dir: dirs[dirNum] });
-      },
-      outputStrings: {
-        unknown: Outputs.unknown,
-        north: Outputs.north,
-        east: Outputs.east,
-        south: Outputs.south,
-        west: Outputs.west,
-        text: { en: '${dir}两侧' },
-      },
-    },
+    // {
+    //   id: 'souma r10s 浪尖转体',
+    //   type: 'StartsUsingExtra',
+    //   netRegex: { id: 'B891', capture: true },
+    //   infoText: (_data, matches, output) => {
+    //     const dirNum = Directions.xyTo4DirNum(
+    //       parseFloat(matches.x),
+    //       parseFloat(matches.y),
+    //       center.x,
+    //       center.y,
+    //     );
+    //     const dirs: { [dir: number]: string } = {
+    //       0: output.north!(),
+    //       1: output.east!(),
+    //       2: output.south!(),
+    //       3: output.west!(),
+    //     };
+    //     return output.text!({ dir: dirs[dirNum] });
+    //   },
+    //   outputStrings: {
+    //     unknown: Outputs.unknown,
+    //     north: 'A',
+    //     east: 'Bee',
+    //     south: 'C',
+    //     west: 'Dog',
+    //     text: { en: '${dir}' },
+    //   },
+    // },
     {
       id: 'souma r10s 云安娜',
       type: 'GainsEffect',
@@ -591,13 +598,31 @@ hideall "--sync--"
       },
       tts: '',
       outputStrings: {
-        stack: { en: '稍后分摊' },
-        spread: { en: '稍后散开' },
+        stack: { en: '分摊' },
+        spread: { en: '散开' },
       },
     },
-    // TODO: 5分钟的海浪机制
-    // A点分摊 [02:18:26.070] 257 101:800375CD:00800040:02::
-    // C点分散 [02:30:32.229] 257 101:800375CD:08000400:04::
+    // A 分摊 [02:18:26.070] 257 101:800375CD:00800040:02::
+    // A 散开 [01:41:24.413] 257 101:800375CD:08000400:02::
+    // C 散开 [02:30:32.229] 257 101:800375CD:08000400:04::
+    // C 分摊 [01:18:33.062] 257 101:800375CD:00800040:04::
+    {
+      id: 'souma r10s 小 海 啸',
+      type: 'MapEffect',
+      netRegex: { 'flags': ['00800040', '08000400'], 'location': ['02', '04'] },
+      infoText: (_data, matches, output) => {
+        const gimmick = matches.flags === '00800040' ? 'stack' : 'spread';
+        const dir = matches.location === '02' ? 'north' : 'south';
+        return output.text!({ dir: output[dir]!(), gimmick: output[gimmick]!() });
+      },
+      outputStrings: {
+        north: 'A',
+        south: 'C',
+        spread: { en: '散开' },
+        stack: { en: '分摊' },
+        text: { en: '${dir} ${gimmick}' },
+      },
+    },
     {
       id: 'souma r10s 4人云安娜',
       // 最后冲浪后
@@ -625,12 +650,11 @@ hideall "--sync--"
       id: 'souma r10s 腾火踏浪',
       type: 'StartsUsing',
       netRegex: { id: 'B5C4', capture: false },
-      condition: (data) => data.sBuff === 'fire',
-      infoText: (_data, _matches, output) => output.text!(),
+      condition: (data) => data.sBuff !== undefined,
+      infoText: (data, _matches, output) => output[data.sBuff!]!(),
       outputStrings: {
-        text: {
-          en: '四连跳',
-        },
+        fire: { en: '四连跳' },
+        water: { en: '接近场中' },
       },
     },
     {
@@ -660,6 +684,115 @@ hideall "--sync--"
           ko: '전멸기',
           tc: '狂暴',
         },
+      },
+    },
+    {
+      id: 'souma r10s 第N目标',
+      type: 'GainsEffect',
+      netRegex: { effectId: ['BBC', 'BBD', 'BBE', 'D7B'], capture: true },
+      condition: Conditions.targetIsYou(),
+      durationSeconds: (_data, matches) => {
+        const count = ['BBC', 'BBD', 'BBE', 'D7B'].indexOf(matches.effectId);
+        return [23.863 - 16.676, 27.076 - 18.685, 30.421 - 20.693, 33.762 - 22.702][count];
+      },
+      infoText: (_data, matches, output) => {
+        const count = ['BBC', 'BBD', 'BBE', 'D7B'].indexOf(matches.effectId);
+        return output.text!({ n: count + 1 });
+      },
+      outputStrings: {
+        text: { en: '#${n}' },
+      },
+    },
+    {
+      id: 'souma r10s 冲浪术1',
+      type: 'StartsUsingExtra',
+      // B5CE = 滑板
+      // B5CC = 海浪
+      netRegex: { id: ['B5CE', 'B5CC'], capture: true },
+      preRun: (data, matches) => {
+        data.sSurf.push(matches);
+      },
+      delaySeconds: 10,
+      run: (data) => data.sSurf.length = 0,
+    },
+    {
+      id: 'souma r10s 冲浪术2',
+      type: 'StartsUsingExtra',
+      // B5CE = 滑板
+      // B5CC = 海浪
+      netRegex: { id: ['B5CE', 'B5CC'], capture: true },
+      delaySeconds: 0.5,
+      suppressSeconds: 10,
+      infoText: (data, matches, output) => {
+        const surf = data.sSurf.find((v) => v.id === 'B5CC');
+        const board = data.sSurf.find((v) => v.id === 'B5CE');
+        if (!surf) {
+          console.error(matches.timestamp, 'surf not found');
+          return;
+        }
+        if (!board) {
+          console.error(matches.timestamp, 'board not found');
+          return;
+        }
+        // 得出海浪位置
+        const surfDirNum = Directions.xyTo4DirNum(
+          parseFloat(surf.x),
+          parseFloat(surf.y),
+          center.x,
+          center.y,
+        );
+        const surfDir = ['N', 'E', 'S', 'W'][surfDirNum]!;
+        // 根据每一个方向，得到面向海浪时board的左右方向
+        let dangerZone = undefined;
+        const x = parseFloat(board.x);
+        const y = parseFloat(board.y);
+        if (surfDir === 'N') {
+          if (Math.abs(x - center.x) < 1)
+            dangerZone = 'center';
+          else if (x < center.x)
+            dangerZone = 'left';
+          else
+            dangerZone = 'right';
+        } else if (surfDir === 'S') {
+          if (Math.abs(x - center.x) < 1)
+            dangerZone = 'center';
+          else if (x < center.x)
+            dangerZone = 'left';
+          else
+            dangerZone = 'right';
+        } else if (surfDir === 'E') {
+          if (Math.abs(y - center.y) < 1)
+            dangerZone = 'center';
+          else if (y < center.y)
+            dangerZone = 'left';
+          else
+            dangerZone = 'right';
+        } else if (surfDir === 'W') {
+          if (Math.abs(y - center.y) < 1)
+            dangerZone = 'center';
+          else if (y < center.y)
+            dangerZone = 'right';
+          else
+            dangerZone = 'left';
+        }
+        if (dangerZone === undefined) {
+          console.error('dangerZone is undefined');
+          return output.unknown!({
+            dir: output[surfDir]!(),
+          });
+        }
+        return output.text!({ dir: output[surfDir]!(), road: output[dangerZone]!() });
+      },
+      outputStrings: {
+        N: 'A',
+        E: 'Bee',
+        S: 'C',
+        W: 'Dog',
+        center: { en: '中间' },
+        left: { en: '左边' },
+        right: { en: '右边' },
+        text: { en: '${dir}击退，${road}危险' },
+        unknown: { en: '${dir}击退' },
       },
     },
   ],
