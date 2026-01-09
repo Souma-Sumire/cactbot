@@ -52,6 +52,7 @@ const headMarkerData = {
 const triggerSet: TriggerSet<Data> = {
   id: 'SoumaM10S',
   zoneId: ZoneId.AacHeavyweightM2Savage,
+  zoneLabel: { en: 'M10S Souma特供版' },
   config: [
     {
       id: 'soumaM10SfireWater',
@@ -596,7 +597,6 @@ hideall "--sync--"
         const gimmick = matches.count === '3ED' ? 'stack' : 'spread';
         return output[gimmick]!();
       },
-      tts: '',
       outputStrings: {
         stack: { en: '分摊' },
         spread: { en: '散开' },
@@ -757,9 +757,9 @@ hideall "--sync--"
           if (Math.abs(x - center.x) < 1)
             dangerZone = 'center';
           else if (x < center.x)
-            dangerZone = 'left';
-          else
             dangerZone = 'right';
+          else
+            dangerZone = 'left';
         } else if (surfDir === 'E') {
           if (Math.abs(y - center.y) < 1)
             dangerZone = 'center';
@@ -785,7 +785,7 @@ hideall "--sync--"
       },
       outputStrings: {
         N: 'A',
-        E: 'Bee',
+        E: 'Boy',
         S: 'C',
         W: 'Dog',
         center: { en: '中间' },

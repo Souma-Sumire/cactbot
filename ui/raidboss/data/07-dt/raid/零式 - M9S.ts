@@ -39,6 +39,7 @@ const center = {
 const triggerSet: TriggerSet<Data> = {
   id: 'SoumaAacHeavyweightM1Savage',
   zoneId: ZoneId.AacHeavyweightM1Savage,
+  zoneLabel: { en: 'M9S Souma特供版' },
   overrideTimelineFile: true,
   timeline: `hideall "--Reset--"
 hideall "--sync--"
