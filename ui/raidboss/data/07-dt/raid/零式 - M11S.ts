@@ -6,14 +6,11 @@ import { RaidbossData } from '../../../../../types/data';
 import { PluginCombatantState } from '../../../../../types/event';
 import { TriggerSet } from '../../../../../types/trigger';
 
-// TODO：
-// 星轨链 + 兽焰连尾击
-
 type Weapon = '钢铁' | '十字' | '月环';
 
 type Phase = 'p1' | '劈刀' | '劈刀后' | '大漩涡后' | '连线' | '陨石' | '星轨' | '星轨后';
 
-type BitMap = [[0 | 1, 0 | 1], [0 | 1, 0 | 1]];
+type BitMap = [[number, number], [number, number]];
 
 const center = {
   x: 100,
@@ -47,7 +44,48 @@ const orbitalMap: Record<string, BitMap> = {
     [0, 0],
     [1, 1],
   ],
-} as const;
+};
+
+const getOrb = (arr: { pos: string }[]) => {
+  const orb = arr.map((v) => orbitalMap[v.pos]).filter((v) => !!v) as BitMap[];
+  return orb;
+};
+
+const getOrbitalInt = (orb: BitMap[]) => {
+  const int = orb.reduce((a, b) => {
+    return [
+      [a[0][0] | b[0][0], a[0][1] | b[0][1]],
+      [a[1][0] | b[1][0], a[1][1] | b[1][1]],
+    ];
+  }, [
+    [0, 0],
+    [0, 0],
+  ]);
+  return int;
+};
+
+const getOrbitalSafe = (orbStr: string) => {
+  const map: Record<string, string> = {
+    '0101': 'left',
+    '1010': 'right',
+    '1100': 'bottom',
+    '0011': 'top',
+    '1110': 'bottom right',
+    '1101': 'bottom left',
+    '1011': 'top right',
+    '0111': 'top left',
+  };
+  return map[orbStr];
+};
+
+const orbitalEasyCase = ['bottom right', 'bottom left', 'top left', 'top right'];
+
+const handleOrb = (arr: { pos: string }[]) => {
+  const orb = getOrb(arr);
+  const int = getOrbitalInt(orb);
+  const safe = getOrbitalSafe(int.map((x) => x.map((x) => x.toString()).join('')).join(''));
+  return { orb, int, safe };
+};
 
 export interface Data extends RaidbossData {
   sCombatants: PluginCombatantState[];
@@ -69,6 +107,7 @@ export interface Data extends RaidbossData {
   sTowerCount: number;
   sIsTether: boolean;
   sOrbital: { x: number; y: number; pos: string }[];
+  sOrbitalSafe: (string | undefined)[];
 }
 
 const headMarkerData = {
@@ -178,6 +217,7 @@ hideall "--sync--"
       sIsTether: false,
       sTetherCount: 0,
       sOrbital: [],
+      sOrbitalSafe: [],
     };
   },
   triggers: [
@@ -194,7 +234,6 @@ hideall "--sync--"
         if (data.sPhase === '劈刀') {
           const x = parseFloat(matches.x);
           const y = parseFloat(matches.y);
-          // console.log(x, y, equal(x, 85), equal(x, 115), equal(y, 100));
           if (
             ((equal(x, 85) || equal(x, 115)) && equal(y, 100)) ||
             ((equal(y, 85) || equal(y, 115)) && equal(x, 100))
@@ -261,7 +300,6 @@ hideall "--sync--"
       suppressSeconds: 30,
       alertText: (data, _matches, output) => {
         data.sIsTether = !!data.sTether[data.me];
-        // console.log(_matches.timestamp, data.me, data.sIsTether);
         return data.sIsTether ? output.line!() : output.noLine!();
       },
       outputStrings: {
@@ -387,9 +425,12 @@ hideall "--sync--"
       netRegex: {
         category: '0197',
         param1: [
-          '11D1', // 十字
-          '11D2', // 钢铁
-          '11D3', // 月环
+          // 十字
+          '11D1',
+          // 钢铁
+          '11D2',
+          // 月环
+          '11D3',
         ],
       },
       preRun: (data, matches) => {
@@ -439,7 +480,6 @@ hideall "--sync--"
           };
         });
         if (data.sLastWeapon === undefined) {
-          // console.log(matches.timestamp, matches.heading, dirNum, dists.slice());
           const mostClosest = dists.sort((a, b) => a.dist - b.dist)[0]!;
           // 1
           data.sLastWeapon = mostClosest;
@@ -569,11 +609,12 @@ hideall "--sync--"
       run: (data) => {
         data.sPhase = '星轨后';
         data.sOrbital.length = 0;
+        data.sOrbitalSafe.length = 0;
       },
     },
     {
       id: 'souma r11s 星轨链 B433',
-      type: 'StartsUsing',
+      type: 'StartsUsingExtra',
       netRegex: { id: 'B433', capture: true },
       preRun: (data, matches) => {
         /*
@@ -587,61 +628,86 @@ hideall "--sync--"
         const x = parseFloat(matches.x);
         const y = parseFloat(matches.y);
         const isX = equal(y, 75, 1);
-        const xCount = Math.floor((x - 85) / 10) + 1;
         const isY = equal(x, 125, 1);
-        const yCount = Math.floor((y - 85) / 10) + 1;
+        const xCount = Math.round((x - 85) / 10) + 1;
+        const yCount = Math.round((y - 85) / 10) + 1;
+        if (isX && (xCount < 1 || xCount > 4)) {
+          throw new Error(`Invalid orbital X position: ${x}, ${y} ${xCount}, ${yCount}`);
+        }
+        if (isY && (yCount < 1 || yCount > 4)) {
+          throw new Error(`Invalid orbital Y position: ${x}, ${y} ${xCount}, ${yCount}`);
+        }
         const pos = isX ? `X${xCount}` : isY ? `Y${yCount}` : 'Unknown';
         data.sOrbital.push({
           x: x,
-          y: x,
+          y: y,
           pos: pos,
         });
       },
-      run: (data, _matches, output) => {
-        const cares = data.sOrbital.map((v) => orbitalMap[v.pos]).filter((v) => !!v);
-        // 取cares交集
-        const int = cares.reduce((a: BitMap, b: BitMap) => {
-          return [
-            [a[0][0] & b[0][0], a[0][1] & b[0][1]],
-            [a[1][0] & b[1][0], a[1][1] & b[1][1]],
-          ];
-        });
+      durationSeconds: 6,
+      infoText: (data, _matches, output) => {
         if (data.sOrbital.length === 2) {
-          console.log(1, cares.slice());
+          const { safe } = handleOrb(data.sOrbital);
+          data.sOrbitalSafe.push(safe);
         }
         if (data.sOrbital.length === 4) {
-          console.log(2, cares.slice());
-        }
-        if (data.sOrbital.length === 6) {
-          console.log(3, cares.slice());
-        }
-        if (data.sOrbital.length === 8) {
-          console.log(4, cares.slice());
+          const { safe } = handleOrb(data.sOrbital.slice(2, 4));
+          data.sOrbitalSafe.push(safe);
+          const s = data.sOrbitalSafe;
+          const speed = s[0] === undefined ? 'slow' : 'fast';
+          const eazy = orbitalEasyCase.includes(speed === 'fast' ? s[0]! : s[1]!);
+          if (eazy) {
+            // 简单模式：一步斜穿 第1下穿
+            if (speed === 'fast') {
+              return output.eazyFast!({ dir: output[`first ${s[0]!}`]!() });
+            }
+            // 简单模式：一步斜穿 第2下穿
+            if (speed === 'slow') {
+              return output.eazySlow!({
+                dir: output[`second ${s[1]!}`]!(),
+              });
+            }
+          }
+          if (!eazy) {
+            // 困难模式 34穿12
+            return output.hard!({
+              dir1: output[`first ${s[0]!}`]!(),
+              dir2: output[s[1]!]!(),
+            });
+          }
+          throw new Error('Unknown case');
         }
       },
+      outputStrings: {
+        'eazySlow': { en: '${dir} => 第二下斜穿' },
+        'eazyFast': { en: '${dir} => 斜穿' },
+        'hard': { en: '${dir1} => ${dir2} => 斜穿' },
+        'left': { en: '左' },
+        'right': { en: '右' },
+        'bottom': { en: '下' },
+        'top': { en: '上' },
+        'bottom right': { en: '右下' },
+        'bottom left': { en: '左下' },
+        'top right': { en: '右上' },
+        'top left': { en: '左上' },
+        'first left': { en: '左' },
+        'first right': { en: '右' },
+        'first bottom': { en: '下两侧' },
+        'first top': { en: '上两侧' },
+        'first bottom right': { en: '右偏下' },
+        'first bottom left': { en: '左偏下' },
+        'first top right': { en: '右偏上' },
+        'first top left': { en: '左偏上' },
+        'second left': { en: '左' },
+        'second right': { en: '右' },
+        'second bottom': { en: '下' },
+        'second top': { en: '上' },
+        'second bottom right': { en: '右偏下' },
+        'second bottom left': { en: '左偏下' },
+        'second top right': { en: '右偏上' },
+        'second top left': { en: '左偏上' },
+      },
     },
-    // {
-    //   id: 'souma r11s _rsv_46140_-1_4_0_0_SE2DC5B04_EE2DC5B04 B43C',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'B43C', capture: false },
-    //   infoText: (_data, _matches, output) => output.text!(),
-    //   outputStrings: {
-    //     text: {
-    //       en: '自定义文本',
-    //     },
-    //   },
-    // },
-    // {
-    //   id: 'souma r11s _rsv_46170_-1_4_0_0_SE2DC5B04_EE2DC5B04 B45A',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'B45A', capture: false },
-    //   infoText: (_data, _matches, output) => output.text!(),
-    //   outputStrings: {
-    //     text: {
-    //       en: '自定义文本',
-    //     },
-    //   },
-    // },
     {
       id: 'souma r11s 碎心踢',
       type: 'StartsUsing',
