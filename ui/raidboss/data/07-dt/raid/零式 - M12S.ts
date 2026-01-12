@@ -17,7 +17,17 @@ const mjMap: Record<string, string> = {
   1290: 'alpha',
 };
 
-type Phase = '第一次细胞' | '第一次细胞后' | '第二次细胞' | '麻将' | '麻将后' | '喋血';
+type Phase =
+  | '第一次细胞'
+  | '第一次细胞后'
+  | '第二次细胞'
+  | '麻将'
+  | '麻将后'
+  | '喋血'
+  | '本体1运'
+  | '本体2运'
+  | '本体3运'
+  | '本体4运';
 
 type Stage = '门神' | '本体';
 
@@ -43,6 +53,7 @@ export interface Data extends RaidbossData {
   sMj2NikuIds: string[];
   sMjDieXueIds: string[];
   sDieXue?: { spread: 'left' | 'right'; stack: 'left' | 'right' };
+  sP2一运buff: NetMatches['GainsEffect'][];
 }
 
 const triggerSet: TriggerSet<Data> = {
@@ -57,7 +68,7 @@ hideall "--sync--"
 
 0.0 "--sync--" InCombat { inGameCombat: "1" } window 0,1
 
-11 "补天之手" StartsUsing { id: "B4D7" } window 20,20 #Lindwurm（Boss）
+11 "补天之手?/境中奇焰?" StartsUsing { id: "B4D7" } window 20,20 #Lindwurm（Boss）
 15.9 "补天之手" # Ability { id: "B4D7" } #Lindwurm（Boss）
 41.3 "致命灾变" # Ability { id: "B495" } #Lindwurm（Boss）
 70.7 "细胞附身·早期" # Ability { id: "BEBD" } #Lindwurm（Boss）
@@ -98,6 +109,108 @@ hideall "--sync--"
 390.8 "追猎重击" # Ability { id: "B4CF" } #Lindwurm（Boss）
 398.4 "喋血" # Ability { id: "B4C6" } #Lindwurm（Boss）
 415.2 "追猎重击" # Ability { id: "B4D0" } #Lindwurm（Boss）
+
+
+
+1011.1 "境中奇焰" StartsUsing { id: "B528" } window 2000,30 #リンドブルム（Boss）
+1016.1 "境中奇焰" # Ability { id: "B528" } #リンドブルム（Boss）
+1028.5 "自我复制" # Ability { id: "B4D8" } #リンドブルム（Boss）
+1040 "强力魔法" # Ability { id: "B4DF" } #人型分体（分身）
+1040 "天顶猛击" # Ability { id: "B4DD" } #人型分体（分身）
+1040.3 "天顶猛击" # Ability { id: "B4DE" } #人型分体（分身）
+1041.3 "强力魔法" # Ability { id: "B4E0" } #リンドブルム（分身）
+1046 "蛇踢" # Ability { id: "B527" } #リンドブルム（Boss）
+1061.5 "天顶猛击" # Ability { id: "B4DD" } #人型分体（分身）
+1061.5 "强力魔法" # Ability { id: "B4DF" } #人型分体（分身）
+1061.8 "天顶猛击" # Ability { id: "B4DE" } #人型分体（分身）
+1062.8 "强力魔法" # Ability { id: "B4E0" } #リンドブルム（分身）
+1070.7 "双重飞踢" # Ability { id: "B523" } #リンドブルム（Boss）
+1075.3 "双重飞踢" # Ability { id: "B525" } #リンドブルム（分身）
+1077.8 "魔力连击" # Ability { id: "B526" } #リンドブルム（分身）
+1092 "模仿细胞" # Ability { id: "B4E1" } #リンドブルム（Boss）
+1106.1 "自我复制" # Ability { id: "B4D8" } #リンドブルム（Boss）
+1128.4 "落火飞溅" # Ability { id: "B4E3" } #リンドブルム（Boss）
+1129.3 "炎波" # Ability { id: "B4E5" } #リンドブルム（分身）
+1130.6 "魔力爆发" # Ability { id: "B4E7" } #リンドブルム（分身）
+1136.2 "细胞附身" # Ability { id: "B4E9" } #人型分体（分身）
+1136.2 "重猛击" # Ability { id: "B4E8" } #人型分体（分身）
+1137.5 "细胞附身" # Ability { id: "B4EA" } #リンドブルム（分身）
+1138 "指向性冲击波" # Ability { id: "B4EB" } #リンドブルム（分身）
+1141.6 "蛇踢" # Ability { id: "B527" } #リンドブルム（Boss）
+1151.8 "时空重现" # Ability { id: "B4EC" } #リンドブルム（Boss）
+1159.9 "落火飞溅" # Ability { id: "B4ED" } #人型分体（分身）
+1160 "近/远界阴怒" # Ability { id: "B52F" } #リンドブルム（Boss）
+1161.2 "魔力爆发" # Ability { id: "BBE3" } #リンドブルム（分身）
+1161.5 "炎波" # Ability { id: "B8E1" } #リンドブルム（分身）
+1165.2 "细胞附身" # Ability { id: "B4EA" } #リンドブルム（分身）
+1165.2 "魔力爆发" # Ability { id: "BBE3" } #リンドブルム（分身）
+1165.7 "指向性冲击波" # Ability { id: "B922" } #リンドブルム（分身）
+1169.4 "重猛击" # Ability { id: "BE5D" } #リンドブルム（分身）
+1173.2 "魔力爆发" # Ability { id: "BBE3" } #リンドブルム（分身）
+1173.2 "细胞附身" # Ability { id: "B4EA" } #リンドブルム（分身）
+1173.8 "指向性冲击波" # Ability { id: "B922" } #リンドブルム（分身）
+1184.5 "变异细胞" # Ability { id: "B505" } #リンドブルム（Boss）
+1190.7 "魔力球" # Ability { id: "B4FB" } #リンドブルム（Boss）
+1201.7 "魔力扩散" # Ability { id: "B4FE" } #リンドブルム（分身）
+1203.3 "细胞爆炸" # Ability { id: "B507" } #リンドブルム（分身）
+1218 "魔力球苏醒" # Ability { id: "B500" } #リンドブルム（Boss）
+1219.8 "黑洞判定" # Ability { id: "B503" } #リンドブルム（分身）
+1224.9 "黑洞判定" # Ability { id: "B503" } #リンドブルム（分身）
+1224.9 "林德布鲁姆狂水" # Ability { id: "B501" } #リンドブルム（分身）
+1229.2 "阴界近/远景" # Ability { id: "B52C" } #リンドブルム（Boss）
+1230.5 "阴界波" # Ability { id: "B52D" } #リンドブルム（分身）
+1233.4 "细胞爆炸" # Ability { id: "B507" } #リンドブルム（分身）
+1237.3 "境中奇焰" # Ability { id: "B528" } #リンドブルム（Boss）
+1247.1 "双重飞踢" # Ability { id: "B521" } #リンドブルム（Boss）
+1251.7 "双重飞踢" # Ability { id: "B525" } #リンドブルム（分身）
+1254.1 "魔力连击" # Ability { id: "B526" } #リンドブルム（分身）
+1270.3 "境中奇梦" # Ability { id: "B509" } #リンドブルム（Boss）
+1276.5 "模仿细胞" # Ability { id: "B4E1" } #リンドブルム（Boss）
+1291.7 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
+1297.8 "自我复制" # Ability { id: "B4D8" } #リンドブルム（Boss）
+1310.3 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
+1311.3 "蛇踢" # Ability { id: "B511" } #人型分体（分身）
+1311.3 "力量喷涌" # Ability { id: "B510" } #人型分体（分身）
+1316.5 "自我复制" # Ability { id: "B4D8" } #リンドブルム（Boss）
+1336.1 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
+1340.5 "蛇踢" # Ability { id: "BE95" } #リンドブルム（分身）
+1340.7 "力量喷涌" # Ability { id: "B516" } #リンドブルム（分身）
+1344.6 "林德布鲁姆陨石" # Ability { id: "B4F2" } #リンドブルム（Boss）
+1350.7 "陨落" # Ability { id: "B4F3" } #リンドブルム（Boss）
+1358.2 "境中奇奥" # Ability { id: "B9D9" } #リンドブルム（分身）
+1364.9 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
+1371.4 "重猛击" # Ability { id: "B519" } #人型分体（分身）
+1377.7 "魔力爆发" # Ability { id: "B518" } #リンドブルム（分身）
+1381.5 "重猛击" # Ability { id: "B519" } #人型分体（分身）
+1387.8 "魔力爆发" # Ability { id: "B518" } #リンドブルム（分身）
+1395.5 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
+1399.9 "轰击" # Ability { id: "B4F4" } #リンドブルム（分身）
+1400.5 "踩塔判定" # Ability { id: "B4F6" } #リンドブルム（分身）
+1410.6 "远近判定" # Ability { id: "B4FA" } #リンドブルム（分身）
+1419 "空间裂断" # Ability { id: "B51C" } #リンドブルム（Boss）
+1431.6 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
+1432.6 "力量喷涌" # Ability { id: "B50F" } #人型分体（分身）
+1432.6 "蛇踢" # Ability { id: "BCAF" } #人型分体（分身）
+1437.7 "时空重现" # Ability { id: "B4EC" } #リンドブルム（Boss）
+1441.1 "魔力爆发" # Ability { id: "BBE3" } #リンドブルム（分身）
+1441.3 "重猛击" # Ability { id: "BE5D" } #リンドブルム（分身）
+1446.9 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
+1451.3 "蛇踢" # Ability { id: "BE95" } #リンドブルム（分身）
+1451.6 "力量喷涌" # Ability { id: "B516" } #リンドブルム（分身）
+1454.4 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
+1460.8 "魔力爆发" # Ability { id: "B4EE" } #人型分体（分身）
+1460.8 "重猛击" # Ability { id: "B4EF" } #人型分体（分身）
+1462.1 "魔力爆发" # Ability { id: "BBE3" } #リンドブルム（分身）
+1462.3 "重猛击" # Ability { id: "BE5D" } #リンドブルム（分身）
+1467.1 "力量喷涌" # Ability { id: "B516" } #リンドブルム（分身）
+1472.9 "境中奇梦" # Ability { id: "B509" } #リンドブルム（Boss）
+1481.6 "双重飞踢" # Ability { id: "B521" } #リンドブルム（Boss）
+1486.2 "双重飞踢" # Ability { id: "B525" } #リンドブルム（分身）
+1488.6 "魔力连击" # Ability { id: "B526" } #リンドブルム（分身）
+1502.1 "自我复制" # Ability { id: "B46C" } #リンドブルム（Boss）
+1515.7 "境中奇狱" # Ability { id: "B533" } #リンドブルム（Boss）
+1531.9 "境中奇狱" # Ability { id: "B533" } #リンドブルム（Boss）
+1554.7 "境中奇狱" # Ability { id: "BEC1" } #人型分体（分身）
 `,
   initData: () => {
     return {
@@ -116,16 +229,21 @@ hideall "--sync--"
       sMj2NikuIds: [],
       sMjDieXueIds: [],
       sDieXue: { spread: 'left', stack: 'left' },
+      sP2一运buff: [],
     };
   },
   triggers: [
+    // #region 门神
     {
       id: 'souma r12s 阶段判断',
       type: 'StartsUsing',
-      netRegex: { id: 'B4D7', capture: false },
+      netRegex: { id: ['B4D7', 'B528'], capture: false },
       preRun: (data, matches) => {
         if (matches.id === 'B4D7') {
           data.sStage = '门神';
+        }
+        if (matches.id === 'B528') {
+          data.sStage = '本体';
         }
       },
     },
@@ -791,19 +909,14 @@ hideall "--sync--"
       condition: (data) => data.sPhase === '喋血',
       suppressSeconds: 1,
       infoText: (data, matches, output) => {
-        const tarRole = data.party.nameToRole_[matches.target];
-        const stackRole = tarRole === 'dps' ? 'dps' : 'th';
-        const myRole = data.role === 'dps' ? 'dps' : 'th';
-        const myGimick = stackRole === myRole ? 'stack' : 'spread';
-        const mySide = data.sDieXue![myGimick];
-        const mySideText = output[mySide]!();
-        const myGimickText = output[myGimick]!();
-        const myResult = output.text!({
-          side: mySideText,
-          gimmick: myGimickText,
+        const gimmick = (data.party.nameToRole_[matches.target] === 'dps') === (data.role === 'dps')
+          ? 'stack'
+          : 'spread';
+        const side = data.sDieXue?.[gimmick] ?? 'left';
+        return output.text!({
+          side: output[side]!(),
+          gimmick: output[gimmick]!(),
         });
-
-        return myResult;
       },
       outputStrings: {
         text: { en: '${side}${gimmick}' },
@@ -835,6 +948,224 @@ hideall "--sync--"
         'B4CE': { en: '右上击退 => 左上击退' },
       },
     },
+    {
+      id: 'souma r12s 门神狂暴',
+      type: 'StartsUsing',
+      netRegex: { id: 'B538', capture: false },
+      countdownSeconds: 9.7,
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: 'Enrage', cn: '狂暴' } },
+    },
+    // #endregion
+
+    // #region 本体
+    {
+      id: 'souma r12s p2 境中奇焰',
+      type: 'StartsUsing',
+      netRegex: { id: 'B528', capture: false },
+      response: Responses.aoe(),
+    },
+    {
+      id: 'souma r12s p2 自我复制',
+      type: 'StartsUsing',
+      netRegex: { id: 'B4D8', capture: false },
+      run: (data) => {
+        if (data.sPhase === '第一次细胞') {
+          // 刚开局
+          data.sPhase = '本体1运';
+        }
+      },
+    },
+    {
+      id: 'souma r12s p2 有翼灾变',
+      type: 'StartsUsingExtra',
+      netRegex: { id: ['B4DC'], capture: true },
+      durationSeconds: 62 - 37,
+      suppressSeconds: 62 - 38,
+      infoText: (_data, matches, output) => {
+        const hdg = (equal(parseFloat(matches.heading), 0.000, 0.1) ||
+            equal(parseFloat(matches.heading), 3.141, 0.1))
+          ? '打上下'
+          : '打左右';
+        return output[hdg]!();
+      },
+      outputStrings: {
+        '打上下': { en: '(分身打上下)' },
+        '打左右': { en: '(分身打左右)' },
+      },
+    },
+    {
+      id: 'souma r12s p2 一运buff',
+      type: 'GainsEffect',
+      netRegex: {
+        effectId: [
+          'B79', // 火耐
+          'CFB', // 暗耐
+        ],
+        capture: true,
+      },
+      condition: (data) => data.sPhase === '本体1运',
+      preRun: (data, matches) => {
+        data.sP2一运buff.push(matches);
+      },
+      alertText: (data, _matches, output) => {
+        if (data.sP2一运buff.length !== 6)
+          return;
+        const dark4 = data.sP2一运buff.filter((v) => v.effectId === 'CFB').map((v) => v.target);
+        const myGroup = dark4.includes(data.me) ? 'dark' : 'fire';
+        return output[myGroup]!();
+      },
+      outputStrings: {
+        dark: { en: '暗找斜' },
+        fire: { en: '火找正' },
+      },
+    },
+    // {
+    //   id: 'souma r12s p2 蛇踢 B511',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B511', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    {
+      id: 'souma r12s p2 蛇踢 B527',
+      type: 'StartsUsing',
+      netRegex: { id: 'B527', capture: false },
+      alarmText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: '去背后' } },
+    },
+    // {
+    //   id: 'souma r12s p2 蛇踢 BCAF',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'BCAF', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    {
+      id: 'souma r12s p2 双重飞踢1',
+      type: 'StartsUsing',
+      netRegex: { id: ['B520'], capture: false },
+      response: Responses.tankBuster(),
+    },
+    {
+      id: 'souma r12s p2 双重飞踢2',
+      type: 'StartsUsing',
+      netRegex: { id: ['B525'], capture: false },
+      response: (data, _matches, output) => {
+        output.responseOutputStrings = {
+          tank: { en: '去背后 => 大圈死刑' },
+          other: { en: '去背后脚下' },
+        };
+        return {
+          [data.role === 'tank' ? 'alertText' : 'infoText']:
+            output[data.role === 'tank' ? 'tank' : 'other']!(),
+        };
+      },
+    },
+    // {
+    //   id: 'souma r12s p2 模仿细胞 B4E1',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B4E1', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 落火飞溅 B4E3',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B4E3', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 时空重现 B4EC',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B4EC', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 近界阴怒 B52E',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B52E', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 变异细胞 B505',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B505', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 魔力球 B4FB',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B4FB', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 魔力球苏醒 B500',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B500', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 阴界近景 B52B',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B52B', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    {
+      id: 'souma r12s p2 境中奇梦',
+      type: 'StartsUsing',
+      netRegex: { id: 'B509', capture: false },
+      response: Responses.aoe(),
+    },
+    // {
+    //   id: 'souma r12s p2 力量喷涌 B50F',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B50F', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 力量喷涌 B510',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B510', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 力量喷涌 B512',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B512', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 力量喷涌 B51B',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B51B', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    // {
+    //   id: 'souma r12s p2 陨落 B4F3',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: 'B4F3', capture: false },
+    //   infoText: (_data, _matches, output) => output.text!(),
+    //   outputStrings: { text: { en: '自定义文本' } },
+    // },
+    {
+      id: 'souma r12s p2 境中奇狱',
+      type: 'StartsUsing',
+      netRegex: { id: ['B533', 'B534', 'B535', 'B537', 'BEC1'], capture: false },
+      response: Responses.aoe(),
+    },
+    // #endregion
   ],
 };
 
