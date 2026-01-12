@@ -1,4 +1,5 @@
 import Conditions from '../../../../../resources/conditions';
+import Outputs from '../../../../../resources/outputs';
 import { callOverlayHandler } from '../../../../../resources/overlay_plugin_api';
 import { Responses } from '../../../../../resources/responses';
 import ZoneId from '../../../../../resources/zone_id';
@@ -16,7 +17,13 @@ const mjMap: Record<string, string> = {
   1290: 'alpha',
 };
 
-type Phase = '第一次细胞' | '第二次细胞' | '麻将' | '麻将后';
+type Phase = '第一次细胞' | '第一次细胞后' | '第二次细胞' | '麻将' | '麻将后' | '喋血';
+
+type Stage = '门神' | '本体';
+
+const equal = (num: number, target: number, diff = 0.1) => {
+  return Math.abs(num - target) < diff;
+};
 
 export interface Data extends RaidbossData {
   sWeaponId: number | undefined;
@@ -30,6 +37,12 @@ export interface Data extends RaidbossData {
   sBallsOver: boolean;
   sMjNikus: string[];
   sCombatantData: PluginCombatantState[];
+  sStage: Stage;
+  sWings2?: '前' | '右' | '后' | '左';
+  sSaibo2?: string;
+  sMj2NikuIds: string[];
+  sMjDieXueIds: string[];
+  sDieXue?: { spread: 'left' | 'right'; stack: 'left' | 'right' };
 }
 
 const triggerSet: TriggerSet<Data> = {
@@ -37,7 +50,55 @@ const triggerSet: TriggerSet<Data> = {
   zoneId: ZoneId.AacHeavyweightM4Savage,
   zoneLabel: { en: 'M12S Souma特供版' },
   overrideTimelineFile: true,
-  timeline: ``,
+  timeline: `hideall "--Reset--"
+hideall "--sync--"
+
+0.0 "--Reset--" ActorControl { command: "4000000F" } window 0,100000 jump 0
+
+0.0 "--sync--" InCombat { inGameCombat: "1" } window 0,1
+
+11 "补天之手" StartsUsing { id: "B4D7" } window 20,20 #Lindwurm（Boss）
+15.9 "补天之手" # Ability { id: "B4D7" } #Lindwurm（Boss）
+41.3 "致命灾变" # Ability { id: "B495" } #Lindwurm（Boss）
+70.7 "细胞附身·早期" # Ability { id: "BEBD" } #Lindwurm（Boss）
+77.9 "极饿伸展" # Ability { id: "B469" } #Lindwurm（Boss）
+108.2 "补天之手" # Ability { id: "B4D7" } #Lindwurm（Boss）
+120.4 "细胞附身·中期" # Ability { id: "BEBE" } #Lindwurm（Boss）
+135.6 "残暴拘束" # Ability { id: "B4B8" } #Lindwurm（Boss）
+141.6 "蜕鳞" # Ability { id: "B4BC" } #Lindwurm（Boss）
+146.6 "蜕鳞" # Ability { id: "B4BC" } #Lindwurm（Boss）
+151.5 "蜕鳞" # Ability { id: "B4BC" } #Lindwurm（Boss）
+153.4 "细胞变异" # Ability { id: "B4B7" } #Blood Vessel（分身）
+154.6 "细胞变异" # Ability { id: "B4B3" } #Blood Vessel（分身）
+156.5 "蜕鳞" # Ability { id: "B4BC" } #Lindwurm（Boss）
+158.4 "细胞变异" # Ability { id: "B4B7" } #Blood Vessel（分身）
+159.5 "细胞变异" # Ability { id: "B4B3" } #Blood Vessel（分身）
+161.5 "蜕鳞" # Ability { id: "B4BC" } #Lindwurm（Boss）
+163.3 "细胞变异" # Ability { id: "B4B7" } #Blood Vessel（分身）
+164.8 "细胞变异" # Ability { id: "B4B3" } #Blood Vessel（分身）
+166.4 "蜕鳞" # Ability { id: "B4BC" } #Lindwurm（Boss）
+168.4 "细胞变异" # Ability { id: "B4B7" } #Blood Vessel（分身）
+171.3 "细胞变异" # Ability { id: "B4B3" } #Blood Vessel（分身）
+171.4 "蜕鳞" # Ability { id: "B4BC" } #Lindwurm（Boss）
+176.3 "巨蟒绞缠" # Ability { id: "B4BD" } #Lindwurm（Boss）
+186.5 "溅血" # Ability { id: "B9C4" } #Lindwurm（Boss）
+206.7 "细胞附身·晚期" # Ability { id: "BEBF" } #Lindwurm（Boss）
+211.9 "野性分裂" # Ability { id: "BE09" } #Lindwurm（Boss）
+216.1 "震场" # Ability { id: "BE0A" } #Lindwurm（Boss）
+241.4 "补天之手" # Ability { id: "B4D7" } #Lindwurm（Boss）
+253.6 "细胞附身·末期" # Ability { id: "BEC0" } #Lindwurm（Boss）
+257.7 "极饿伸展" # Ability { id: "B469" } #Lindwurm（Boss）
+288 "溅血" # Ability { id: "B9C3" } #Lindwurm（Boss）
+316.3 "致命灾变" # Ability { id: "B495" } #Lindwurm（Boss）
+340.6 "喋血" # Ability { id: "B4C6" } #Lindwurm（Boss）
+357.4 "灾变吐息" # Ability { id: "B4D2" } #Lindwurm（Boss）
+361.9 "灾变吐息" # Ability { id: "B4D1" } #Lindwurm（Boss）
+369.5 "喋血" # Ability { id: "B4C3" } #Lindwurm（Boss）
+386.3 "追猎重击" # Ability { id: "B4D0" } #Lindwurm（Boss）
+390.8 "追猎重击" # Ability { id: "B4CF" } #Lindwurm（Boss）
+398.4 "喋血" # Ability { id: "B4C6" } #Lindwurm（Boss）
+415.2 "追猎重击" # Ability { id: "B4D0" } #Lindwurm（Boss）
+`,
   initData: () => {
     return {
       sWeaponId: undefined,
@@ -51,14 +112,35 @@ const triggerSet: TriggerSet<Data> = {
       sBallsOver: false,
       sMjNikus: [],
       sCombatantData: [],
+      sStage: '门神',
+      sMj2NikuIds: [],
+      sMjDieXueIds: [],
+      sDieXue: { spread: 'left', stack: 'left' },
     };
   },
   triggers: [
     {
+      id: 'souma r12s 阶段判断',
+      type: 'StartsUsing',
+      netRegex: { id: 'B4D7', capture: false },
+      preRun: (data, matches) => {
+        if (matches.id === 'B4D7') {
+          data.sStage = '门神';
+        }
+      },
+    },
+    {
       id: 'souma r12s aoe B4D7',
       type: 'StartsUsing',
       netRegex: { id: 'B4D7', capture: false },
-      response: Responses.bigAoe(),
+      response: Responses.bigAoe('alert'),
+    },
+    {
+      id: 'souma r12s aoe B9C4',
+      type: 'StartsUsing',
+      netRegex: { id: 'B9C4', capture: false },
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: '小AoE' } },
     },
     {
       id: 'souma r12s 伸展',
@@ -74,12 +156,25 @@ const triggerSet: TriggerSet<Data> = {
         }
         data.sWeaponId = add.WeaponId;
       },
-      infoText: (data, _matches, output) => {
-        return data.sWeaponId === 5 ? output.right!() : output.left!();
-      },
-      outputStrings: {
-        left: { en: '左侧安全' },
-        right: { en: '右侧安全' },
+      response: (data, _matches, output) => {
+        output.responseOutputStrings = {
+          left: { en: '左侧安全' },
+          right: { en: '右侧安全' },
+          分散left: { en: '←左分散' },
+          分散right: { en: '右→分散' },
+          死超left: { en: '右→分散' },
+          死超right: { en: '←左分散' },
+        };
+        if (data.sPhase === '第二次细胞') {
+          const safe = data.sWeaponId === 5 ? 'right' : 'left';
+          const buff = data.sSaibo2 === '死超' ? '死超' : '分散';
+          return {
+            [buff === '死超' ? 'alertText' : 'infoText']: output[buff + safe]!(),
+          };
+        }
+        return {
+          infoText: data.sWeaponId === 5 ? output.right!() : output.left!(),
+        };
       },
     },
     {
@@ -120,14 +215,32 @@ const triggerSet: TriggerSet<Data> = {
       suppressSeconds: 999,
       infoText: (data, _matches, output) => output[data.sMj!.mj + data.sMj!.sym]!(),
       outputStrings: {
-        '1麻alpha': { en: '阿尔法1。记场地三塔，先出去再踩塔' },
-        '2麻alpha': { en: '阿尔法2。记场地四塔，先出去再踩塔' },
-        '3麻alpha': { en: '阿尔法3。记场地一塔，先踩塔再出去' },
-        '4麻alpha': { en: '阿尔法4。记场地二塔，先踩塔再出去' },
-        '1麻beta': { en: '贝塔1。内拉线 => 玩家三塔' },
-        '2麻beta': { en: '贝塔2。内拉线 => 玩家四塔' },
-        '3麻beta': { en: '贝塔3。玩家一塔 => 内拉线' },
-        '4麻beta': { en: '贝塔4。玩家二塔 => 内拉线' },
+        '1麻alpha': { en: 'alpha1：1线 => 场地3塔' },
+        '2麻alpha': { en: 'alpha2：2线 => 场地4塔' },
+        '3麻alpha': { en: 'alpha3：场地1塔 => 3线' },
+        '4麻alpha': { en: 'alpha4：场地2塔 => 4线' },
+        '1麻beta': { en: 'beta1: 反拉1线 => 玩家三塔' },
+        '2麻beta': { en: 'beta2: 反拉2线 => 玩家四塔' },
+        '3麻beta': { en: 'beta3: 玩家一塔 => 反拉3线' },
+        '4麻beta': { en: 'beta4: 玩家二塔 => 反拉4线' },
+      },
+    },
+    {
+      id: 'souma r12s 麻将0-',
+      type: 'GainsEffect',
+      netRegex: { effectId: ['1292', '1290'], capture: true },
+      condition: Conditions.targetIsYou(),
+      delaySeconds: (_data, matches) => parseFloat(matches.duration) - 5,
+      suppressSeconds: 999,
+      countdownSeconds: 5,
+      infoText: (data, _matches, output) => {
+        if (data.sMj?.mj === '1麻' || data.sMj?.mj === '2麻') {
+          return output[data.sMj.sym]!();
+        }
+      },
+      outputStrings: {
+        'alpha': { en: '准备出去' },
+        'beta': { en: '准备反向拉线' },
       },
     },
     {
@@ -140,7 +253,7 @@ const triggerSet: TriggerSet<Data> = {
       alertText: (data, _matches, output) => output[data.sMj!.sym]!(),
       outputStrings: {
         'alpha': { en: '出去！' },
-        'beta': { en: '向内拉！' },
+        'beta': { en: '反向拉线！' },
       },
     },
     {
@@ -148,17 +261,27 @@ const triggerSet: TriggerSet<Data> = {
       type: 'GainsEffect',
       netRegex: { effectId: ['1292', '1290'], capture: true },
       condition: Conditions.targetIsYou(),
-      delaySeconds: (_data, matches) => parseFloat(matches.duration) - 8,
-      durationSeconds: 5,
+      delaySeconds: (_data, matches) => parseFloat(matches.duration) - 10,
+      durationSeconds: 6,
       suppressSeconds: 999,
       alertText: (data, _matches, output) => {
         if (data.sMj?.mj === '3麻' || data.sMj?.mj === '4麻') {
-          return output[data.sMj.sym]!();
+          if (data.sMj.sym === 'alpha') {
+            const tower = data.sMjNikus.at(data.sMj.mj === '3麻' ? 0 : 1);
+            if (tower === undefined) {
+              return output.unknown!();
+            }
+            return output.alpha!({
+              tower,
+            });
+          }
+          return output.beta!();
         }
       },
       outputStrings: {
-        'alpha': { en: '踩场地塔' },
-        'beta': { en: '踩玩家塔' },
+        'alpha': { en: '踩（${tower}）场地塔 => 场中准备出门拉线' },
+        'unknown': { en: '踩场地塔 => 场中准备出门拉线' },
+        'beta': { en: '踩玩家塔 => 场中准备反向拉线' },
       },
     },
     {
@@ -166,18 +289,48 @@ const triggerSet: TriggerSet<Data> = {
       type: 'GainsEffect',
       netRegex: { effectId: ['1292', '1290'], capture: true },
       condition: Conditions.targetIsYou(),
-      delaySeconds: (_data, matches) => parseFloat(matches.duration) + 2,
-      countdownSeconds: 7,
-      durationSeconds: 7,
+      delaySeconds: (_data, matches) => parseFloat(matches.duration) + 1,
+      countdownSeconds: 14,
+      durationSeconds: 14,
       suppressSeconds: 999,
       alertText: (data, _matches, output) => {
         if (data.sMj?.mj === '1麻' || data.sMj?.mj === '2麻') {
-          return output[data.sMj.sym]!();
+          if (data.sMj.sym === 'alpha') {
+            const tower = data.sMjNikus.at(data.sMj.mj === '1麻' ? 2 : 3);
+            if (tower === undefined) {
+              return output.unknown!();
+            }
+            return output.alpha!({
+              tower,
+            });
+          }
+          return output.beta!();
         }
       },
       outputStrings: {
-        'alpha': { en: '准备场地塔' },
+        'alpha': { en: '准备（${tower}）场地塔' },
+        'unknown': { en: '准备场地塔' },
         'beta': { en: '准备玩家塔' },
+      },
+    },
+    {
+      id: 'souma r12s 麻将12-',
+      type: 'GainsEffect',
+      netRegex: { effectId: ['1292', '1290'], capture: true },
+      condition: Conditions.targetIsYou(),
+      delaySeconds: (_data, matches) => parseFloat(matches.duration) + 14,
+      suppressSeconds: 999,
+      infoText: (data, _matches, output) => {
+        if (data.sMj?.mj === '1麻' || data.sMj?.mj === '2麻') {
+          if (data.sMj.sym === 'alpha') {
+            return output.alpha!();
+          }
+          return output.beta!();
+        }
+      },
+      outputStrings: {
+        'alpha': { en: '踩场地塔' },
+        'beta': { en: '踩玩家塔' },
       },
     },
     {
@@ -230,29 +383,23 @@ const triggerSet: TriggerSet<Data> = {
       },
       condition: (data) => data.sPhase === '麻将',
       run: (data, matches) => {
-        if (matches.x === '96.0000' && matches.y === '96.0000') {
-          data.sMjNikus.push('内左上');
-        }
-        if (matches.x === '96.0000' && matches.y === '110.0000') {
-          data.sMjNikus.push('内左下');
-        }
-        if (matches.x === '115.0000' && matches.y === '96.0000') {
-          data.sMjNikus.push('外右上');
-        }
-        if (matches.x === '115.0000' && matches.y === '110.0000') {
-          data.sMjNikus.push('外右下');
-        }
-        if (matches.x === '85.0000' && matches.y === '96.0000') {
-          data.sMjNikus.push('外左上');
-        }
-        if (matches.x === '85.0000' && matches.y === '110.0000') {
-          data.sMjNikus.push('外左下');
-        }
-        if (matches.x === '104.0000' && matches.y === '96.0000') {
-          data.sMjNikus.push('内右上');
-        }
-        if (matches.x === '104.0000' && matches.y === '110.0000') {
-          data.sMjNikus.push('内右下');
+        const xLabel = {
+          '85.0000': '外左',
+          '96.0000': '内左',
+          '104.0000': '内右',
+          '115.0000': '外右',
+        }[matches.x];
+        const yLabel = {
+          '90.0000': '上',
+          '96.0000': '上',
+          '104.0000': '下',
+          '110.0000': '下',
+        }[matches.y];
+        if (
+          xLabel !== undefined && yLabel !== undefined &&
+          !data.sMjNikus.includes(`${xLabel}${yLabel}`)
+        ) {
+          data.sMjNikus.push(`${xLabel}${yLabel}`);
         }
       },
     },
@@ -284,20 +431,19 @@ const triggerSet: TriggerSet<Data> = {
       durationSeconds: 16.5,
       countdownSeconds: 16.5,
       suppressSeconds: 30,
+      condition: (data) => data.sPhase === '第一次细胞',
       alertText: (data, _matches, output) => {
         const buff = data.sSpreadStack.find((v) => v.target === data.me)?.effectId === '1299'
           ? 'spread'
           : 'stack';
         const buffStr = output[buff]!();
         if (data.sPhase === '第一次细胞') {
-          data.sPhase = '第二次细胞';
+          data.sPhase = '第一次细胞后';
           const countStr = output[data.sWings[data.me]!]!();
           return output.text!({
             buff: buffStr,
             count: countStr,
           });
-        } else if (data.sPhase === '第二次细胞') {
-          // return buffStr;
         }
       },
       run: (data) => {
@@ -327,6 +473,136 @@ const triggerSet: TriggerSet<Data> = {
       },
     },
     {
+      id: 'souma r12s 小翅膀2',
+      type: 'GainsEffect',
+      netRegex: {
+        effectId: 'DE6',
+        count: [
+          '436', // 前
+          '437', // 右
+          '438', // 后
+          '439', // 左
+        ],
+        capture: true,
+      },
+      condition: Conditions.targetIsYou(),
+      infoText: (data, matches, output) => {
+        data.sWings2 = {
+          '436': '前',
+          '437': '右',
+          '438': '后',
+          '439': '左',
+        }[matches.count] as '前' | '右' | '后' | '左';
+        return output[data.sWings2]!();
+      },
+      tts: null,
+      outputStrings: {
+        '前': { en: '(前)' },
+        '右': { en: '(右)' },
+        '后': { en: '(后)' },
+        '左': { en: '(左)' },
+      },
+    },
+    // 斜点安全
+    // [02:53:26.903] 263 107:400062FB:B4A3:107.517:92.502:0.000:0.000
+    // [02:53:26.903] 263 107:4000633A:B4A0:92.502:87.497:0.000:1.249
+    // [02:53:27.216] 263 107:4000633E:B4A2:82.492:97.507:0.000:0.785
+    // [02:53:27.216] 263 107:400062FA:B4A3:87.497:102.512:0.000:0.000
+    // [02:53:27.530] 263 107:40006339:B4A0:92.502:97.507:0.000:1.249
+    // [02:53:27.530] 263 107:400062F9:B4A3:107.517:102.512:0.000:0.000
+    // [02:53:27.844] 263 107:4000633F:B4A2:112.491:97.507:0.000:0.785
+    // [02:53:27.844] 263 107:400062F8:B4A3:117.496:102.512:0.000:0.000
+    // [02:53:28.111] 263 107:40006338:B4A0:92.502:107.517:0.000:1.249
+    // [02:53:28.111] 263 107:400062F7:B4A3:107.517:112.491:0.000:0.000
+
+    // 正点安全
+    // [02:12:44.256] 263 107:40005E43:B4A3:92.502:92.502:0.000:0.000
+    // [02:12:44.256] 263 107:40005EF8:B4A1:82.492:87.497:0.000:1.107
+    // [02:12:44.566] 263 107:40005E42:B4A3:117.496:92.502:0.000:0.000
+    // [02:12:44.566] 263 107:40005EF7:B4A1:107.517:87.497:0.000:1.107
+    // [02:12:44.877] 263 107:40005E41:B4A3:92.502:102.512:0.000:0.000
+    // [02:12:44.877] 263 107:40005EFB:B4A0:107.517:97.507:0.000:-1.249
+    // [02:12:45.188] 263 107:40005E40:B4A3:92.502:112.491:0.000:0.000
+    // [02:12:45.188] 263 107:40005EF6:B4A1:82.492:107.517:0.000:1.107
+    // [02:12:45.456] 263 107:40005EFE:B4A1:107.517:107.517:0.000:1.107
+    // [02:12:45.456] 263 107:40005E3F:B4A3:117.496:112.491:0.000:0.000
+    {
+      id: 'souma r12s 大蛇丸',
+      type: 'StartsUsingExtra',
+      netRegex: { id: ['B4A1', 'B4A2'] },
+      suppressSeconds: 6,
+      infoText: (data, matches, output) => {
+        const safe = matches.id === 'B4A1' ? '正' : '斜';
+        const wing = data.sWings2;
+        return output[safe + wing]!();
+      },
+      outputStrings: {
+        '正前': { en: '↓正下方格，换位' },
+        '正右': { en: '←正左方格' },
+        '正后': { en: '↑正上方格，换位' },
+        '正左': { en: '→正右方格' },
+        '斜前': { en: '↙左下方格' },
+        '斜右': { en: '↖左上方格' },
+        '斜后': { en: '↗右上方格' },
+        '斜左': { en: '↘右下方格' },
+      },
+    },
+    {
+      id: 'souma r12s 晚期了这孩子',
+      type: 'StartsUsing',
+      netRegex: { id: 'BEBF', capture: false },
+      delaySeconds: 18,
+      durationSeconds: 7,
+      response: (data, _matches, output) => {
+        output.responseOutputStrings = {
+          'tank': { en: '引导直线死刑 => 去场中' },
+          'other': { en: '躲避直线死刑 => 引导分散' },
+        };
+        if (data.role === 'tank') {
+          return {
+            alertText: output.tank!(),
+          };
+        }
+        return {
+          infoText: output.other!(),
+        };
+      },
+    },
+    {
+      id: 'souma r12s 末期了这孩子',
+      type: 'StartsUsing',
+      netRegex: { id: 'BEC0', capture: false },
+      infoText: (_data, _matches, output) => output.text!(),
+      run: (data) => data.sPhase = '第二次细胞',
+      outputStrings: {
+        text: Outputs.baitPuddles,
+      },
+    },
+    {
+      id: 'souma r12s 致死细胞',
+      type: 'GainsEffect',
+      netRegex: { effectId: ['129B', '1299'], capture: true },
+      condition: (data, matches) => data.sPhase === '第二次细胞' && data.me === matches.target,
+      alertText: (data, matches, output) => {
+        data.sSaibo2 = matches.effectId === '129B' ? '死超' : '分散';
+        return output[data.sSaibo2]!();
+      },
+      outputStrings: {
+        '死超': { en: '死超' },
+        '分散': { en: '分散' },
+      },
+    },
+    {
+      id: 'souma r12s 初始化球',
+      type: 'StartsUsing',
+      netRegex: { id: 'B495', capture: false },
+      run: (data) => {
+        data.sBalls = [];
+        data.sBallsOver = false;
+        data.sBallsFirst = false;
+      },
+    },
+    {
       id: 'souma r12s 球',
       type: 'AddedCombatant',
       netRegex: { npcNameId: '14378', npcBaseId: ['19200', '19201'], capture: true },
@@ -343,10 +619,14 @@ const triggerSet: TriggerSet<Data> = {
           const purpleSide = parseFloat(purples[0]!.x) < 100 ? 'left' : 'right';
           if (data.role === 'dps') {
             data.sBallsOver = true;
+            data.sBallsFirst = true;
             return output[purpleSide === 'left' ? 'right' : 'left']!();
           }
           // TH 1紫
           if (purples.length === 1) {
+            if (data.sBallsFirst) {
+              return;
+            }
             data.sBallsFirst = true;
             return output[purpleSide]!();
           }
@@ -356,15 +636,17 @@ const triggerSet: TriggerSet<Data> = {
             const side = data.sBallsFirst ? '' : output[purpleSide]!();
             const ordered = data.sBalls.filter((v) =>
               purpleSide === 'left' ? parseFloat(v.x) < 100 : parseFloat(v.x) > 100
-            ).map((v) => v.npcBaseId === '19200' ? output.t!() : output.h!()).join(
-              '',
-            );
+            ).map((v) => v.npcBaseId === '19200' ? 't' : 'h');
+            const result = Array.from({ length: 4 }, (_, i) => ordered[i] ?? 'h').map((v) =>
+              output[v]!()
+            ).join('/');
             if (data.sBallsFirst) {
-              return ordered;
+              return result;
             }
+            data.sBallsFirst = true;
             return output.text!({
               side: side,
-              ordered: ordered,
+              ordered: result,
             });
           }
         }
@@ -375,6 +657,182 @@ const triggerSet: TriggerSet<Data> = {
         h: { en: '奶' },
         left: { en: '左' },
         right: { en: '右' },
+      },
+    },
+    {
+      id: 'souma r12s 拉线之1',
+      type: 'HeadMarker',
+      netRegex: { id: '0291', capture: true },
+      condition: (data, matches) => data.sPhase === '第二次细胞' && matches.target === data.me,
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: { en: '集合拉线' },
+      },
+    },
+    {
+      id: 'souma r12s 拉线之2',
+      type: 'GainsEffect',
+      netRegex: { effectId: '1291', capture: true },
+      condition: (data, matches) => data.sPhase === '第二次细胞' && matches.target === data.me,
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: { en: '走！' },
+      },
+    },
+    {
+      id: 'souma r12s ActorControlExtra',
+      type: 'ActorControlExtra',
+      netRegex: {
+        category: '019D',
+        param1: '10',
+        param2: '20',
+        param3: '0',
+        param4: '0',
+      },
+      condition: (data) => data.sPhase === '第二次细胞' || data.sPhase === '喋血',
+      preRun: (data, matches) => {
+        if (data.sPhase === '喋血') {
+          data.sMjDieXueIds.push(matches.id);
+        } else {
+          data.sMj2NikuIds.push(matches.id);
+        }
+      },
+    },
+    {
+      id: 'souma r12s ActorControlExtra2',
+      type: 'ActorControlExtra',
+      netRegex: {
+        category: '019D',
+        param1: '10',
+        param2: '20',
+        param3: '0',
+        param4: '0',
+        capture: false,
+      },
+      condition: (data) => data.sPhase === '第二次细胞' && data.sMj2NikuIds.length > 0,
+      delaySeconds: 0.5,
+      suppressSeconds: 999,
+      promise: async (data) => {
+        data.sCombatantData = (await callOverlayHandler({
+          call: 'getCombatants',
+          ids: data.sMj2NikuIds.map((v) => parseInt(v, 16)),
+        })).combatants;
+        data.sMj2NikuIds.length = 0;
+      },
+      infoText: (data, _matches, output) => {
+        // console.log(data.sCombatantData.map((v) => ({ x: v.PosX, y: v.PosY })));
+        // {x: 91, y: 87} {x: 109, y: 113} 24安全
+        if (data.sCombatantData.find((v) => equal(v.PosX, 91) && equal(v.PosY, 87))) {
+          return output['24']!();
+        }
+        return output['13']!();
+      },
+      outputStrings: {
+        '24': { en: '二四安全' },
+        '13': { en: '一三安全' },
+      },
+    },
+    {
+      id: 'souma r12s 喋血',
+      type: 'StartsUsing',
+      netRegex: {
+        id: [
+          'B4C3',
+          'B4C6',
+        ],
+      },
+      suppressSeconds: 1,
+      infoText: (_data, _matches, output) => output.text!(),
+      run: (data) => {
+        data.sPhase = '喋血';
+        data.sDieXue = undefined;
+      },
+      outputStrings: {
+        text: { en: 'AoE' },
+      },
+    },
+    {
+      id: 'souma r12s ActorControlExtra2喋血',
+      type: 'ActorControlExtra',
+      netRegex: {
+        category: '019D',
+        param1: '10',
+        param2: '20',
+        param3: '0',
+        param4: '0',
+        capture: false,
+      },
+      condition: (data) => data.sPhase === '喋血' && data.sMjDieXueIds.length > 0,
+      delaySeconds: 0.5,
+      suppressSeconds: 10,
+      promise: async (data) => {
+        data.sCombatantData = (await callOverlayHandler({
+          call: 'getCombatants',
+          ids: data.sMjDieXueIds.map((v) => parseInt(v, 16)),
+        })).combatants;
+        data.sMjDieXueIds.length = 0;
+        if (data.sCombatantData.find((v) => equal(v.PosX, 110.75) && equal(v.PosY, 96.5))) {
+          data.sDieXue = {
+            spread: 'left',
+            stack: 'right',
+          };
+        } else {
+          data.sDieXue = {
+            spread: 'right',
+            stack: 'left',
+          };
+        }
+      },
+    },
+    {
+      id: 'souma r12s 喋血分摊分散',
+      type: 'HeadMarker',
+      netRegex: { id: ['013D'], capture: true },
+      condition: (data) => data.sPhase === '喋血',
+      suppressSeconds: 1,
+      infoText: (data, matches, output) => {
+        const tarRole = data.party.nameToRole_[matches.target];
+        const stackRole = tarRole === 'dps' ? 'dps' : 'th';
+        const myRole = data.role === 'dps' ? 'dps' : 'th';
+        const myGimick = stackRole === myRole ? 'stack' : 'spread';
+        const mySide = data.sDieXue![myGimick];
+        const mySideText = output[mySide]!();
+        const myGimickText = output[myGimick]!();
+        const myResult = output.text!({
+          side: mySideText,
+          gimmick: myGimickText,
+        });
+
+        return myResult;
+      },
+      outputStrings: {
+        text: { en: '${side}${gimmick}' },
+        left: { en: '左' },
+        right: { en: '右' },
+        stack: { en: '分摊' },
+        spread: { en: '散开' },
+      },
+    },
+    {
+      id: 'souma r12s 喋血用',
+      type: 'Ability',
+      netRegex: {
+        id: [
+          'B4CB', // 左先出，蛇
+          'B4CC', // 左先出，击退
+          'B4CD', // 右先出，蛇
+          'B4CE', // 右边先出，击退
+        ],
+      },
+      condition: (data) => data.sPhase === '喋血',
+      delaySeconds: 5,
+      durationSeconds: 18 - 5,
+      alertText: (_data, matches, output) => output[matches.id]!(),
+      outputStrings: {
+        'B4CB': { en: '右半安全 => 左半安全' },
+        'B4CC': { en: '左上击退 => 右上击退' },
+        'B4CD': { en: '左半安全 => 右半安全' },
+        'B4CE': { en: '右上击退 => 左上击退' },
       },
     },
   ],
