@@ -1748,7 +1748,7 @@ hideall "--sync--"
         if (!actor) {
           throw new Error('actor not found');
         }
-        const dir = Directions.xyTo4DirNum(actor.x, actor.y, center.x, center.y);
+        const dir = Directions.xyTo8DirNum(actor.x, actor.y, center.x, center.y);
         if (dir % 2 === 0) {
           data.s四运长记忆1 = '正点先刷';
           return output.even!();
@@ -1806,7 +1806,17 @@ hideall "--sync--"
       condition: (data, matches) => data.me === matches.target && data.sPhase === '本体4运',
       durationSeconds: 55,
       suppressSeconds: 999,
-      infoText: (data, matches, output) => {
+      response: (data, matches, output) => {
+        output.responseOutputStrings = {
+          '0': { en: 'A：接同色分摊' },
+          '2': { en: 'B：接同色分摊' },
+          '5': { en: '3：接同色分摊' },
+          '7': { en: '4：接同色分摊' },
+          '4': { en: 'C：接同色大圈' },
+          '6': { en: 'D：接同色大圈' },
+          '1': { en: '1：接同色大圈' },
+          '3': { en: '2：接同色大圈' },
+        };
         const source = data.sActorPositions[matches.sourceId];
         if (!source) {
           throw new Error('source not found');
@@ -1822,21 +1832,9 @@ hideall "--sync--"
           6: 2,
           7: 2,
         }[dir]!;
-        data.s四运分摊分散玩家机制 = {
-          count: count,
-          gimmick: [0, 2, 5, 7].includes(dir) ? '分摊' : '大圈',
-        };
-        return output[dir]!();
-      },
-      outputStrings: {
-        '0': { en: 'A：接同色分摊' },
-        '2': { en: 'B：接同色分摊' },
-        '5': { en: '3：接同色分摊' },
-        '7': { en: '4：接同色分摊' },
-        '4': { en: 'C：接同色大圈' },
-        '6': { en: 'D：接同色大圈' },
-        '1': { en: '1：接同色大圈' },
-        '3': { en: '2：接同色大圈' },
+        const gimmick = [0, 2, 5, 7].includes(dir) ? '分摊' : '大圈';
+        data.s四运分摊分散玩家机制 = { count, gimmick };
+        return { [gimmick === '大圈' ? 'alertText' : 'infoText']: output[dir]!() };
       },
     },
     {
@@ -1886,41 +1884,6 @@ hideall "--sync--"
         },
       },
     },
-    // {
-    //   id: 'souma r12s p2 力量喷涌 B50F',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'B50F', capture: false },
-    //   infoText: (_data, _matches, output) => output.text!(),
-    //   outputStrings: { text: { en: '自定义文本' } },
-    // },
-    // {
-    //   id: 'souma r12s p2 力量喷涌 B510',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'B510', capture: false },
-    //   infoText: (_data, _matches, output) => output.text!(),
-    //   outputStrings: { text: { en: '自定义文本' } },
-    // },
-    // {
-    //   id: 'souma r12s p2 力量喷涌 B512',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'B512', capture: false },
-    //   infoText: (_data, _matches, output) => output.text!(),
-    //   outputStrings: { text: { en: '自定义文本' } },
-    // },
-    // {
-    //   id: 'souma r12s p2 力量喷涌 B51B',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'B51B', capture: false },
-    //   infoText: (_data, _matches, output) => output.text!(),
-    //   outputStrings: { text: { en: '自定义文本' } },
-    // },
-    // {
-    //   id: 'souma r12s p2 陨落 B4F3',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'B4F3', capture: false },
-    //   infoText: (_data, _matches, output) => output.text!(),
-    //   outputStrings: { text: { en: '自定义文本' } },
-    // },
     {
       id: 'souma r12s p2 力量喷涌',
       type: 'StartsUsingExtra',
@@ -1939,8 +1902,8 @@ hideall "--sync--"
         return output[kage]!();
       },
       outputStrings: {
-        A: { en: '(A打上下)稍后4、1' },
-        C: { en: '(C打上下)稍后3、2' },
+        A: { en: '稍后1、4' },
+        C: { en: '稍后2、3' },
       },
     },
     {
@@ -1963,8 +1926,8 @@ hideall "--sync--"
         return output[kage]!();
       },
       outputStrings: {
-        A: { en: '4点1点安全' },
-        C: { en: '2点3点安全' },
+        A: { en: '1、4安全' },
+        C: { en: '2、3安全' },
       },
     },
     {
