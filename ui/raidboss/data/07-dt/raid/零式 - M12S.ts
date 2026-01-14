@@ -2,7 +2,7 @@ import Conditions from '../../../../../resources/conditions';
 import Outputs from '../../../../../resources/outputs';
 import { callOverlayHandler } from '../../../../../resources/overlay_plugin_api';
 import { Responses } from '../../../../../resources/responses';
-import { Directions } from '../../../../../resources/util';
+import Util, { Directions } from '../../../../../resources/util';
 import ZoneId from '../../../../../resources/zone_id';
 import { RaidbossData } from '../../../../../types/data';
 import { PluginCombatantState } from '../../../../../types/event';
@@ -68,12 +68,12 @@ export interface Data extends RaidbossData {
   s四运分摊分散玩家机制?: { count: number; gimmick: '分摊' | '大圈' };
   s四运分摊分散正点是大圈?: boolean;
   s四运分身打上下?: 'A' | 'C';
+  sP2一运打哪里?: 'AC' | 'BD';
   sP2二运暗分身?: { id: string; x: number; y: number };
   sP2二运火分身?: { id: string; x: number; y: number };
   sP2二运暗分身分身?: { id: string; x: number; y: number }[];
   sP2二运火分身分身?: { id: string; x: number; y: number }[];
-  sP2二运打哪里?: 'AC' | 'BD';
-  sP2我找谁?: 'dark' | 'fire';
+  sP2二运我找谁?: 'dark' | 'fire';
 }
 
 const triggerSet: TriggerSet<Data> = {
@@ -252,17 +252,17 @@ hideall "--sync--"
       sDieXue: { spread: 'left', stack: 'left' },
       sP2一运buff: [],
       sP2二运num: undefined,
-      s三运buff: undefined,
-      s三运先吸: undefined,
-      s四运长记忆1: undefined,
-      s四运分摊分散玩家机制: undefined,
-      s四运分摊分散正点机制: undefined,
       sP2二运打哪里: undefined,
       sP2二运暗分身: undefined,
       sP2二运火分身: undefined,
       sP2二运暗分身分身: undefined,
       sP2二运火分身分身: undefined,
-      sP2我找谁: undefined,
+      sP2二运我找谁: undefined,
+      s三运buff: undefined,
+      s三运先吸: undefined,
+      s四运长记忆1: undefined,
+      s四运分摊分散玩家机制: undefined,
+      s四运分摊分散正点机制: undefined,
     };
   },
   triggers: [
@@ -1073,16 +1073,17 @@ hideall "--sync--"
       netRegex: { id: ['B4DC'], capture: true },
       durationSeconds: 62 - 37,
       suppressSeconds: 62 - 38,
-      infoText: (_data, matches, output) => {
+      infoText: (data, matches, output) => {
         const hdg = (equal(parseFloat(matches.heading), 0.000, 0.1) ||
             equal(parseFloat(matches.heading), 3.141, 0.1))
-          ? '打上下'
-          : '打左右';
+          ? 'AC'
+          : 'BD';
+        data.sP2一运打哪里 = hdg;
         return output[hdg]!();
       },
       outputStrings: {
-        '打上下': { en: '(分身打上下)' },
-        '打左右': { en: '(分身打左右)' },
+        'AC': { en: '(分身打上下)' },
+        'BD': { en: '(分身打左右)' },
       },
     },
     {
@@ -1102,14 +1103,15 @@ hideall "--sync--"
         data.sP2一运buff.push(matches);
       },
       durationSeconds: 10,
-      alertText: (data, _matches, output) => {
+      infoText: (data, _matches, output) => {
         if (data.sP2一运buff.length !== 6)
           return;
         const dark4 = data.sP2一运buff.filter((v) => v.effectId === 'CFB').map((v) => v.target);
         const myGroup = dark4.includes(data.me) ? 'dark' : 'fire';
-        data.sP2我找谁 = myGroup;
+        data.sP2二运我找谁 = myGroup === 'dark' ? 'fire' : 'dark';
         return output[myGroup]!();
       },
+      tts: null,
       outputStrings: {
         dark: { en: '暗找斜' },
         fire: { en: '火找正' },
@@ -1171,7 +1173,8 @@ hideall "--sync--"
           // v.PosX && v.PosY && v.PosZ &&
           // v.PosZ === 0 &&
           !(v.PosX === 100 && v.PosY === 100) &&
-          v.Radius === 5 && v.Type === 2 && v.WorldID === 65535
+          v.Radius === 5 && v.Type === 2 && v.WorldID === 65535 &&
+          v.PosX !== undefined && v.PosY !== undefined
         );
       },
       run: (data) => {
@@ -1182,6 +1185,7 @@ hideall "--sync--"
         data.sP2二运火分身!.y = data.sActorPositions[data.sP2二运火分身!.id]!.y;
         const fire = data.sP2二运火分身;
         const dark = data.sP2二运暗分身;
+        // console.log(fire, dark);
         const origin = data.sCombatantData.map((v) => {
           return {
             ID: v.ID,
@@ -1192,7 +1196,7 @@ hideall "--sync--"
             fireDis: getDis(fire!.x, fire!.y, v.PosX, v.PosY),
           };
         });
-        // console.warn(origin);
+        // console.log(origin.slice());
         // 近1 = 5，近2 = 5，斜别组近3= 7.4
         data.sP2二运火分身分身 = origin.filter((v) => (v.fireDis < 6 && v.fireDis > 4)).map((v) => ({
           id: v.id,
@@ -1204,6 +1208,7 @@ hideall "--sync--"
           x: v.x,
           y: v.y,
         }));
+        // console.log(data.sP2二运火分身分身, data.sP2二运暗分身分身);
       },
     },
     {
@@ -1211,16 +1216,18 @@ hideall "--sync--"
       type: 'StartsUsing',
       netRegex: { id: 'B527', capture: false },
       delaySeconds: 14.3,
+      durationSeconds: 5.5,
       suppressSeconds: 999,
       promise: async (data) => {
         data.sCombatantData = (await callOverlayHandler({
           call: 'getCombatants',
         })).combatants.filter((v) =>
           v.ID &&
-          v.BNpcID === 19204 && v.BNpcNameID === 14380 && v.Job === 0 &&
-          equal(v.PosZ, 0.2136, 0.05) &&
-          !(v.PosX === 100 && v.PosY === 100) &&
-          v.Radius === 5 && v.Type === 2 && v.WorldID === 65535
+          v.BNpcID === 19204 && v.BNpcNameID === 14380 &&
+          //  && v.Job === 0 &&
+          // equal(v.PosZ, 0.2136, 0.05) &&
+          v.PosX !== 100 && v.PosY !== 100
+          // v.Radius === 5 && v.Type === 2 && v.WorldID === 65535
         );
       },
       infoText: (data, _matches, output) => {
@@ -1254,15 +1261,23 @@ hideall "--sync--"
           'dirSE': ['B', 'C'],
           'dirSW': ['C', 'D'],
         };
-        const melee = warymark[data.sP2我找谁 === 'fire' ? fire1!.dir : dark1!.dir];
-        const caster = warymark[data.sP2我找谁 === 'fire' ? fire2!.dir : dark2!.dir];
-        return output.text!({
-          melee,
-          caster,
-        });
+        const wmMelee = data.sP2一运打哪里 === 'AC' ? ['A', 'C'] : ['B', 'D'];
+        const wmCaster = data.sP2一运打哪里 === 'AC' ? ['B', 'D'] : ['A', 'C'];
+        const meleeAdd = data.sP2二运我找谁 === 'fire' ? fire1!.dir : dark1!.dir;
+        const casterAdd = data.sP2二运我找谁 === 'fire' ? fire2!.dir : dark2!.dir;
+        const melee = warymark[meleeAdd]!.find((v) => wmMelee.includes(v))!;
+        const caster = warymark[casterAdd]!.find((v) => wmCaster.includes(v))!;
+        const meleeDir = output[meleeAdd]!();
+        const casterDir = output[casterAdd]!();
+        if (data.role === 'tank' || Util.isMeleeDpsJob(data.job)) {
+          return output.melee!({ melee: melee, dir: meleeDir });
+        }
+        return output.caster!({ caster: caster, dir: casterDir });
       },
       outputStrings: {
-        text: { en: '近战${melee} / 远程${caster}' },
+        melee: { en: '去${melee}(分身在${dir})' },
+        caster: { en: '去${caster}(分身在${dir})' },
+        ...Directions.outputStringsIntercardDir,
       },
       // [
       //   { 'id': '40005069', 'x': 95.0041, 'y': 105.0142 },
@@ -1319,6 +1334,7 @@ hideall "--sync--"
       run: (data) => {
         if (data.sPhase === '本体1运') {
           data.sPhase = '本体2运';
+          data.sP2一运buff.length = 0;
         }
       },
     },
@@ -1590,6 +1606,12 @@ hideall "--sync--"
       netRegex: { id: 'B4FB', capture: false },
       preRun: (data) => {
         data.sPhase = '本体3运';
+        data.sP2二运num = undefined;
+        data.sP2二运暗分身 = undefined;
+        data.sP2二运火分身 = undefined;
+        data.sP2二运暗分身分身 = undefined;
+        data.sP2二运火分身分身 = undefined;
+        data.sP2二运我找谁 = undefined;
       },
     },
     {
@@ -1675,6 +1697,7 @@ hideall "--sync--"
         right: { en: '右' },
         text: { en: '撞${dir}边${c1}/${c2}' },
         a: { en: '场中别动' },
+        aTank: { en: '场中别动，一会换T' },
       },
     },
     {
