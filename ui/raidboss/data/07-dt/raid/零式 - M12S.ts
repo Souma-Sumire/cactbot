@@ -38,8 +38,11 @@ const equal = (num: number, target: number, diff = 0.1) => {
   return Math.abs(num - target) < diff;
 };
 
+const getDis = (x1: number, y1: number, x2: number, y2: number) =>
+  Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+
 export interface Data extends RaidbossData {
-  sActorPositions: { [id: string]: { x: number; y: number; heading: number } };
+  sActorPositions: { [id: string]: { id: string; x: number; y: number; heading: number } };
   sWeaponId: number | undefined;
   sBuffs: string[];
   sSpreadStack: NetMatches['GainsEffect'][];
@@ -65,6 +68,12 @@ export interface Data extends RaidbossData {
   s四运分摊分散玩家机制?: { count: number; gimmick: '分摊' | '大圈' };
   s四运分摊分散正点是大圈?: boolean;
   s四运分身打上下?: 'A' | 'C';
+  sP2二运暗分身?: { id: string; x: number; y: number };
+  sP2二运火分身?: { id: string; x: number; y: number };
+  sP2二运暗分身分身?: { id: string; x: number; y: number }[];
+  sP2二运火分身分身?: { id: string; x: number; y: number }[];
+  sP2二运打哪里?: 'AC' | 'BD';
+  sP2我找谁?: 'dark' | 'fire';
 }
 
 const triggerSet: TriggerSet<Data> = {
@@ -248,6 +257,12 @@ hideall "--sync--"
       s四运长记忆1: undefined,
       s四运分摊分散玩家机制: undefined,
       s四运分摊分散正点机制: undefined,
+      sP2二运打哪里: undefined,
+      sP2二运暗分身: undefined,
+      sP2二运火分身: undefined,
+      sP2二运暗分身分身: undefined,
+      sP2二运火分身分身: undefined,
+      sP2我找谁: undefined,
     };
   },
   triggers: [
@@ -255,34 +270,40 @@ hideall "--sync--"
       id: 'souma r12s ActorSetPos Tracker',
       type: 'ActorSetPos',
       netRegex: { id: '4[0-9A-Fa-f]{7}', capture: true },
-      run: (data, matches) =>
+      run: (data, matches) => {
         data.sActorPositions[matches.id] = {
+          id: matches.id,
           x: parseFloat(matches.x),
           y: parseFloat(matches.y),
           heading: parseFloat(matches.heading),
-        },
+        };
+      },
     },
     {
       id: 'souma r12s ActorMove Tracker',
       type: 'ActorMove',
       netRegex: { id: '4[0-9A-Fa-f]{7}', capture: true },
-      run: (data, matches) =>
+      run: (data, matches) => {
         data.sActorPositions[matches.id] = {
+          id: matches.id,
           x: parseFloat(matches.x),
           y: parseFloat(matches.y),
           heading: parseFloat(matches.heading),
-        },
+        };
+      },
     },
     {
       id: 'souma r12s AddedCombatant Tracker',
       type: 'AddedCombatant',
       netRegex: { id: '4[0-9A-Fa-f]{7}', capture: true },
-      run: (data, matches) =>
+      run: (data, matches) => {
         data.sActorPositions[matches.id] = {
+          id: matches.id,
           x: parseFloat(matches.x),
           y: parseFloat(matches.y),
           heading: parseFloat(matches.heading),
-        },
+        };
+      },
     },
     // #region 门神
     {
@@ -538,7 +559,7 @@ hideall "--sync--"
       run: (data) => data.sPhase = '麻将后',
     },
     {
-      id: 'souma r12s ActorSetPos Tracker',
+      id: 'souma r12s ActorSetPos Tracker2',
       type: 'ActorSetPos',
       netRegex: {
         id: '4[0-9A-Fa-f]{7}',
@@ -1086,6 +1107,7 @@ hideall "--sync--"
           return;
         const dark4 = data.sP2一运buff.filter((v) => v.effectId === 'CFB').map((v) => v.target);
         const myGroup = dark4.includes(data.me) ? 'dark' : 'fire';
+        data.sP2我找谁 = myGroup;
         return output[myGroup]!();
       },
       outputStrings: {
@@ -1107,6 +1129,151 @@ hideall "--sync--"
       delaySeconds: 0.5,
       alertText: (_data, _matches, output) => output.text!(),
       outputStrings: { text: { en: '去背后' } },
+    },
+    {
+      id: 'souma r12s p2 强力魔法',
+      type: 'StartsUsingExtra',
+      netRegex: { id: 'B4DF', capture: true },
+      suppressSeconds: 999,
+      run: (data, matches) => {
+        data.sP2二运暗分身 = {
+          'id': matches.sourceId,
+          'x': parseFloat(matches.x),
+          'y': parseFloat(matches.y),
+        };
+      },
+    },
+    {
+      id: 'souma r12s p2 天顶猛击',
+      type: 'Ability',
+      netRegex: { 'id': 'B4DE', 'capture': true, 'type': '22' },
+      suppressSeconds: 999,
+      run: (data, matches) => {
+        data.sP2二运火分身 = {
+          'id': matches.sourceId,
+          'x': parseFloat(matches.x),
+          'y': parseFloat(matches.y),
+        };
+      },
+    },
+    {
+      id: 'souma r12s p2 蛇踢 B527--',
+      type: 'StartsUsing',
+      netRegex: { id: 'B527', capture: false },
+      delaySeconds: 4,
+      suppressSeconds: 999,
+      promise: async (data) => {
+        data.sCombatantData = (await callOverlayHandler({
+          call: 'getCombatants',
+        })).combatants.filter((v) =>
+          v.ID &&
+          v.BNpcID === 19204 && v.BNpcNameID === 14380 && v.Job === 0 &&
+          // v.PosX && v.PosY && v.PosZ &&
+          // v.PosZ === 0 &&
+          !(v.PosX === 100 && v.PosY === 100) &&
+          v.Radius === 5 && v.Type === 2 && v.WorldID === 65535
+        );
+      },
+      run: (data) => {
+        // console.warn(data.sP2二运暗分身, data.sP2二运火分身);
+        data.sP2二运暗分身!.x = data.sActorPositions[data.sP2二运暗分身!.id]!.x;
+        data.sP2二运暗分身!.y = data.sActorPositions[data.sP2二运暗分身!.id]!.y;
+        data.sP2二运火分身!.x = data.sActorPositions[data.sP2二运火分身!.id]!.x;
+        data.sP2二运火分身!.y = data.sActorPositions[data.sP2二运火分身!.id]!.y;
+        const fire = data.sP2二运火分身;
+        const dark = data.sP2二运暗分身;
+        const origin = data.sCombatantData.map((v) => {
+          return {
+            ID: v.ID,
+            id: v.ID!.toString(16).toUpperCase(),
+            x: v.PosX,
+            y: v.PosY,
+            darkDis: getDis(dark!.x, dark!.y, v.PosX, v.PosY),
+            fireDis: getDis(fire!.x, fire!.y, v.PosX, v.PosY),
+          };
+        });
+        // console.warn(origin);
+        // 近1 = 5，近2 = 5，斜别组近3= 7.4
+        data.sP2二运火分身分身 = origin.filter((v) => (v.fireDis < 6 && v.fireDis > 4)).map((v) => ({
+          id: v.id,
+          x: v.x,
+          y: v.y,
+        }));
+        data.sP2二运暗分身分身 = origin.filter((v) => (v.darkDis < 6 && v.darkDis > 4)).map((v) => ({
+          id: v.id,
+          x: v.x,
+          y: v.y,
+        }));
+      },
+    },
+    {
+      id: 'souma r12s p2 蛇踢 B527---',
+      type: 'StartsUsing',
+      netRegex: { id: 'B527', capture: false },
+      delaySeconds: 14.3,
+      suppressSeconds: 999,
+      promise: async (data) => {
+        data.sCombatantData = (await callOverlayHandler({
+          call: 'getCombatants',
+        })).combatants.filter((v) =>
+          v.ID &&
+          v.BNpcID === 19204 && v.BNpcNameID === 14380 && v.Job === 0 &&
+          equal(v.PosZ, 0.2136, 0.05) &&
+          !(v.PosX === 100 && v.PosY === 100) &&
+          v.Radius === 5 && v.Type === 2 && v.WorldID === 65535
+        );
+      },
+      infoText: (data, _matches, output) => {
+        const fires = data.sCombatantData.filter((v) =>
+          data.sP2二运火分身分身!.some((v2) => v2.id === v.ID!.toString(16).toUpperCase())
+        ).map((v) => {
+          return {
+            x: v.PosX,
+            y: v.PosY,
+            dis: getDis(v.PosX, v.PosY, center.x, center.y),
+            dir: Directions.xyToIntercardDirOutput(v.PosX, v.PosY, center.x, center.y),
+          };
+        }).sort((v1, v2) => v1.dis - v2.dis);
+        const darks = data.sCombatantData.filter((v) =>
+          data.sP2二运暗分身分身!.some((v2) => v2.id === v.ID!.toString(16).toUpperCase())
+        ).map((v) => {
+          return {
+            x: v.PosX,
+            y: v.PosY,
+            dis: getDis(v.PosX, v.PosY, center.x, center.y),
+            dir: Directions.xyToIntercardDirOutput(v.PosX, v.PosY, center.x, center.y),
+          };
+        }).sort((v1, v2) => v1.dis - v2.dis);
+        const fire1 = fires[0];
+        const fire2 = fires[1];
+        const dark1 = darks[0];
+        const dark2 = darks[1];
+        const warymark: Record<string, string[]> = {
+          'dirNE': ['A', 'B'],
+          'dirNW': ['A', 'D'],
+          'dirSE': ['B', 'C'],
+          'dirSW': ['C', 'D'],
+        };
+        const melee = warymark[data.sP2我找谁 === 'fire' ? fire1!.dir : dark1!.dir];
+        const caster = warymark[data.sP2我找谁 === 'fire' ? fire2!.dir : dark2!.dir];
+        return output.text!({
+          melee,
+          caster,
+        });
+      },
+      outputStrings: {
+        text: { en: '近战${melee} / 远程${caster}' },
+      },
+      // [
+      //   { 'id': '40005069', 'x': 95.0041, 'y': 105.0142 },
+      //   { 'id': '4000506A', 'x': 109.8972, 'y': 90.0906 },
+      //   { 'id': '4000506D', 'x': 105.0142, 'y': 95.0041 },
+      //   { 'id': '4000506E', 'x': 90.0906, 'y': 109.8972 },
+      // ];
+      // [17:35:24.400] StartsCasting 14:40005069:人形分身:B4DF:强力魔法:40005069:人形分身:2.700:94.99:105.00:0.00:0.00
+      // [17:35:24.400] StartsCasting 14:4000506A:人形分身:B4DF:强力魔法:4000506A:人形分身:2.700:109.88:90.07:0.00:0.00
+      // [17:35:24.400] StartsCasting 14:4000506D:人形分身:B4DD:天顶猛击:4000506D:人形分身:2.700:105.00:94.99:0.00:0.00
+      // [17:35:24.400] StartsCasting 14:4000506E:人形分身:B4DD:天顶猛击:4000506E:人形分身:2.700:90.07:109.88:0.00:0.00
     },
     // {
     //   id: 'souma r12s p2 蛇踢 BCAF',
@@ -1390,14 +1557,6 @@ hideall "--sync--"
       },
     },
     {
-      id: 'souma r12s p2 魔力球 B4FB',
-      type: 'StartsUsing',
-      netRegex: { id: 'B4FB', capture: false },
-      run: (data) => {
-        data.sPhase = '本体3运';
-      },
-    },
-    {
       id: 'souma r12s p2 阴界近景 B52B',
       type: 'StartsUsing',
       netRegex: { id: 'B52B', capture: false },
@@ -1457,8 +1616,6 @@ hideall "--sync--"
         // );
       },
       alertText: (data, _matches, output) => {
-        const getDis = (x1: number, y1: number, x2: number, y2: number) =>
-          Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
         const left = data.sCombatantData.filter((v) => v.PosX < 100).map((v) => ({
           BNpcID: v.BNpcID,
           PosX: v.PosX,
