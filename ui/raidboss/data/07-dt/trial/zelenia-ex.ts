@@ -152,8 +152,6 @@ const mapEffectData: MapEffectData = {
   },
 } as const;
 
-const mapEffectTiles: MapEffectTile[] = Object.keys(mapEffectData) as MapEffectTile[];
-
 const isTileLoc = (loc: string): loc is TileSlotsType => {
   return tileSlots.includes(loc as TileSlotsType);
 };
@@ -220,12 +218,14 @@ const defaultTileState = () => ({
 } as const);
 
 export interface Data extends RaidbossData {
+  readonly triggerSetConfig: {
+    escelonsFall: 'dpsIn' | 'supportFirst' | 'dpsFirst' | 'none';
+  };
   phase: Phase;
   tileState: {
     [loc in MapEffectTile]: 'unknown' | 'red' | 'grey';
   };
   escelonFallBaits: ('near' | 'far')[];
-  bloom1StartDir?: number;
   bloom4RoseDirNorth: boolean;
   bloom5FirstDirSafe: 'dirNE' | 'dirNW' | 'dirSE' | 'dirSW' | 'unknown';
   bloom5SecondDirSafe: 'dirNE' | 'dirNW' | 'dirSE' | 'dirSW' | 'unknown';
@@ -235,6 +235,71 @@ export interface Data extends RaidbossData {
 const triggerSet: TriggerSet<Data> = {
   id: 'RecollectionExtreme',
   zoneId: ZoneId.RecollectionExtreme,
+  config: [
+    {
+      id: 'escelonsFall',
+      name: {
+        en: 'Escelons Fall Strategy',
+        de: 'Aufsteigendes Kreuz Strategy',
+        cn: '凌空错策略',
+        ko: '클라임 크로스 전략',
+      },
+      comment: {
+        en: `Strategy for resolving Escelons' Fall 1 and 3.
+
+            None - Just call the first bait.
+            DPS In - DPS always start in, Support always start out.
+            Support First - Support bait the first hit.
+            DPS First - DPS bait the first hit.`,
+        de: `Strategie zur Bewältigung von Escelons Fall 1 und 3.
+
+            Keine – Zeige einfach erste Köder Position an.
+            DPS innen – DPS startet immer innen, Support startrt immer außen.
+            Support zuerst – Support ködert zuerst.
+            DPS zuerst – DPS ködert zuerst.`,
+        cn: `凌空错1和3处理策略。
+
+            无 - 仅播报第一次引导。
+            输出在内 - DPS 始终圈内开始，T 奶始终圈外开始。
+            T 奶先 - T 奶引导第一次攻击。
+            DPS 先 - DPS 引导第一次攻击。`,
+        ko: `클라임 크로스 1, 3 처리 전략.
+
+            없음 - 첫 번째 유도만 호출.
+            딜러 안 - 딜러는 항상 안쪽에서 시작, 탱힐은 항상 바깥쪽에서 시작.
+            탱힐 먼저 - 탱힐이 첫 번째 공격을 유도.
+            딜러 먼저 - 딜러가 첫 번째 공격을 유도.`,
+      },
+      type: 'select',
+      options: {
+        en: {
+          'None': 'none',
+          'DPS In': 'dpsIn',
+          'Support First': 'supportFirst',
+          'DPS First': 'dpsFirst',
+        },
+        de: {
+          'Keine': 'none',
+          'DPS innen': 'dpsIn',
+          'Support zuerst': 'supportFirst',
+          'DPS zuerst': 'dpsFirst',
+        },
+        cn: {
+          '无': 'none',
+          '输出在内': 'dpsIn',
+          'T 奶先': 'supportFirst',
+          'DPS 先': 'dpsFirst',
+        },
+        ko: {
+          '없음': 'none',
+          '딜러 안': 'dpsIn',
+          '탱힐 먼저': 'supportFirst',
+          '딜러 먼저': 'dpsFirst',
+        },
+      },
+      default: 'none',
+    },
+  ],
   timelineFile: 'zelenia-ex.txt',
   initData: () => ({
     escelonFallBaits: [],
@@ -307,51 +372,75 @@ const triggerSet: TriggerSet<Data> = {
         if (bait1 === undefined || bait2 === undefined)
           return;
 
+        let first = 'unknown';
+
+        if (data.triggerSetConfig.escelonsFall === 'dpsIn') {
+          if (data.role === 'tank' || data.role === 'healer') {
+            first = 'out';
+          } else {
+            first = 'in';
+          }
+        } else if (data.triggerSetConfig.escelonsFall === 'supportFirst') {
+          if (data.role === 'tank' || data.role === 'healer') {
+            first = bait1 === 'near' ? 'in' : 'out';
+          } else {
+            first = bait1 === 'near' ? 'out' : 'in';
+          }
+        } else if (data.triggerSetConfig.escelonsFall === 'dpsFirst') {
+          if (data.role === 'tank' || data.role === 'healer') {
+            first = bait1 === 'near' ? 'out' : 'in';
+          } else {
+            first = bait1 === 'near' ? 'in' : 'out';
+          }
+        } else {
+          first = bait1;
+        }
+
         if (bait1 === bait2) {
           return output.swapAfterFirst!({
-            first: output[bait1]!(),
+            first: output[first]!(),
           });
         }
         return output.swapAfterSecond!({
-          first: output[bait1]!(),
+          first: output[first]!(),
         });
       },
       outputStrings: {
         near: {
-          en: 'Near',
-          de: 'Nah',
-          fr: 'proche',
-          ja: '近',
-          cn: '近',
-          ko: '가까이',
-          tc: '近',
+          en: 'Near bait first',
+          de: 'Nah ködert zuerst',
+          cn: '先靠近引导',
+          ko: '가까이 유도 먼저',
         },
         far: {
-          en: 'Far',
-          de: 'Fern',
-          fr: 'loin',
-          ja: '遠',
-          cn: '远',
-          ko: '멀리',
-          tc: '遠',
+          en: 'Far bait first',
+          de: 'Fern ködert zuerst',
+          cn: '先远离引导',
+          ko: '멀리 유도 먼저',
+        },
+        out: {
+          en: 'Start out',
+          de: 'Starte außen',
+          cn: '圈外开始',
+          ko: '바깥 시작',
+        },
+        in: {
+          en: 'Start in',
+          de: 'Starte innen',
+          cn: '圈内开始',
+          ko: '안 시작',
         },
         swapAfterFirst: {
-          en: '${first} bait first, Swap after first+third',
-          de: '${first} zuerst ködern, wechsel nach dem ersten + dritten',
-          fr: 'Bait ${first} d\'abord, échangez après le 1er et 3ème',
-          ja: '${first} を先に誘導 → 1・3回目後に交代',
-          cn: '先 ${first} 引导, 1、3刀后交换',
-          ko: '처음 ${first} 유도, 1, 3번째 이후 교대',
-          tc: '先 ${first} 引導, 1、3刀後交換',
+          en: '${first}, Swap after first+third',
+          de: '${first}, Wechseln nach erstem+dritten',
+          cn: '${first}, 第1次和第3次后交换',
+          ko: '${first}, 1번째와 3번째 후 교대',
         },
         swapAfterSecond: {
-          en: '${first} bait first, Swap after second',
-          de: '${first} zuerst ködern, wechsel nach dem zweiten',
-          fr: 'Bait ${first} d\'abord, échangez après le 2ème',
-          ja: '${first} を先に誘導 → 2回目後に交代',
-          cn: '先 ${first} 引导, 2刀后交换',
-          ko: '처음 ${first} 유도, 2번째 이후 교대',
-          tc: '先 ${first} 引導, 2刀後交換',
+          en: '${first}, Swap after second',
+          de: '${first}, Wechseln nach dem zweiten',
+          cn: '${first}, 第2次后交换',
+          ko: '${first}, 2번째 후 교대',
         },
       },
     },
@@ -510,58 +599,21 @@ const triggerSet: TriggerSet<Data> = {
       response: Responses.bigAoe(),
     },
     {
-      id: 'ZeleniaEx Bloom 1 Rotation Collector',
-      type: 'MapEffect',
-      netRegex: {
-        location: tileSlots,
-        flags: [bloomTileFlags.red, bloomTileFlags.grey, bloomTileFlags.greyToRed],
-        capture: false,
-      },
-      condition: (data) => data.phase === 'bloom1',
-      delaySeconds: 0.5,
-      suppressSeconds: 100,
-      run: (data) => {
-        let dirIdx = 1;
-        let foundGrey = false;
-
-        // Find the 1st inner tile clockwise that's grey
-        for (const key of mapEffectTiles) {
-          if (!key.includes('Inner'))
-            continue;
-          if (foundGrey) {
-            if (data.tileState[key] === 'red') {
-              // Special edge case, NNW is safe
-              dirIdx = 15;
-            } else {
-              dirIdx += 2;
-            }
-            break;
-          }
-
-          if (data.tileState[key] === 'grey') {
-            foundGrey = true;
-            continue;
-          }
-
-          dirIdx += 2;
-        }
-
-        data.bloom1StartDir = dirIdx;
-      },
-    },
-    {
-      id: 'ZeleniaEx Bloom 1 Rotation',
+      id: 'ZeleniaEx Bloom 1',
       type: 'HeadMarker',
       netRegex: { id: [headMarkerData.clockwise, headMarkerData.counterclockwise], capture: true },
-      infoText: (data, matches, output) =>
+      infoText: (_data, matches, output) =>
         output.text!({
-          dir: output[Directions.output16Dir[data.bloom1StartDir ?? -1] ?? 'unknown']!(),
+          dir: matches.id === headMarkerData.clockwise
+            ? output.dirSE!()
+            : output.dirN!(),
           rotate: matches.id === headMarkerData.clockwise
             ? output.clockwise!()
             : output.counterclockwise!(),
         }),
       outputStrings: {
-        ...Directions.outputStrings16Dir,
+        dirN: Outputs.dirN,
+        dirSE: Outputs.dirSE,
         clockwise: Outputs.clockwise,
         counterclockwise: Outputs.counterclockwise,
         text: {

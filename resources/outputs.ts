@@ -600,6 +600,11 @@ export default {
     ko: '오른쪽',
     tc: '右',
   },
+  rightEast: {
+    en: 'Right/East',
+    cn: '右侧',
+    ko: '오른쪽/동쪽',
+  },
   left: {
     en: 'Left',
     de: 'Links',
@@ -608,6 +613,11 @@ export default {
     cn: '左',
     ko: '왼쪽',
     tc: '左',
+  },
+  leftWest: {
+    en: 'Left/West',
+    cn: '左侧',
+    ko: '왼쪽/서쪽',
   },
   getLeftAndWest: {
     en: '<= Get Left/West',
