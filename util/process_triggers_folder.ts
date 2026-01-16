@@ -131,10 +131,7 @@ const processFile = async (originalFilename: string) => {
 const processAllFiles = async (root: string) => {
   // Process files.
   await walkDirAsync(root, async (filename) => {
-    if (!filename.includes('07-dt') || !filename.includes('零式')) {
-      return;
-    }
-    if (filename.endsWith('.js') || filename.endsWith('.ts'))
+    if (filename.includes('99-custom') && (filename.endsWith('.js') || filename.endsWith('.ts')))
       await processFile(filename);
   });
 
