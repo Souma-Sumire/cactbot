@@ -713,7 +713,7 @@ export class PopupText {
       }
       const existing = uniqueById.get(triggerSet.id);
       if (existing !== undefined) {
-        console.log(
+        console.debug(
           `Overriding trigger set id '${triggerSet.id}' from '${existing.filename}' with '${triggerSet.filename}'`,
         );
       }
@@ -951,7 +951,7 @@ export class PopupText {
 
       if (set.overrideTimelineFile) {
         const filename = set.filename !== undefined ? `'${set.filename}'` : '(user file)';
-        console.log(`Overriding timeline from ${filename}.`);
+        console.debug(`Overriding timeline from ${filename}.`);
 
         // If the timeline file override is set, all previously loaded timeline info is dropped.
         // Styles, triggers, and translations are kept, as they may still apply to the new one.

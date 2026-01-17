@@ -18,6 +18,13 @@ const mjMap: Record<string, string> = {
   1290: 'alpha',
 };
 
+const towers = {
+  '1EBF25': '风',
+  '1EBF26': '暗',
+  '1EBF27': '土',
+  '1EBF28': '火',
+};
+
 type Phase =
   | '第一次细胞'
   | '第一次细胞后'
@@ -74,10 +81,15 @@ export interface Data extends RaidbossData {
   sP2二运暗分身分身?: { id: string; x: number; y: number }[];
   sP2二运火分身分身?: { id: string; x: number; y: number }[];
   sP2二运我找谁?: 'dark' | 'fire';
+  // s四运小世界?: boolean;
+  s四运B9D9: NetMatches['Ability'][];
+  sCombatantMemory: {
+    [id: string]: { id: string; x: number; y: number; bNpcId: string; tower: string };
+  };
 }
 
 const triggerSet: TriggerSet<Data> = {
-  id: 'SoumaAacHeavyweightM4Savage',
+  id: 'AacHeavyweightM4Savage',
   zoneId: ZoneId.AacHeavyweightM4Savage,
   zoneLabel: { en: 'M12S Souma特供版' },
   overrideTimelineFile: true,
@@ -88,7 +100,7 @@ hideall "--sync--"
 
 0.0 "--sync--" InCombat { inGameCombat: "1" } window 0,1
 
-11 "补天之手?/境中奇焰?" StartsUsing { id: "B4D7" } window 20,20 #Lindwurm（Boss）
+11 "--sync--" StartsUsing { id: "B4D7" } window 20,20 #Lindwurm（Boss）
 15.9 "补天之手" # Ability { id: "B4D7" } #Lindwurm（Boss）
 41.3 "致命灾变" # Ability { id: "B495" } #Lindwurm（Boss）
 70.7 "细胞附身·早期" # Ability { id: "BEBD" } #Lindwurm（Boss）
@@ -139,7 +151,7 @@ hideall "--sync--"
 1040 "天顶猛击" # Ability { id: "B4DD" } #人型分体（分身）
 1040.3 "天顶猛击" # Ability { id: "B4DE" } #人型分体（分身）
 1041.3 "强力魔法" # Ability { id: "B4E0" } #リンドブルム（分身）
-1046 "蛇踢" # Ability { id: "B527" } #リンドブルム（Boss）
+1046 "蛇踢" Ability { id: "B527" } #リンドブルム（Boss）
 1061.5 "天顶猛击" # Ability { id: "B4DD" } #人型分体（分身）
 1061.5 "强力魔法" # Ability { id: "B4DF" } #人型分体（分身）
 1061.8 "天顶猛击" # Ability { id: "B4DE" } #人型分体（分身）
@@ -156,7 +168,7 @@ hideall "--sync--"
 1136.2 "重猛击" # Ability { id: "B4E8" } #人型分体（分身）
 1137.5 "细胞附身" # Ability { id: "B4EA" } #リンドブルム（分身）
 1138 "指向性冲击波" # Ability { id: "B4EB" } #リンドブルム（分身）
-1141.6 "蛇踢" # Ability { id: "B527" } #リンドブルム（Boss）
+1141.6 "蛇踢" Ability { id: "B527" } #リンドブルム（Boss）
 1151.8 "时空重现" # Ability { id: "B4EC" } #リンドブルム（Boss）
 1159.9 "落火飞溅" # Ability { id: "B4ED" } #人型分体（分身）
 1160 "近/远界阴怒" # Ability { id: "B52F" } #リンドブルム（Boss）
@@ -189,11 +201,11 @@ hideall "--sync--"
 1291.7 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
 1297.8 "自我复制" # Ability { id: "B4D8" } #リンドブルム（Boss）
 1310.3 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
-1311.3 "蛇踢" # Ability { id: "B511" } #人型分体（分身）
+1311.3 "蛇踢" Ability { id: "B511" } #人型分体（分身）
 1311.3 "力量喷涌" # Ability { id: "B510" } #人型分体（分身）
 1316.5 "自我复制" # Ability { id: "B4D8" } #リンドブルム（Boss）
 1336.1 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
-1340.5 "蛇踢" # Ability { id: "BE95" } #リンドブルム（分身）
+1340.5 "蛇踢" Ability { id: "BE95" } #リンドブルム（分身）
 1340.7 "力量喷涌" # Ability { id: "B516" } #リンドブルム（分身）
 1344.6 "林德布鲁姆陨石" # Ability { id: "B4F2" } #リンドブルム（Boss）
 1350.7 "陨落" # Ability { id: "B4F3" } #リンドブルム（Boss）
@@ -210,12 +222,12 @@ hideall "--sync--"
 1419 "空间裂断" # Ability { id: "B51C" } #リンドブルム（Boss）
 1431.6 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
 1432.6 "力量喷涌" # Ability { id: "B50F" } #人型分体（分身）
-1432.6 "蛇踢" # Ability { id: "BCAF" } #人型分体（分身）
+1432.6 "蛇踢" Ability { id: "BCAF" } #人型分体（分身）
 1437.7 "时空重现" # Ability { id: "B4EC" } #リンドブルム（Boss）
 1441.1 "魔力爆发" # Ability { id: "BBE3" } #リンドブルム（分身）
 1441.3 "重猛击" # Ability { id: "BE5D" } #リンドブルム（分身）
 1446.9 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
-1451.3 "蛇踢" # Ability { id: "BE95" } #リンドブルム（分身）
+1451.3 "蛇踢" Ability { id: "BE95" } #リンドブルム（分身）
 1451.6 "力量喷涌" # Ability { id: "B516" } #リンドブルム（分身）
 1454.4 "心象投影" # Ability { id: "BBE2" } #リンドブルム（Boss）
 1460.8 "魔力爆发" # Ability { id: "B4EE" } #人型分体（分身）
@@ -263,6 +275,8 @@ hideall "--sync--"
       s四运长记忆1: undefined,
       s四运分摊分散玩家机制: undefined,
       s四运分摊分散正点机制: undefined,
+      s四运B9D9: [],
+      sCombatantMemory: {},
     };
   },
   triggers: [
@@ -303,6 +317,34 @@ hideall "--sync--"
           y: parseFloat(matches.y),
           heading: parseFloat(matches.heading),
         };
+      },
+    },
+    {
+      id: 'souma r12s CombatantMemory Tracker',
+      type: 'CombatantMemory',
+      netRegex: {
+        change: 'Add',
+        id: '4[0-9A-Fa-f]{7}',
+        pair: [{
+          key: 'BNpcID',
+          value: Object.keys(towers),
+        }],
+        capture: true,
+      },
+      run: (data, matches) => {
+        if (
+          matches.pairBNpcID !== undefined &&
+          matches.pairPosX !== undefined &&
+          matches.pairPosY !== undefined
+        ) {
+          data.sCombatantMemory[matches.id] = {
+            id: matches.id,
+            x: parseFloat(matches.pairPosX),
+            y: parseFloat(matches.pairPosY),
+            bNpcId: matches.pairBNpcID,
+            tower: towers[matches.pairBNpcID as keyof typeof towers],
+          };
+        }
       },
     },
     // #region 门神
@@ -487,9 +529,9 @@ hideall "--sync--"
       netRegex: { effectId: ['1292', '1290'], capture: true },
       condition: Conditions.targetIsYou(),
       delaySeconds: (_data, matches) => parseFloat(matches.duration) + 1,
-      countdownSeconds: 14,
       durationSeconds: 14,
       suppressSeconds: 999,
+      countdownSeconds: 14,
       alertText: (data, _matches, output) => {
         if (data.sMj?.mj === '1麻' || data.sMj?.mj === '2麻') {
           if (data.sMj.sym === 'alpha') {
@@ -628,11 +670,11 @@ hideall "--sync--"
         ],
         capture: false,
       },
+      condition: (data) => data.sPhase === '第一次细胞',
       delaySeconds: 0.5,
       durationSeconds: 16.5,
-      countdownSeconds: 16.5,
       suppressSeconds: 30,
-      condition: (data) => data.sPhase === '第一次细胞',
+      countdownSeconds: 16.5,
       alertText: (data, _matches, output) => {
         const buff = data.sSpreadStack.find((v) => v.target === data.me)?.effectId === '1299'
           ? 'spread'
@@ -933,8 +975,8 @@ hideall "--sync--"
         return output['13']!();
       },
       outputStrings: {
-        '24': { en: '二四安全' },
-        '13': { en: '一三安全' },
+        '24': { en: '右上/左下安全' },
+        '13': { en: '左上/右下安全' },
       },
     },
     {
@@ -955,6 +997,12 @@ hideall "--sync--"
       outputStrings: {
         text: { en: 'AoE' },
       },
+    },
+    {
+      id: 'souma r12s 溅血',
+      type: 'StartsUsing',
+      netRegex: { id: 'B9C3', capture: false },
+      response: Responses.aoe(),
     },
     {
       id: 'souma r12s ActorControlExtra2喋血',
@@ -1071,7 +1119,7 @@ hideall "--sync--"
       id: 'souma r12s p2 有翼灾变',
       type: 'StartsUsingExtra',
       netRegex: { id: ['B4DC'], capture: true },
-      durationSeconds: 62 - 37,
+      durationSeconds: 3,
       suppressSeconds: 62 - 38,
       infoText: (data, matches, output) => {
         const hdg = (equal(parseFloat(matches.heading), 0.000, 0.1) ||
@@ -1082,8 +1130,8 @@ hideall "--sync--"
         return output[hdg]!();
       },
       outputStrings: {
-        'AC': { en: '(分身打上下)' },
-        'BD': { en: '(分身打左右)' },
+        AC: { en: '(分身打上下)' },
+        BD: { en: '(分身打左右)' },
       },
     },
     {
@@ -1102,28 +1150,33 @@ hideall "--sync--"
       preRun: (data, matches) => {
         data.sP2一运buff.push(matches);
       },
-      durationSeconds: 10,
-      infoText: (data, _matches, output) => {
+      delaySeconds: 1,
+      durationSeconds: 11,
+      response: (data, _matches, output) => {
+        output.responseOutputStrings = {
+          text: { en: '${side}${hdg}' },
+          dark: { en: '暗找斜' },
+          fire: { en: '火找正' },
+          AC: { en: '(分身打上下)' },
+          BD: { en: '(分身打左右)' },
+        };
         if (data.sP2一运buff.length !== 6)
           return;
         const dark4 = data.sP2一运buff.filter((v) => v.effectId === 'CFB').map((v) => v.target);
         const myGroup = dark4.includes(data.me) ? 'dark' : 'fire';
         data.sP2二运我找谁 = myGroup === 'dark' ? 'fire' : 'dark';
-        return output[myGroup]!();
-      },
-      tts: null,
-      outputStrings: {
-        dark: { en: '暗找斜' },
-        fire: { en: '火找正' },
+        const side = output[myGroup]!();
+        const hdg = output[data.sP2一运打哪里!]!();
+        data.sP2一运buff.length = 0;
+        return {
+          infoText: output.text!({
+            side: side,
+            hdg: hdg,
+          }),
+          tts: side,
+        };
       },
     },
-    // {
-    //   id: 'souma r12s p2 蛇踢 B511',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'B511', capture: false },
-    //   infoText: (_data, _matches, output) => output.text!(),
-    //   outputStrings: { text: { en: '自定义文本' } },
-    // },
     {
       id: 'souma r12s p2 蛇踢 B527',
       type: 'StartsUsing',
@@ -1212,7 +1265,7 @@ hideall "--sync--"
       },
     },
     {
-      id: 'souma r12s p2 蛇踢 B527---',
+      id: 'souma r12s p2 蛇踢 B527-----------',
       type: 'StartsUsing',
       netRegex: { id: 'B527', capture: false },
       delaySeconds: 14.3,
@@ -1269,14 +1322,23 @@ hideall "--sync--"
         const caster = warymark[casterAdd]!.find((v) => wmCaster.includes(v))!;
         const meleeDir = output[meleeAdd]!();
         const casterDir = output[casterAdd]!();
+        const attr = output[data.sP2二运我找谁!]!();
+        const meleeText = output[melee as keyof typeof output]!();
+        const casterText = output[caster as keyof typeof output]!();
         if (data.role === 'tank' || Util.isMeleeDpsJob(data.job)) {
-          return output.melee!({ melee: melee, dir: meleeDir });
+          return output.melee!({ melee: meleeText, dir: meleeDir, attr: attr });
         }
-        return output.caster!({ caster: caster, dir: casterDir });
+        return output.caster!({ caster: casterText, dir: casterDir, attr: attr });
       },
       outputStrings: {
-        melee: { en: '去${melee}(分身在${dir})' },
-        caster: { en: '去${caster}(分身在${dir})' },
+        A: { en: 'A' },
+        B: { en: 'B' },
+        C: { en: 'C' },
+        D: { en: 'D' },
+        melee: { en: '去${melee}${attr}(分身在${dir})' },
+        caster: { en: '去${caster}${attr}(分身在${dir})' },
+        fire: { en: '分摊' },
+        dark: { en: '散开' },
         ...Directions.outputStringsIntercardDir,
       },
       // [
@@ -1517,9 +1579,9 @@ hideall "--sync--"
       type: 'GainsEffect',
       netRegex: { effectId: ['12A1', '12A3'] },
       condition: Conditions.targetIsYou(),
+      delaySeconds: (data) => data.role === 'tank' ? 1 : 0,
       durationSeconds: (data, matches) =>
         parseFloat(matches.duration) - (data.role === 'tank' ? 1 : 0) - 1,
-      delaySeconds: (data) => data.role === 'tank' ? 1 : 0,
       countdownSeconds: (data, matches) =>
         parseFloat(matches.duration) - (data.role === 'tank' ? 1 : 0) - 1,
       response: (data, matches, output) => {
@@ -1543,10 +1605,10 @@ hideall "--sync--"
       type: 'GainsEffect',
       netRegex: { effectId: ['12A1', '12A3'] },
       condition: Conditions.targetIsYou(),
-      durationSeconds: (_data, matches) => parseFloat(matches.duration) - 0.5,
       delaySeconds: 0.5,
-      countdownSeconds: (_data, matches) => parseFloat(matches.duration) - 0.5,
+      durationSeconds: (_data, matches) => parseFloat(matches.duration) - 0.5,
       suppressSeconds: 999,
+      countdownSeconds: (_data, matches) => parseFloat(matches.duration) - 0.5,
       infoText: (data, matches, output) => {
         const buff = matches.effectId === '12A1' ? 'a' : 'b';
         if (buff === 'a' && data.role === 'tank')
@@ -1843,7 +1905,11 @@ hideall "--sync--"
       netRegex: { 'id': ['0170', '0171'] },
       condition: (data, matches) => data.me === matches.target && data.sPhase === '本体4运',
       suppressSeconds: 999,
-      run: (data, matches) => {
+      response: (data, matches, output) => {
+        output.responseOutputStrings = {
+          circle: { en: '接大圈' },
+          stack: { en: '接分摊' },
+        };
         const source = data.sActorPositions[matches.sourceId];
         if (!source) {
           throw new Error('source not found');
@@ -1853,6 +1919,10 @@ hideall "--sync--"
         const num = dir % 2 === 0 ? '正点' : '斜点';
         data.s四运分摊分散正点是大圈 = (gimmick === '大圈' && num === '正点') ||
           (gimmick === '分摊' && num === '斜点');
+        return {
+          [data.s四运分摊分散玩家机制!.gimmick === '大圈' ? 'alertText' : 'infoText']:
+            output[data.s四运分摊分散玩家机制!.gimmick === '大圈' ? 'circle' : 'stack']!(),
+        };
       },
     },
     // 04:25
@@ -1926,8 +1996,8 @@ hideall "--sync--"
         return output[kage]!();
       },
       outputStrings: {
-        A: { en: '1、4安全' },
-        C: { en: '2、3安全' },
+        A: { en: '1、4安全 => 小世界分组' },
+        C: { en: '2、3安全 => 小世界分组' },
       },
     },
     {
@@ -1943,6 +2013,50 @@ hideall "--sync--"
       countdownSeconds: 9.7,
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: { text: { en: '狂暴' } },
+    },
+    // {
+    //   id: 'souma r12s p2 B4F3',
+    //   type: 'StartsUsing',
+    //   netRegex: { id: ['B4F3'], capture: false },
+    //   preRun: (data) => data.s四运小世界 = true,
+    //   delaySeconds: 15,
+    //   run: (data) => data.s四运小世界 = false,
+    // },
+    {
+      id: 'souma r12s B9D9',
+      type: 'Ability',
+      netRegex: { id: ['B9D9'], capture: true },
+      preRun: (data, matches) => data.s四运B9D9.push(matches),
+      delaySeconds: 0.5,
+      promise: async (data, matches) => {
+        data.sCombatantData = (await callOverlayHandler({ call: 'getCombatants' })).combatants
+          .filter((v) =>
+            v.ID &&
+            v.ID >= 0x10000000 && v.ID <= 0x1FFFFFFF
+          );
+        console.log(
+          matches.timestamp,
+          data.sCombatantData.map((v) => ({
+            x: v.PosX,
+            y: v.PosY,
+            name: v.Name,
+          })),
+        );
+      },
+      // run: (data) => {
+      //   if (data.s四运B9D9.length === 4) {
+      //     data.s四运B9D9.length = 0;
+      //     const player = data.sCombatantData.find((v) => v.Name === data.me)!;
+      //     const side = player.PosX <= 100 ? 'MT' : 'ST';
+      //     const groups = data.sCombatantData.filter((
+      //       v,
+      //     ) => (side === 'MT' ? v.PosX <= 100 : v.PosX > 100));
+      //     const towers = Object.values(data.sCombatantMemory).filter((
+      //       v,
+      //     ) => (side === 'MT' ? v.x <= 100 : v.x > 100));
+      //     console.log(data.me, side, groups, towers);
+      //   }
+      // },
     },
     // #endregion
   ],

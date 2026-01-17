@@ -134,7 +134,7 @@ const headMarkerData = {
 } as const;
 
 const triggerSet: TriggerSet<Data> = {
-  id: 'SoumaAacHeavyweightM3Savage',
+  id: 'AacHeavyweightM3Savage',
   zoneId: ZoneId.AacHeavyweightM3Savage,
   zoneLabel: { en: 'M11S Souma特供版' },
   overrideTimelineFile: true,

@@ -50,7 +50,7 @@ const headMarkerData = {
 } as const;
 
 const triggerSet: TriggerSet<Data> = {
-  id: 'SoumaM10S',
+  id: 'AacHeavyweightM2Savage',
   zoneId: ZoneId.AacHeavyweightM2Savage,
   zoneLabel: { en: 'M10S Souma特供版' },
   config: [
