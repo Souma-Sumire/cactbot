@@ -86,6 +86,7 @@ export interface Data extends RaidbossData {
   sCombatantMemory: {
     [id: string]: { id: string; x: number; y: number; bNpcId: string; tower: string };
   };
+  s四运踩塔?: { tower: string; position: string; switch: boolean };
 }
 
 const triggerSet: TriggerSet<Data> = {
@@ -1266,6 +1267,7 @@ hideall "--sync--"
     },
     {
       id: 'souma r12s p2 蛇踢 B527-----------',
+      comment: { en: '根据职业判断近战/远程，不考虑D2黑魔的特殊情况。' },
       type: 'StartsUsing',
       netRegex: { id: 'B527', capture: false },
       delaySeconds: 14.3,
@@ -2023,6 +2025,36 @@ hideall "--sync--"
     //   run: (data) => data.s四运小世界 = false,
     // },
     {
+      id: 'souma r12s B9D9 后',
+      comment: { en: '根据职业判断近战/远程，不考虑D2黑魔的特殊情况。' },
+      type: 'Ability',
+      netRegex: { id: ['B9D9'], capture: false },
+      delaySeconds: 30,
+      durationSeconds: 12 + 22,
+      suppressSeconds: 30,
+      alertText: (data, _matches, output) => {
+        const { tower, position } = data.s四运踩塔!;
+        const role = data.role === 'tank' || Util.isMeleeDpsJob(data.job) ? 'melee' : 'caster';
+        return output.text!({
+          tower: output[`${tower}${['暗', '风'].includes(tower) ? '' : role}`]!(),
+          position: output[position]!(),
+        });
+      },
+      outputStrings: {
+        text: { en: '${position}${tower}' },
+        火melee: { en: '火塔（等热风）=> 中间' },
+        火caster: { en: '火塔（等热风）=> 左后' },
+        土melee: { en: '土塔（躲竹笋）=> 中间' },
+        土caster: { en: '土塔（躲竹笋）=> 左后' },
+        暗: { en: '暗塔（射场外）=> 最前' },
+        风: { en: '风塔（被吹飞）=> 右前' },
+        左上: { en: '左上' },
+        右上: { en: '右上' },
+        左下: { en: '左下' },
+        右下: { en: '右下' },
+      },
+    },
+    {
       id: 'souma r12s B9D9',
       type: 'Ability',
       netRegex: { id: ['B9D9'], capture: true },
@@ -2037,86 +2069,90 @@ hideall "--sync--"
             v.ID >= 0x10000000 && v.ID <= 0x1FFFFFFF
           );
       },
-      run: (data) => {
-        if (data.s四运B9D9.length === 4) {
-          const debuffs = data.s四运B9D9.map((v) => v.target);
-          data.s四运B9D9.length = 0;
-          const player = data.sCombatantData.find((v) => v.Name === data.me)!;
-          const side = player.PosX <= 100 ? 'MT' : 'ST';
-          const players = data.sCombatantData.filter((
-            v,
-          ) => (side === 'MT' ? v.PosX <= 100 : v.PosX > 100)).map((v) => {
-            return { x: v.PosX, y: v.PosY, name: v.Name, id: v.ID?.toString(16).toUpperCase() };
-          }).sort((a, b) => a.x - b.x);
-          const towers = Object.values(data.sCombatantMemory).filter((
-            v,
-          ) => (side === 'MT' ? v.x <= 100 : v.x > 100));
-          const [t1, t2, t3, t4] = towers.sort((a, b) => {
-            if (a.y === b.y)
-              return a.x - b.x;
-            return a.y - b.y;
-          });
-          // 1 2   |   1  2
-          // 3 4   |   3  4
-          const [p1, p3] = players.slice(0, 2).sort((a, b) => a.y - b.y);
-          const [p2, p4] = players.slice(2, 4).sort((a, b) => a.y - b.y);
-          const frontTowers = side === 'MT' ? [t2!, t4!] : [t1!, t3!];
-          const backTowers = side === 'MT' ? [t1!, t3!] : [t2!, t4!];
-          const frontPlayers = side === 'MT' ? [p2!, p4!] : [p1!, p3!];
-          const backPlayers = side === 'MT' ? [p1!, p3!] : [p2!, p4!];
-          const simpleColor = ['土', '火'];
-          type Tower = {
-            id: string;
-            x: number;
-            y: number;
-            bNpcId: string;
-            tower: string;
-          };
-          const getTower = (
-            playerName: string,
-            sideTowers: Tower[],
-            originTower: Tower,
-            position: 'nw' | 'ne' | 'sw' | 'se',
-          ) => {
-            const tower = debuffs.includes(playerName)
-              ? sideTowers.find((t) => simpleColor.includes(t.tower))!
-              : sideTowers.find((t) => !simpleColor.includes(t.tower))!;
-            const swh = originTower.tower !== tower.tower;
-            return {
-              tower: tower,
-              position: swh ? { nw: 'ne', ne: 'nw', sw: 'se', se: 'sw' }[position] : position,
-              switch: swh,
-            };
-          };
-          const playerToTower = {
-            [frontPlayers[0]!.name!]: getTower(
-              frontPlayers[0]!.name!,
-              frontTowers,
-              frontTowers[0]!,
-              'nw',
-            ),
-            [frontPlayers[1]!.name!]: getTower(
-              frontPlayers[1]!.name!,
-              frontTowers,
-              frontTowers[1]!,
-              'ne',
-            ),
-            [backPlayers[0]!.name!]: getTower(
-              backPlayers[0]!.name!,
-              backTowers,
-              backTowers[0]!,
-              'sw',
-            ),
-            [backPlayers[1]!.name!]: getTower(
-              backPlayers[1]!.name!,
-              backTowers,
-              backTowers[1]!,
-              'se',
-            ),
-          };
+      infoText: (data, _matches, output) => {
+        if (data.s四运B9D9.length !== 4)
+          return;
+        const debuffs = data.s四运B9D9.map((v) => v.target);
+        data.s四运B9D9.length = 0;
+        const me = data.sCombatantData.find((v) => v.Name === data.me);
+        if (!me)
+          return;
+        const isMT = me.PosX <= 100;
+        const magicTower = ['土', '火'];
+        const swapPos = { '左上': '右上', '右上': '左上', '左下': '右下', '右下': '左下' } as const;
 
-          console.log(playerToTower);
+        const players = data.sCombatantData
+          .filter((v) => isMT === (v.PosX <= 100))
+          .map((v) => ({ x: v.PosX, y: v.PosY, name: v.Name }))
+          .sort((a, b) => a.x - b.x);
+        const [t1, t2, t3, t4] = Object.values(data.sCombatantMemory)
+          .filter((v) => isMT === (v.x <= 100))
+          .sort((a, b) => a.y === b.y ? a.x - b.x : a.y - b.y);
+        if (players.length !== 4 || !t1 || !t2 || !t3 || !t4)
+          return;
+
+        // 1 2   center   1  2
+        // 3 4   center   3  4
+        const [p1, p3] = players.slice(0, 2).sort((a, b) => a.y - b.y);
+        const [p2, p4] = players.slice(2, 4).sort((a, b) => a.y - b.y);
+
+        type Cfg = [typeof p1, typeof t1, [typeof t1, typeof t1], keyof typeof swapPos];
+        const configs: Cfg[] = isMT
+          ? [
+            [p2, t2, [t2, t4], '左上'],
+            [p4, t4, [t2, t4], '右上'],
+            [p1, t1, [t1, t3], '左下'],
+            [p3, t3, [t1, t3], '右下'],
+          ]
+          : [
+            [p3, t3, [t3, t1], '左上'],
+            [p1, t1, [t3, t1], '右上'],
+            [p4, t4, [t4, t2], '左下'],
+            [p2, t2, [t4, t2], '右下'],
+          ];
+
+        const result: Record<string, { tower: string; position: string; switch: boolean }> = {};
+        for (const [p, originT, sideTs, pos] of configs) {
+          const targetT = sideTs.find((t) =>
+            debuffs.includes(p!.name!) === magicTower.includes(t.tower)
+          )!;
+          const isSwapped = originT.tower !== targetT.tower;
+          result[p!.name!] = {
+            tower: targetT.tower,
+            position: isSwapped ? swapPos[pos] : pos,
+            switch: isSwapped,
+          };
         }
+        data.s四运踩塔 = result[data.me]!;
+        return output.text!({
+          tower: output[result[data.me]!.tower]!(),
+          position: output[result[data.me]!.position]!(),
+        });
+      },
+      outputStrings: {
+        text: {
+          en: '(稍后${position}${tower}塔)',
+        },
+        火: { en: '火' },
+        土: { en: '土' },
+        暗: { en: '暗' },
+        风: { en: '风' },
+        左上: { en: '左上' },
+        右上: { en: '右上' },
+        左下: { en: '左下' },
+        右下: { en: '右下' },
+      },
+    },
+    {
+      id: 'souma r12s p2 空间裂断',
+      type: 'StartsUsing',
+      netRegex: { id: ['B51C'], capture: false },
+      infoText: (data) => {
+        return data.s四运分身打上下;
+      },
+      outputStrings: {
+        A: { en: 'A打上下' },
+        C: { en: 'C打上下' },
       },
     },
     // #endregion
