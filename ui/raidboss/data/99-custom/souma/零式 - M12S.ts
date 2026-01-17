@@ -2022,41 +2022,61 @@ hideall "--sync--"
     //   delaySeconds: 15,
     //   run: (data) => data.s四运小世界 = false,
     // },
+    // {
+    //   id: 'souma r12s B9D9',
+    //   type: 'Ability',
+    //   netRegex: { id: ['B9D9'], capture: true },
+    //   preRun: (data, matches) => data.s四运B9D9.push(matches),
+    //   delaySeconds: 0.5,
+    //   promise: async (data, matches) => {
+    //     data.sCombatantData = (await callOverlayHandler({ call: 'getCombatants' })).combatants
+    //       .filter((v) =>
+    //         v.ID &&
+    //         v.ID >= 0x10000000 && v.ID <= 0x1FFFFFFF
+    //       );
+    //     console.log(
+    //       matches.timestamp,
+    //       data.sCombatantData.map((v) => ({
+    //         x: v.PosX,
+    //         y: v.PosY,
+    //         name: v.Name,
+    //       })),
+    //     );
+    //   },
+    // run: (data) => {
+    //   if (data.s四运B9D9.length === 4) {
+    //     data.s四运B9D9.length = 0;
+    //     const player = data.sCombatantData.find((v) => v.Name === data.me)!;
+    //     const side = player.PosX <= 100 ? 'MT' : 'ST';
+    //     const groups = data.sCombatantData.filter((
+    //       v,
+    //     ) => (side === 'MT' ? v.PosX <= 100 : v.PosX > 100));
+    //     const towers = Object.values(data.sCombatantMemory).filter((
+    //       v,
+    //     ) => (side === 'MT' ? v.x <= 100 : v.x > 100));
+    //     console.log(data.me, side, groups, towers);
+    //   }
+    // },
+    // },
     {
-      id: 'souma r12s B9D9',
+      id: 'r12s B9D9',
       type: 'Ability',
       netRegex: { id: ['B9D9'], capture: true },
-      preRun: (data, matches) => data.s四运B9D9.push(matches),
-      delaySeconds: 0.5,
-      promise: async (data, matches) => {
-        data.sCombatantData = (await callOverlayHandler({ call: 'getCombatants' })).combatants
+      delaySeconds: 0.5, // if delay 0.5, posX is NaN
+      promise: async () => {
+        const combatantData = (await callOverlayHandler({ call: 'getCombatants' })).combatants
           .filter((v) =>
             v.ID &&
             v.ID >= 0x10000000 && v.ID <= 0x1FFFFFFF
           );
         console.log(
-          matches.timestamp,
-          data.sCombatantData.map((v) => ({
+          combatantData.map((v) => ({
             x: v.PosX,
             y: v.PosY,
             name: v.Name,
           })),
         );
       },
-      // run: (data) => {
-      //   if (data.s四运B9D9.length === 4) {
-      //     data.s四运B9D9.length = 0;
-      //     const player = data.sCombatantData.find((v) => v.Name === data.me)!;
-      //     const side = player.PosX <= 100 ? 'MT' : 'ST';
-      //     const groups = data.sCombatantData.filter((
-      //       v,
-      //     ) => (side === 'MT' ? v.PosX <= 100 : v.PosX > 100));
-      //     const towers = Object.values(data.sCombatantMemory).filter((
-      //       v,
-      //     ) => (side === 'MT' ? v.x <= 100 : v.x > 100));
-      //     console.log(data.me, side, groups, towers);
-      //   }
-      // },
     },
     // #endregion
   ],
