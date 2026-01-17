@@ -2022,60 +2022,101 @@ hideall "--sync--"
     //   delaySeconds: 15,
     //   run: (data) => data.s四运小世界 = false,
     // },
-    // {
-    //   id: 'souma r12s B9D9',
-    //   type: 'Ability',
-    //   netRegex: { id: ['B9D9'], capture: true },
-    //   preRun: (data, matches) => data.s四运B9D9.push(matches),
-    //   delaySeconds: 0.5,
-    //   promise: async (data, matches) => {
-    //     data.sCombatantData = (await callOverlayHandler({ call: 'getCombatants' })).combatants
-    //       .filter((v) =>
-    //         v.ID &&
-    //         v.ID >= 0x10000000 && v.ID <= 0x1FFFFFFF
-    //       );
-    //     console.log(
-    //       matches.timestamp,
-    //       data.sCombatantData.map((v) => ({
-    //         x: v.PosX,
-    //         y: v.PosY,
-    //         name: v.Name,
-    //       })),
-    //     );
-    //   },
-    // run: (data) => {
-    //   if (data.s四运B9D9.length === 4) {
-    //     data.s四运B9D9.length = 0;
-    //     const player = data.sCombatantData.find((v) => v.Name === data.me)!;
-    //     const side = player.PosX <= 100 ? 'MT' : 'ST';
-    //     const groups = data.sCombatantData.filter((
-    //       v,
-    //     ) => (side === 'MT' ? v.PosX <= 100 : v.PosX > 100));
-    //     const towers = Object.values(data.sCombatantMemory).filter((
-    //       v,
-    //     ) => (side === 'MT' ? v.x <= 100 : v.x > 100));
-    //     console.log(data.me, side, groups, towers);
-    //   }
-    // },
-    // },
     {
-      id: 'r12s B9D9',
+      id: 'souma r12s B9D9',
       type: 'Ability',
       netRegex: { id: ['B9D9'], capture: true },
-      delaySeconds: 0.5, // if delay 0.5, posX is NaN
-      promise: async () => {
-        const combatantData = (await callOverlayHandler({ call: 'getCombatants' })).combatants
+      preRun: (data, matches) => data.s四运B9D9.push(matches),
+      // 模拟器现在（在M12S本体限定？）目前有bug，至少要延迟一些，才能拿到正确的坐标
+      // https://github.com/OverlayPlugin/cactbot/issues/957
+      delaySeconds: 1,
+      promise: async (data) => {
+        data.sCombatantData = (await callOverlayHandler({ call: 'getCombatants' })).combatants
           .filter((v) =>
             v.ID &&
             v.ID >= 0x10000000 && v.ID <= 0x1FFFFFFF
           );
-        console.log(
-          combatantData.map((v) => ({
-            x: v.PosX,
-            y: v.PosY,
-            name: v.Name,
-          })),
-        );
+      },
+      run: (data) => {
+        if (data.s四运B9D9.length === 4) {
+          const debuffs = data.s四运B9D9.map((v) => v.target);
+          data.s四运B9D9.length = 0;
+          const player = data.sCombatantData.find((v) => v.Name === data.me)!;
+          const side = player.PosX <= 100 ? 'MT' : 'ST';
+          const players = data.sCombatantData.filter((
+            v,
+          ) => (side === 'MT' ? v.PosX <= 100 : v.PosX > 100)).map((v) => {
+            return { x: v.PosX, y: v.PosY, name: v.Name, id: v.ID?.toString(16).toUpperCase() };
+          }).sort((a, b) => a.x - b.x);
+          const towers = Object.values(data.sCombatantMemory).filter((
+            v,
+          ) => (side === 'MT' ? v.x <= 100 : v.x > 100));
+          const [t1, t2, t3, t4] = towers.sort((a, b) => {
+            if (a.y === b.y)
+              return a.x - b.x;
+            return a.y - b.y;
+          });
+          // 1 2   |   1  2
+          // 3 4   |   3  4
+          const [p1, p3] = players.slice(0, 2).sort((a, b) => a.y - b.y);
+          const [p2, p4] = players.slice(2, 4).sort((a, b) => a.y - b.y);
+          const frontTowers = side === 'MT' ? [t2!, t4!] : [t1!, t3!];
+          const backTowers = side === 'MT' ? [t1!, t3!] : [t2!, t4!];
+          const frontPlayers = side === 'MT' ? [p2!, p4!] : [p1!, p3!];
+          const backPlayers = side === 'MT' ? [p1!, p3!] : [p2!, p4!];
+          const simpleColor = ['土', '火'];
+          type Tower = {
+            id: string;
+            x: number;
+            y: number;
+            bNpcId: string;
+            tower: string;
+          };
+          const getTower = (
+            playerName: string,
+            sideTowers: Tower[],
+            originTower: Tower,
+            position: 'nw' | 'ne' | 'sw' | 'se',
+          ) => {
+            const tower = debuffs.includes(playerName)
+              ? sideTowers.find((t) => simpleColor.includes(t.tower))!
+              : sideTowers.find((t) => !simpleColor.includes(t.tower))!;
+            const swh = originTower.tower !== tower.tower;
+            return {
+              tower: tower,
+              position: swh ? { nw: 'ne', ne: 'nw', sw: 'se', se: 'sw' }[position] : position,
+              switch: swh,
+            };
+          };
+          const playerToTower = {
+            [frontPlayers[0]!.name!]: getTower(
+              frontPlayers[0]!.name!,
+              frontTowers,
+              frontTowers[0]!,
+              'nw',
+            ),
+            [frontPlayers[1]!.name!]: getTower(
+              frontPlayers[1]!.name!,
+              frontTowers,
+              frontTowers[1]!,
+              'ne',
+            ),
+            [backPlayers[0]!.name!]: getTower(
+              backPlayers[0]!.name!,
+              backTowers,
+              backTowers[0]!,
+              'sw',
+            ),
+            [backPlayers[1]!.name!]: getTower(
+              backPlayers[1]!.name!,
+              backTowers,
+              backTowers[1]!,
+              'se',
+            ),
+          };
+
+          console.log(playerToTower);
+        }
       },
     },
     // #endregion
