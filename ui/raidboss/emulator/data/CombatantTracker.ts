@@ -79,18 +79,12 @@ export default class CombatantTracker {
       // StartsUsingExtra / AbilityExtra
       if (isLineEvent0x107(line) || isLineEvent0x108(line)) {
         const c = this.initCombatant(line.id);
-        const state: Partial<CombatantState> = {};
-        if (!isNaN(line.x))
-          state.PosX = line.x;
-        if (!isNaN(line.y))
-          state.PosY = line.y;
-        if (!isNaN(line.z))
-          state.PosZ = line.z;
-        if (!isNaN(line.heading))
-          state.Heading = line.heading;
-
-        if (Object.keys(state).length > 0)
-          c?.pushPartialState(line.timestamp, state);
+        c?.pushPartialState(line.timestamp, {
+          PosX: line.x,
+          PosY: line.y,
+          PosZ: line.z,
+          Heading: line.heading,
+        });
       }
 
       // NpcYell / BattleTalk2
@@ -102,18 +96,12 @@ export default class CombatantTracker {
       // ActorMove / ActorSetPos
       if (isLineEvent0x10E(line) || isLineEvent0x10F(line)) {
         const c = this.initCombatant(line.id);
-        const state: Partial<CombatantState> = {};
-        if (!isNaN(line.x))
-          state.PosX = line.x;
-        if (!isNaN(line.y))
-          state.PosY = line.y;
-        if (!isNaN(line.z))
-          state.PosZ = line.z;
-        if (!isNaN(line.heading))
-          state.Heading = line.heading;
-
-        if (Object.keys(state).length > 0)
-          c?.pushPartialState(line.timestamp, state);
+        c?.pushPartialState(line.timestamp, {
+          PosX: line.x,
+          PosY: line.y,
+          PosZ: line.z,
+          Heading: line.heading,
+        });
       }
 
       // SpawnNPCExtra
