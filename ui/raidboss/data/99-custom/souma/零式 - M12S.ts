@@ -2269,6 +2269,18 @@ hideall "--sync--"
         Target: { en: 'A目标圈' },
       },
     },
+    {
+      id: 'B51C',
+      type: 'StartsUsing',
+      netRegex: { id: 'B51C', capture: true },
+      promise: async (_data, matches) => {
+        const combatantData = (await callOverlayHandler({ call: 'getCombatants' })).combatants;
+        console.log(
+          matches.timestamp,
+          combatantData.find((v) => v.ID === parseInt('40000AA5', 16)),
+        );
+      },
+    },
     // #endregion
   ],
 };
