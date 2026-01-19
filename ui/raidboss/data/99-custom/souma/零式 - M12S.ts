@@ -69,7 +69,7 @@ export interface Data extends RaidbossData {
   sWings: Record<string, string>;
   sMj?: { mj: string; sym: string };
   sPhase: Phase;
-  sBalls: NetMatches['AddedCombatant'][];
+  sBalls: NetMatches['CombatantMemory'][];
   sBallsFirst: boolean;
   sBallsOver: boolean;
   sMjNikus: string[];
@@ -570,7 +570,7 @@ hideall "--sync--"
       },
     },
     {
-      id: 'souma r12s 麻将12-',
+      id: 'souma r12s 麻将12啊',
       type: 'GainsEffect',
       netRegex: { effectId: ['1292', '1290'], capture: true },
       condition: Conditions.targetIsYou(),
@@ -868,8 +868,21 @@ hideall "--sync--"
     },
     {
       id: 'souma r12s 球',
-      type: 'AddedCombatant',
-      netRegex: { npcNameId: '14378', npcBaseId: ['19200', '19201'], capture: true },
+      // type: 'AddedCombatant',
+      // netRegex: { npcNameId: '14378', npcBaseId: ['19200', '19201'], capture: true },
+      type: 'CombatantMemory',
+      netRegex: {
+        change: 'Add',
+        id: '4[0-9A-Fa-f]{7}',
+        pair: [{
+          key: 'BNpcID',
+          value: ['4B00', '4B01'],
+        }, {
+          key: 'BNpcNameID',
+          value: '382A',
+        }],
+        capture: true,
+      },
       preRun: (data, matches) => {
         data.sBalls.push(matches);
       },
@@ -878,9 +891,9 @@ hideall "--sync--"
         if (data.sBallsOver || data.sBalls.length % 2 !== 0) {
           return;
         }
-        const purples = data.sBalls.filter((v) => v.npcBaseId === '19200');
+        const purples = data.sBalls.filter((v) => v.pairBNpcID === '4B00');
         if (purples.length > 0) {
-          const purpleSide = parseFloat(purples[0]!.x) < 100 ? 'left' : 'right';
+          const purpleSide = parseFloat(purples[0]!.pairPosX!) < 100 ? 'left' : 'right';
           if (data.role === 'dps') {
             data.sBallsOver = true;
             data.sBallsFirst = true;
@@ -899,8 +912,9 @@ hideall "--sync--"
             data.sBallsOver = true;
             const side = data.sBallsFirst ? '' : output[purpleSide]!();
             const ordered = data.sBalls.filter((v) =>
-              purpleSide === 'left' ? parseFloat(v.x) < 100 : parseFloat(v.x) > 100
-            ).map((v) => v.npcBaseId === '19200' ? 't' : 'h');
+              purpleSide === 'left' ? parseFloat(v.pairPosX!) < 100 : parseFloat(v.pairPosX!) > 100
+            ).map((v) => v.pairBNpcID === '4B00' ? 't' : 'h');
+            // console.log(data.sBalls.slice(), ordered);
             const result = Array.from({ length: 4 }, (_, i) => ordered[i] ?? 'h').map((v) =>
               output[v]!()
             ).join('/');
@@ -1229,7 +1243,7 @@ hideall "--sync--"
       },
     },
     {
-      id: 'souma r12s p2 蛇踢 B527--',
+      id: 'souma r12s p2 蛇踢 B527吧吧吧',
       type: 'StartsUsing',
       netRegex: { id: 'B527', capture: false },
       delaySeconds: 4,
@@ -1282,7 +1296,7 @@ hideall "--sync--"
       },
     },
     {
-      id: 'souma r12s p2 蛇踢 B527-----------',
+      id: 'souma r12s p2 蛇踢 B527吃吃吃吃吃吃吃',
       comment: { en: '根据职业判断近战/远程，不考虑D2黑魔的特殊情况。' },
       type: 'StartsUsing',
       netRegex: { id: 'B527', capture: false },
@@ -1295,13 +1309,26 @@ hideall "--sync--"
         })).combatants.filter((v) =>
           v.ID &&
           v.BNpcID === 19204 && v.BNpcNameID === 14380 &&
-          //  && v.Job === 0 &&
-          // equal(v.PosZ, 0.2136, 0.05) &&
           v.PosX !== 100 && v.PosY !== 100
-          // v.Radius === 5 && v.Type === 2 && v.WorldID === 65535
         );
       },
       infoText: (data, _matches, output) => {
+        if (!data.sP2二运火分身分身 || !data.sP2二运暗分身分身) {
+          console.error('蛇踢触发器数据缺失:', {
+            火分身分身: data.sP2二运火分身分身,
+            暗分身分身: data.sP2二运暗分身分身,
+            战斗员数据: data.sCombatantData?.length,
+          });
+          return output.error!();
+        }
+        if (!data.sP2二运我找谁 || !data.sP2一运打哪里) {
+          console.error('蛇踢触发器buff数据缺失:', {
+            我找谁: data.sP2二运我找谁,
+            打哪里: data.sP2一运打哪里,
+          });
+          return output.error!();
+        }
+
         const fires = data.sCombatantData.filter((v) =>
           data.sP2二运火分身分身!.some((v2) => v2.id === v.ID!.toString(16).toUpperCase())
         ).map((v) => {
@@ -1340,7 +1367,7 @@ hideall "--sync--"
         const caster = warymark[casterAdd]!.find((v) => wmCaster.includes(v))!;
         const meleeDir = output[meleeAdd]!();
         const casterDir = output[casterAdd]!();
-        const attr = output[data.sP2二运我找谁!]!();
+        const attr = output[data.sP2二运我找谁]!();
         const meleeText = output[melee as keyof typeof output]!();
         const casterText = output[caster as keyof typeof output]!();
         if (data.role === 'tank' || Util.isMeleeDpsJob(data.job)) {
@@ -1349,6 +1376,7 @@ hideall "--sync--"
         return output.caster!({ caster: casterText, dir: casterDir, attr: attr });
       },
       outputStrings: {
+        error: { en: '⚠️数据错误,请查看控制台' },
         A: { en: 'A' },
         B: { en: 'B' },
         C: { en: 'C' },
@@ -2177,7 +2205,7 @@ hideall "--sync--"
       },
     },
     {
-      id: 'souma r12s p2 空间裂断--',
+      id: 'souma r12s p2 空间裂断吧吧',
       type: 'StartsUsing',
       netRegex: { id: 'B51C', capture: true },
       delaySeconds: 0,
@@ -2186,7 +2214,7 @@ hideall "--sync--"
       },
     },
     {
-      id: 'souma r12s p2 空间裂断-',
+      id: 'souma r12s p2 空间裂断啊',
       type: 'Ability',
       netRegex: { id: ['B51D'], capture: true },
       infoText: (data, matches, output) => {
@@ -2267,18 +2295,6 @@ hideall "--sync--"
       outputStrings: {
         Sides: { en: 'A两侧' },
         Target: { en: 'A目标圈' },
-      },
-    },
-    {
-      id: 'B51C',
-      type: 'StartsUsing',
-      netRegex: { id: 'B51C', capture: true },
-      promise: async (_data, matches) => {
-        const combatantData = (await callOverlayHandler({ call: 'getCombatants' })).combatants;
-        console.log(
-          matches.timestamp,
-          combatantData.find((v) => v.ID === parseInt('40000AA5', 16)),
-        );
       },
     },
     // #endregion
