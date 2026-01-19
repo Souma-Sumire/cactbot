@@ -1260,9 +1260,6 @@ hideall "--sync--"
           v.Radius === 5 && v.Type === 2 && v.WorldID === 65535 &&
           v.PosX !== undefined && v.PosY !== undefined
         );
-      },
-      run: (data) => {
-        // console.warn(data.sP2二运暗分身, data.sP2二运火分身);
         data.sP2二运暗分身!.x = data.sActorPositions[data.sP2二运暗分身!.id]!.x;
         data.sP2二运暗分身!.y = data.sActorPositions[data.sP2二运暗分身!.id]!.y;
         data.sP2二运火分身!.x = data.sActorPositions[data.sP2二运火分身!.id]!.x;
@@ -1312,7 +1309,7 @@ hideall "--sync--"
           v.PosX !== 100 && v.PosY !== 100
         );
       },
-      infoText: (data, _matches, output) => {
+      alertText: (data, _matches, output) => {
         if (!data.sP2二运火分身分身 || !data.sP2二运暗分身分身) {
           console.error('蛇踢触发器数据缺失:', {
             火分身分身: data.sP2二运火分身分身,
