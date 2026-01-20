@@ -74,6 +74,15 @@ const triggerSet: TriggerSet<Data> = {
           '라희',
           '저 물좀 떠올게요',
         ],
+        tc: [
+          '馬上回來',
+          '困了睡會兒',
+          'LAHEE~',
+          '沖杯咖啡',
+          '聖誕快樂',
+          '我櫃子動了等下再玩',
+          'CG',
+        ],
       };
       const goofs = goofsByLang[data.displayLang];
       if (!goofs)
@@ -304,7 +313,7 @@ const triggerSet: TriggerSet<Data> = {
           ja: '自分にレーザー',
           cn: '坦克射线',
           ko: '탱 레이저 대상자',
-          tc: '坦克射線',
+          tc: '坦克雷射點名',
         },
       },
     },
@@ -322,7 +331,7 @@ const triggerSet: TriggerSet<Data> = {
           ja: '左右に分かれて内側へ',
           cn: 'T前集合分摊',
           ko: '좌우 탱커 앞 산개',
-          tc: 'T前集合分攤',
+          tc: '坦前集合分攤',
         },
       },
     },
@@ -379,7 +388,7 @@ const triggerSet: TriggerSet<Data> = {
           ja: 'ヒーラーからマーカー取って',
           cn: '接治疗的毒',
           ko: '힐러한테서 표식 받기',
-          tc: '接治療的毒',
+          tc: '接補師的毒',
         },
       },
     },
