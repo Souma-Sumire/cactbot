@@ -117,8 +117,9 @@ const triggerSet: TriggerSet<Data> = {
       type: 'select',
       options: {
         en: {
-          '联合文档': 'doc',
+          '整合文档（看刀）': 'doc',
           'MMW（猫猫窝）': 'mmw',
+          '不报安全区（精准）': 'skip',
         },
       },
       default: 'doc',
@@ -1324,6 +1325,8 @@ hideall "--sync--"
         );
       },
       alertText: (data, _matches, output) => {
+        if (data.triggerSetConfig.soumaM12Sbentiyiyun === 'skip')
+          return;
         const fires = data.sCombatantData.filter((v) =>
           data.sP2二运火分身分身!.some((v2) => v2.id === v.ID!.toString(16).toUpperCase())
         ).map((v) => {
