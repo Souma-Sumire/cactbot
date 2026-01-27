@@ -1897,7 +1897,7 @@ hideall "--sync--"
       alertText: (data, _matches, output) => {
         let str = data.s四运长记忆1!;
         if (data.triggerSetConfig.soumaM12Sbentisiyun === 'uptime')
-          str +='uptime';
+          str += 'uptime';
         return output[str]!();
       },
       outputStrings: {
@@ -1921,7 +1921,7 @@ hideall "--sync--"
       alertText: (data, _matches, output) => {
         let str = data.s四运长记忆1!;
         if (data.triggerSetConfig.soumaM12Sbentisiyun === 'uptime')
-          str +='uptime';
+          str += 'uptime';
         return output[str]!();
       },
       outputStrings: {
