@@ -16,6 +16,7 @@ const __filename = url.fileURLToPath(new URL('.', import.meta.url));
 const __dirname = path.basename(__filename);
 const root = path.join(__dirname, '../ui/raidboss/data/');
 const distRoot = path.join(__dirname, '../dist/triggers/ui/raidboss/data/');
+const buildTime = new Date().toISOString();
 
 fs.rmSync(distRoot, { recursive: true, force: true });
 
@@ -88,6 +89,7 @@ const processFile = async (originalFilename: string) => {
   );
   const distFilePath = path.join(distRoot, path.relative(root, originalFilename));
   let lines = transpiledContents.split(/[\r\n]+/);
+  lines.unshift(`// Build Time: ${buildTime}`);
 
   lines = removeImports(lines);
   lines = changeExportToPush(lines);
