@@ -4,6 +4,7 @@ import { Responses } from '../../../../../resources/responses';
 import { DirectionOutput16, Directions } from '../../../../../resources/util';
 import ZoneId from '../../../../../resources/zone_id';
 import { RaidbossData } from '../../../../../types/data';
+import { NetMatches } from '../../../../../types/net_matches';
 import { TriggerSet } from '../../../../../types/trigger';
 
 export interface Data extends RaidbossData {
@@ -18,9 +19,10 @@ export interface Data extends RaidbossData {
   sMoon?: { side: string; dir: string };
   sTetherId: number;
   sHasHellAwaits: boolean;
+  decOffset?: number;
 }
 
-const headMarkerData = {
+const headmarkers = {
   // Offsets: 00:41, 04:12, 08:13
   // Vfx Path: com_share4a1
   '0131': '0131',
@@ -31,6 +33,14 @@ const headMarkerData = {
   // Vfx Path: lockon5_line_1p
   '028C': '028C',
 } as const;
+
+const firstHeadmarker = parseInt(headmarkers['01D4'], 16);
+
+const getHeadmarkerId = (data: Data, matches: NetMatches['HeadMarker']) => {
+  if (data.decOffset === undefined)
+    data.decOffset = parseInt(matches.id, 16) - firstHeadmarker;
+  return (parseInt(matches.id, 16) - data.decOffset).toString(16).toUpperCase().padStart(4, '0');
+};
 
 const center = {
   x: 100,
@@ -418,20 +428,23 @@ hideall "--sync--"
     {
       id: 'souma r9s Headmarker Stack 0131',
       type: 'HeadMarker',
-      netRegex: { id: headMarkerData['0131'], capture: true },
+      netRegex: {},
+      condition: (data, matches) => getHeadmarkerId(data, matches) === headmarkers['0131'],
       response: Responses.stackMarkerOn(),
     },
     {
       id: 'souma r9s Headmarker Tankbuster 01D4',
       type: 'HeadMarker',
-      netRegex: { id: headMarkerData['01D4'], capture: true },
+      netRegex: {},
+      condition: (data, matches) => getHeadmarkerId(data, matches) === headmarkers['01D4'],
       response: Responses.tankBuster(),
     },
     {
       id: 'souma r9s Headmarker Spread 028C',
       type: 'HeadMarker',
-      netRegex: { id: headMarkerData['028C'], capture: true },
-      condition: Conditions.targetIsYou(),
+      netRegex: {},
+      condition: (data, matches) =>
+        matches.target === data.me && getHeadmarkerId(data, matches) === headmarkers['028C'],
       infoText: (_data, _matches, output) => output.seed!(),
       outputStrings: {
         seed: {
