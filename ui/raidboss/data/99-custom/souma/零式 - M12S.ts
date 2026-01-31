@@ -704,7 +704,7 @@ hideall "--sync--"
       type: 'ActorSetPos',
       netRegex: {
         id: '4[0-9A-Fa-f]{7}',
-        heading: '-0.0001',
+        heading: '0.0000',
         x: [
           '85.0000',
           '96.0000',
