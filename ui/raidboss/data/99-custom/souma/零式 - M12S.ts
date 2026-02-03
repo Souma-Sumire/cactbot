@@ -1003,6 +1003,8 @@ hideall "--sync--"
             const side = data.sBallsFirst ? '' : output[purpleSide]!();
             const ordered = data.sBalls.filter((v) =>
               purpleSide === 'left' ? parseFloat(v.pairPosX!) < 100 : parseFloat(v.pairPosX!) > 100
+            ).sort((a, b) =>
+              Math.abs(parseFloat(a.pairPosX!) - 100) - Math.abs(parseFloat(b.pairPosX!) - 100)
             ).map((v) => v.pairBNpcID === '4B00' ? 't' : 'h');
             // console.log(data.sBalls.slice(), ordered);
             const result = Array.from({ length: 4 }, (_, i) => ordered[i] ?? 'h').map((v) =>
