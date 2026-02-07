@@ -640,7 +640,7 @@ hideall "--sync--"
             'right23': 2,
             'right24': 1,
           };
-          const step = steps[`${data.sMoon.side}${indexs.join('')}`];
+          const step = steps[`${data.sMoon.side}${indexs.sort().join('')}`];
           return {
             [step === 3 ? 'alarmText' : step === 2 ? 'alertText' : 'infoText']: output
               .textWithStep!({
