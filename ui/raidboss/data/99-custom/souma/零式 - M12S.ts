@@ -142,7 +142,7 @@ const triggerSet: TriggerSet<Data> = {
       options: {
         en: {
           '整合文档（看刀）': 'doc',
-          'MMW（猫猫窝）': 'mmw',
+          'MMW（看刀+记刀）': 'mmw',
           '不报安全区（精准）': 'skip',
         },
       },
