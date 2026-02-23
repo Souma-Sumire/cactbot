@@ -624,9 +624,12 @@ hideall "--sync--"
       id: 'souma r10s 小 海 啸',
       type: 'MapEffect',
       netRegex: { 'flags': ['00800040', '08000400'], 'location': ['02', '04'] },
-      infoText: (_data, matches, output) => {
+      infoText: (data, matches, output) => {
         const gimmick = matches.flags === '00800040' ? 'stack' : 'spread';
         const dir = matches.location === '02' ? 'north' : 'south';
+        if (data.sBuff === 'fire') {
+          return;
+        }
         return output.text!({ dir: output[dir]!(), gimmick: output[gimmick]!() });
       },
       outputStrings: {
@@ -668,7 +671,7 @@ hideall "--sync--"
       infoText: (data, _matches, output) => output[data.sBuff!]!(),
       outputStrings: {
         fire: { en: '四连跳' },
-        water: { en: '接近场中' },
+        water: { en: '' },
       },
     },
     {
@@ -714,7 +717,7 @@ hideall "--sync--"
         return output.text!({ n: count + 1 });
       },
       outputStrings: {
-        text: { en: '#${n}' },
+        text: { en: '${n}号' },
       },
     },
     {
