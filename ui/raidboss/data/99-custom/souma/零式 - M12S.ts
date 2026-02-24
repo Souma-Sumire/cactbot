@@ -997,6 +997,32 @@ hideall "--sync--"
         const balls = data.球新实现坐标收集;
         const purples = balls.filter((v) => v.color === 'purple');
         const greens = balls.filter((v) => v.color === 'green');
+        const purplesBySide = {
+          left: purples.filter((v) => v.x < 100),
+          right: purples.filter((v) => v.x > 100),
+        };
+        const greensBySide = {
+          left: greens.filter((v) => v.x < 100),
+          right: greens.filter((v) => v.x > 100),
+        };
+        if (
+          (greensBySide.left.length >= 3 && purplesBySide.left.length <= 1 &&
+            purplesBySide.right.length === 0) ||
+          (greensBySide.right.length >= 3 && purplesBySide.right.length <= 1 &&
+            purplesBySide.left.length === 0)
+        ) {
+          data.sBallsOver = true;
+          data.sBallsFirst = true;
+          const greenSide = greensBySide.left.length >= 3 ? 'left' : 'right';
+          if (data.role === 'dps') {
+            return output[greenSide]!();
+          }
+          // TH
+          return output.text!({
+            side: output[greenSide === 'left' ? 'right' : 'left']!(),
+            ordered: [...'hhtt'].map((v) => output[v]!()).join('/'),
+          });
+        }
         if (purples.length > 0) {
           const purpleSide = purples[0]!.x < 100 ? 'left' : 'right';
           if (data.role === 'dps') {
@@ -1017,7 +1043,7 @@ hideall "--sync--"
             data.sBallsOver = true;
             const side = data.sBallsFirst ? '' : output[purpleSide]!();
             const ordered = balls.filter((v) => purpleSide === 'left' ? v.x < 100 : v.x > 100).sort(
-              (a, b) => parseInt(a.id, 16) - parseInt(b.id, 16)
+              (a, b) => parseInt(a.id, 16) - parseInt(b.id, 16),
             ).map((v) => v.color === 'purple' ? 't' : 'h');
             const result = Array.from({ length: 4 }, (_, i) => ordered[i] ?? 'h').map((v) =>
               output[v]!()
@@ -1028,18 +1054,6 @@ hideall "--sync--"
             data.sBallsFirst = true;
             return output.text!({ side: side, ordered: result });
           }
-        }
-        if (greens.length === 6 && purples.length === 0) {
-          // 一边有4个绿，一边有2个绿，找到2个绿的那边当作2紫，报HHTT
-          const leftGreen = greens.filter((v) => v.x < 100);
-          const rightGreen = greens.filter((v) => v.x > 100);
-          const greenSide = leftGreen.length < rightGreen.length ? 'left' : 'right';
-          data.sBallsOver = true;
-          data.sBallsFirst = true;
-          return output.text!({
-            side: output[greenSide]!(),
-            ordered: [...'hhtt'].map((v) => output[v]!()).join('/'),
-          });
         }
       },
       outputStrings: {
