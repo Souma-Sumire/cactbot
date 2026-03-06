@@ -604,6 +604,7 @@ export default {
   rightEast: {
     en: 'Right/East',
     fr: 'Droite/Est',
+    ja: '右/東へ',
     cn: '右侧',
     ko: '오른쪽/동쪽',
     tc: '東側',
@@ -620,6 +621,7 @@ export default {
   leftWest: {
     en: 'Left/West',
     fr: 'Gauche/Ouest',
+    ja: '左/西へ',
     cn: '左侧',
     ko: '왼쪽/서쪽',
     tc: '西側',
@@ -922,7 +924,7 @@ export default {
     fr: 'Cardinaux',
     ja: '十字回避',
     cn: '去正点',
-    ko: '십자방향으로',
+    ko: '십자방향',
     tc: '去正點',
   },
   intercards: {
@@ -931,7 +933,7 @@ export default {
     fr: 'Intercardinal',
     ja: '斜めへ',
     cn: '去斜角',
-    ko: '대각선 쪽으로',
+    ko: '대각선 쪽',
     tc: '去斜角',
   },
   north: {
