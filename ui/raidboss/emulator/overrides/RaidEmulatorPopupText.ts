@@ -247,7 +247,7 @@ export default class RaidEmulatorPopupText extends StubbedPopupText {
     const container = $ret.querySelector('.popup-text');
     if (!(container instanceof HTMLElement))
       throw new UnreachableCode();
-    container.textContent = text;
+    container.innerText = text;
     return $ret;
   }
 

@@ -306,9 +306,9 @@ div.row.progress-bar-row .player-triggers .trigger-bar.dps .trigger-item {
 }
 
 .popup-text-container {
-  height: 2rem;
-  line-height: 2rem;
-  border: 1px solid black;
+  min-height: 2rem;
+  height: auto;
+  line-height: 1.2;
   margin: 0.5rem;
   padding-left: 0.5rem;
   position: relative;
@@ -316,42 +316,72 @@ div.row.progress-bar-row .player-triggers .trigger-bar.dps .trigger-item {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  font-family: arial, sans-serif;
+  font-weight: bold;
+  text-align: center;
+}
+
+.popup-text-container .popup-text {
+  white-space: pre;
+}
+
+:lang(ja) .popup-text-container {
+  font-family:
+    "BIZ UDPゴシック",
+    "BIZ UDPGothic",
+    "游ゴシック",
+    "Yu Gothic",
+    "Meiryo UI",
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+:lang(zh-CN) .popup-text-container {
+  font-family:
+    "黑体",
+    SimHei,
+    "微软雅黑",
+    "Microsoft Yahei UI",
+    Lato,
+    Arial,
+    Helvetica,
+    sans-serif;
+}
+
+:lang(ko) .popup-text-container {
+  font-family:
+    "나눔바른고딕",
+    "Noto Sans KR",
+    "Noto Sans CJK KR",
+    "맑은 고딕",
+    Arial,
+    Helvetica,
+    sans-serif;
 }
 
 .popup-text-container .popup-text-remaining {
   position: absolute;
   right: 0.5rem;
+  top: 0;
 }
 
 .popup-text-container.alarm-text {
-  color: black;
-  background-color: #f30;
-}
-
-.popup-text-container.alarm-text::before {
-  content: "ALARM: ";
-  display: inline;
+  color: #f30;
+  font-size: 230%;
+  text-shadow: -2px 0 4px black, 0 2px 4px black, 2px 0 4px black, 0 -2px 4px black;
 }
 
 .popup-text-container.alert-text {
-  color: black;
-  background-color: #fb0;
-}
-
-.popup-text-container.alert-text::before {
-  content: "ALERT: ";
-  display: inline;
+  color: #fb0;
+  font-size: 170%;
+  text-shadow: -2px 0 4px black, 0 2px 4px black, 2px 0 4px black, 0 -2px 4px black;
 }
 
 .popup-text-container.info-text {
-  color: black;
-  background-color: #2b2;
-}
-
-.popup-text-container.info-text::before {
-  content: "INFO: ";
-  display: inline;
+  color: #2b2;
+  font-size: 140%;
+  text-shadow: -2px 0 4px black, 0 2px 4px black, 2px 0 4px black, 0 -2px 4px black;
 }
 
 .popup-text-container.tts-text {
@@ -359,19 +389,9 @@ div.row.progress-bar-row .player-triggers .trigger-bar.dps .trigger-item {
   background-color: whitesmoke;
 }
 
-.popup-text-container.tts-text::before {
-  content: "TTS: ";
-  display: inline;
-}
-
 .popup-text-container.audio-file {
   color: black;
   background-color: blue;
-}
-
-.popup-text-container.audio-file::before {
-  content: "AUDIO: ";
-  display: inline;
 }
 
 div.row.encounters-row {
