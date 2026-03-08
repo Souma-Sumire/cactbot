@@ -316,45 +316,19 @@ div.row.progress-bar-row .player-triggers .trigger-bar.dps .trigger-item {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-family: arial, sans-serif;
-  font-weight: bold;
   text-align: center;
 }
 
 .popup-text-container .popup-text {
   white-space: pre;
-}
-
-:lang(ja) .popup-text-container {
-  font-family:
-    "BIZ UDPゴシック",
-    "BIZ UDPGothic",
-    "游ゴシック",
-    "Yu Gothic",
-    "Meiryo UI",
-    Arial,
-    Helvetica,
-    sans-serif;
-}
-
-:lang(zh-CN) .popup-text-container {
+  display: block;
+  text-align: center;
   font-family:
     "黑体",
     SimHei,
     "微软雅黑",
     "Microsoft Yahei UI",
     Lato,
-    Arial,
-    Helvetica,
-    sans-serif;
-}
-
-:lang(ko) .popup-text-container {
-  font-family:
-    "나눔바른고딕",
-    "Noto Sans KR",
-    "Noto Sans CJK KR",
-    "맑은 고딕",
     Arial,
     Helvetica,
     sans-serif;
