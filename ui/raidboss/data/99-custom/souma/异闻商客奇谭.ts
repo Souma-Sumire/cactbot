@@ -5,13 +5,14 @@ import { RaidbossData } from '../../../../../types/data';
 import { NetMatches } from '../../../../../types/net_matches';
 import { TriggerSet } from '../../../../../types/trigger';
 
-type Zoo = '蟹' | '鸟' | '马' | '豚';
+type Zoo = '蟹' | '鸟' | '马' | '豚' | '龟';
 
 const actorControlData: Record<string, Zoo> = {
   'AB8': '蟹',
   'ABA': '鸟',
   'AB5': '马',
   'AB9': '豚',
+  'AB7': '龟',
 };
 
 export interface Data extends RaidbossData {
@@ -115,10 +116,12 @@ const triggerSet: TriggerSet<Data> = {
       infoText: (data, _matches, output) => {
         if (data.zoos.length === 4) {
           const 马 = data.zoosCombatants.filter((v) => v.npcBaseId === '19098');
+          const 龟 = data.zoosCombatants.filter((v) => v.npcBaseId === '19099');
           const 蟹 = data.zoosCombatants.filter((v) => v.npcBaseId === '19100');
           const 豚 = data.zoosCombatants.filter((v) => v.npcBaseId === '19101');
           const 鸟 = data.zoosCombatants.filter((v) => v.npcBaseId === '19102');
           const 马pos = 马.map((v) => getPos(parseFloat(v.x), parseFloat(v.y)));
+          const 龟pos = 龟.map((v) => getPos(parseFloat(v.x), parseFloat(v.y)));
           const 蟹pos = 蟹.map((v) => getPos(parseFloat(v.x), parseFloat(v.y)));
           const 豚dir = Math.abs(parseFloat(豚[0]!.x) - center.boss1.x) <= 3 ? '南北' : '东西';
           const 鸟dir = Math.abs(parseFloat(鸟[0]!.x) - center.boss1.x) <= 3 ? '南北' : '东西';
@@ -142,8 +145,12 @@ const triggerSet: TriggerSet<Data> = {
                   ? '■↖■↗■\n■■■■■\n■■■■■\n■■■■■\n■↙■↘■'
                   : '■■■■■\n↖■■■↗\n■■■■■\n↙■■■↘\n■■■■■',
               );
-            } else if (z === '蟹' || z === '马') {
-              const pos = z === '蟹' ? 蟹pos : 马pos;
+            } else if (z === '蟹' || z === '马' || z === '龟') {
+              const pos = {
+                '蟹': 蟹pos,
+                '马': 马pos,
+                '龟': 龟pos,
+              }[z];
               const map = Array.from({ 'length': 5 }, () => {
                 return Array.from({ 'length': 5 }).fill(0);
               }) as number[][];
@@ -170,6 +177,7 @@ const triggerSet: TriggerSet<Data> = {
         '蟹': { en: '蟹' },
         '鸟': { en: '鸟' },
         '马': { en: '马' },
+        '龟': { en: '龟' },
       },
     },
     {
