@@ -231,6 +231,7 @@ const triggerSet: TriggerSet<Data> = {
       netRegex: {
         npcBaseId: [
           '19098', // 马
+          '19099', // 龟
           '19100', // 蟹
           '19101', // 豚
           '19102', // 鸟
