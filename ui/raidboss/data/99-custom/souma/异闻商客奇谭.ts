@@ -177,7 +177,49 @@ const makeHintTrigger = ({ id, netRegex, delay, duration, idx }: HintTrigger) =>
 const triggerSet: TriggerSet<Data> = {
   id: 'AnotherMerchantsTale',
   zoneId: ZoneId.AnotherMerchantsTale,
-  // timelineFile: '???.txt',
+  timeline: `hideall "--Reset--"
+hideall "--sync--"
+
+
+0.0 "--Reset--" ActorControl { command: "80000027", data0: "4B" } window 0,100000 jump 0
+
+1005.0 "--sync--" ActorControl { command: "80000027", data0: "0E" } window 10000,0 #BOSS
+2000.0 "--sync--" ActorControl { command: "80000027", data0: "48" } window 10000,0 #BOSS
+1005.2 "--sync--" StartsUsing { id: "B32E" } window 10,0
+1010.2 "尖声坠刺" Ability { id: "B32E" }
+1023.9 "呼唤家臣" Ability { id: "B2CB" }
+1037.5 "和声小夜曲" Ability { id: "B2CD" }
+1040.2 "水化弹"
+1044.3 "水化弹"
+1046.5 "水化弹"
+1050.6 "水化弹"
+1054.6 "激涌的洋流" Ability { id: "B329" }
+1068.8 "迷人的指令" Ability { id: "B325" }
+1078.1 "空中漫游" Ability { id: "B315" }
+1091.7 "水瀑"
+1092 "潮水喷涌"
+1103 "无尽的洋流" Ability { id: "B326" }
+1111.1 "无尽的洋流"
+1113.2 "无尽的洋流"
+1115.2 "无尽的洋流"
+1117.3 "无尽的洋流"
+1131.3 "尖声坠刺" Ability { id: "B32E" }
+1142.5 "迷人的指令" Ability { id: "B325" }
+1150.7 "沉没的宝藏" Ability { id: "B319" }
+1167 "激涌的洋流" Ability { id: "B329" }
+1167.7 "潮水喷涌"
+1167.8 "碎裂"
+1183.4 "水之矛" Ability { id: "B31C" }
+1197.7 "呼唤家臣" Ability { id: "B2CB" }
+1211.4 "和声小夜曲" Ability { id: "B2CD" }
+1223 "水球"
+1227.1 "水球"
+1229.1 "水球"
+1230.2 "交汇的洋流"
+1231.1 "水球"
+1241.2 "呼唤家臣" Ability { id: "B2CB" }
+1251.4 "和声重奏曲" Ability { id: "B314" }
+1266.2 "激涌的洋流" Ability { id: "B329" }`,
   initData: () => ({
     zoos: [],
     zoosCombatants: [],
@@ -346,7 +388,7 @@ const triggerSet: TriggerSet<Data> = {
       condition: Conditions.targetIsYou(),
       durationSeconds: (_data, matches) => parseFloat(matches.duration),
       countdownSeconds: (_data, matches) => parseFloat(matches.duration),
-      infoText: (_data, matches, output) => {
+      alertText: (_data, matches, output) => {
         return output[boss1Debuffs[matches.effectId]!]!();
       },
       outputStrings: {
