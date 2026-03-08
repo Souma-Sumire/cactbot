@@ -1,9 +1,16 @@
+import Conditions from '../../../../../resources/conditions';
 import { Responses } from '../../../../../resources/responses';
 import { Directions } from '../../../../../resources/util';
 import ZoneId from '../../../../../resources/zone_id';
 import { RaidbossData } from '../../../../../types/data';
 import { NetMatches } from '../../../../../types/net_matches';
 import { TriggerSet } from '../../../../../types/trigger';
+
+type Phase = 'BOSS1-P1' | 'BOSS1-P2' | 'BOSS1-P3';
+
+const bossPhaseId: Record<string, Phase> = {
+  'B31C': 'BOSS1-P3',
+};
 
 type Zoo = '蟹' | '鸟' | '马' | '豚' | '龟';
 
@@ -28,6 +35,7 @@ export interface Data extends RaidbossData {
   zoos: Zoo[];
   zoosCombatants: NetMatches['AddedCombatant'][];
   zoosResult: string[];
+  phase: Phase;
 }
 
 const boss1Center = { x: 375, y: 530 };
@@ -63,6 +71,13 @@ const getPos = (x: number, y: number): { t: 'x' | 'y'; n: number } => {
 
 const CENTER_CHAR_OFFSET = 14;
 
+const boss1Debuffs: Record<string, string> = {
+  '871': '前',
+  '872': '后',
+  '873': '左',
+  '874': '右',
+};
+
 const makeZooGrid = (positions: { t: 'x' | 'y'; n: number }[]): string => {
   const grid: number[][] = Array.from({ length: 5 }, () => new Array<number>(5).fill(0));
 
@@ -92,20 +107,36 @@ const getZooDir = (combatant: NetMatches['AddedCombatant']): '南北' | '东西'
   Math.abs(parseFloat(combatant.x) - boss1Center.x) <= 3 ? '南北' : '东西';
 
 const computeZoosResult = (data: Data): void => {
-  data.zoosResult = [];
-
   const byZoo = (name: Zoo) =>
     data.zoosCombatants.filter((v) => npcBaseIdToZoo[v.npcBaseId] === name);
-
   const posOf = (name: Zoo) => byZoo(name).map((v) => getPos(parseFloat(v.x), parseFloat(v.y)));
-
-  for (const zoo of data.zoos) {
+  for (const zoo of data.zoos.slice(-4)) {
     if (zoo === '豚' || zoo === '鸟') {
-      data.zoosResult.push(FIXED_PATTERNS[getZooDir(byZoo(zoo)[0]!)]);
+      data.zoosResult.push(
+        FIXED_PATTERNS[
+          getZooDir(data.zoosCombatants.filter((v) => npcBaseIdToZoo[v.npcBaseId] === zoo)[0]!)
+        ],
+      );
     } else {
       data.zoosResult.push(makeZooGrid(posOf(zoo)));
     }
   }
+};
+
+type SingSafe = '内' | '外' | '斜';
+
+const getSafe = (str: string): SingSafe => {
+  const flat = str.replaceAll('\n', '');
+  if (flat.at(7) === '□') {
+    return '内';
+  }
+  if (flat.at(2) === '□') {
+    return '外';
+  }
+  if (flat.at(1) === '□' || flat.at(3) === '□') {
+    return '斜';
+  }
+  throw new Error('unknown safe');
 };
 
 const headMarkerData = {
@@ -121,26 +152,26 @@ const headMarkerData = {
 } as const;
 
 const hintTriggerConfigs = [
-  { suffix: '1', delay: 14, duration: 6.2, idx: 0, cleanup: false },
-  { suffix: '2', delay: 20.3, duration: 3, idx: 1, cleanup: false },
-  { suffix: '3', delay: 23.3, duration: 3, idx: 2, cleanup: false },
-  { suffix: '4', delay: 26.3, duration: 3, idx: 3, cleanup: true },
+  { id: '呼唤家臣1', netRegex: { id: 'B2CB' }, delay: 14, duration: 6.2, idx: 0 },
+  { id: '呼唤家臣2', netRegex: { id: 'B2CB' }, delay: 20.3, duration: 3, idx: 1 },
+  { id: '呼唤家臣3', netRegex: { id: 'B2CB' }, delay: 23.3, duration: 3, idx: 2 },
+  { id: '呼唤家臣4', netRegex: { id: 'B2CB' }, delay: 26.3, duration: 3, idx: 3 },
 ] as const;
 
 type HintTrigger = (typeof hintTriggerConfigs)[number];
 
-const makeHintTrigger = ({ suffix, delay, duration, idx, cleanup }: HintTrigger) =>
+const makeHintTrigger = ({ id, netRegex, delay, duration, idx }: HintTrigger) =>
   ({
-    id: `souma 人鱼达莉娅 呼唤家臣提示${suffix}`,
+    id: `${id}`,
     type: 'StartsUsing',
-    netRegex: { id: 'B2CB', capture: false },
+    netRegex: netRegex,
     delaySeconds: delay,
     durationSeconds: duration,
+    suppressSeconds: 9999,
     soundVolume: 0.3,
     // eslint-disable-next-line rulesdir/cactbot-output-strings
     alertText: (data: Data) => data.zoosResult[idx] ?? '??',
     tts: null,
-    ...(cleanup ? { run: (data: Data) => (data.zoosResult.length = 0) } : {}),
   }) as const;
 
 const triggerSet: TriggerSet<Data> = {
@@ -151,8 +182,17 @@ const triggerSet: TriggerSet<Data> = {
     zoos: [],
     zoosCombatants: [],
     zoosResult: [],
+    phase: 'BOSS1-P1',
   }),
   triggers: [
+    {
+      id: 'souma 人鱼达莉娅 阶段控制',
+      type: 'StartsUsing',
+      netRegex: { id: Object.keys(bossPhaseId), capture: true },
+      run: (data, matches) => {
+        data.phase = bossPhaseId[matches.id]!;
+      },
+    },
     {
       id: 'souma 人鱼达莉娅 尖声坠刺',
       type: 'StartsUsing',
@@ -164,8 +204,9 @@ const triggerSet: TriggerSet<Data> = {
       type: 'StartsUsing',
       netRegex: { id: 'B2CB', capture: false },
       run: (data) => {
-        data.zoos.length = 0;
+        // data.zoos.length = 0;
         data.zoosResult.length = 0;
+        data.zoosCombatants.length = 0;
       },
     },
     {
@@ -177,13 +218,26 @@ const triggerSet: TriggerSet<Data> = {
       },
       preRun: (data, matches) => {
         data.zoos.push(actorControlData[matches.param1]!);
-        if (data.zoos.length === 4)
+        if (data.zoos.length % 4 === 0)
           computeZoosResult(data);
       },
       durationSeconds: 20,
       infoText: (data, _matches, output) => {
-        if (data.zoos.length === 4)
-          return data.zoos.map((v) => output[v]!()).join('');
+        if (data.zoos.length % 4 === 0) {
+          if (data.phase === 'BOSS1-P1')
+            return data.zoos.slice(-4).map((v) => output[v]!()).join('');
+          if (data.phase === 'BOSS1-P3') {
+            const s1: SingSafe = getSafe(data.zoosResult[0]!);
+            const s2: SingSafe = getSafe(data.zoosResult[1]!);
+            const s3: SingSafe = getSafe(data.zoosResult[2]!);
+            return output.p3!({
+              s1: output[s1]!(),
+              s2: output[s2]!(),
+              s3: output[s3]!(),
+              s4: output[s1]!(),
+            });
+          }
+        }
       },
       outputStrings: {
         '豚': { en: '豚' },
@@ -191,6 +245,45 @@ const triggerSet: TriggerSet<Data> = {
         '鸟': { en: '鸟' },
         '马': { en: '马' },
         '龟': { en: '龟' },
+        '内': { en: '内' },
+        '外': { en: '外' },
+        '斜': { en: '斜' },
+        'p3': { en: '${s1}→${s2}→${s3}→${s4}' },
+      },
+    },
+    {
+      id: 'souma 人鱼达莉娅 和声重奏曲',
+      type: 'StartsUsing',
+      netRegex: { id: 'B314' },
+      preRun: (data) => {
+        if (data.zoos.length % 4 === 0) {
+          computeZoosResult(data);
+        }
+      },
+      durationSeconds: 10,
+      infoText: (data, _matches, output) => {
+        if (data.zoos.length % 4 === 0) {
+          const s1: SingSafe = getSafe(data.zoosResult[0]!);
+          const s2: SingSafe = getSafe(data.zoosResult[1]!);
+          const s3: SingSafe = getSafe(data.zoosResult[2]!);
+          return output.p3!({
+            s1: output[s1]!(),
+            s2: output[s2]!(),
+            s3: output[s3]!(),
+            s4: output[s1]!(),
+          });
+        }
+      },
+      outputStrings: {
+        '豚': { en: '豚' },
+        '蟹': { en: '蟹' },
+        '鸟': { en: '鸟' },
+        '马': { en: '马' },
+        '龟': { en: '龟' },
+        '内': { en: '内' },
+        '外': { en: '外' },
+        '斜': { en: '斜' },
+        'p3': { en: '${s1}→${s2}→${s3}→${s4}' },
       },
     },
     ...hintTriggerConfigs.map(makeHintTrigger),
@@ -226,7 +319,7 @@ const triggerSet: TriggerSet<Data> = {
       id: 'souma 人鱼达莉娅 激涌的洋流',
       type: 'StartsUsingExtra',
       netRegex: { id: 'B32A', capture: true },
-      delaySeconds: 2.4,
+      delaySeconds: 3,
       // 只报1分整与4分30秒的这2次
       suppressSeconds: 180,
       infoText: (_data, matches, output) => {
@@ -245,6 +338,23 @@ const triggerSet: TriggerSet<Data> = {
       type: 'StartsUsing',
       netRegex: { id: 'B325', capture: false },
       response: Responses.aoe(),
+    },
+    {
+      id: 'souma 人鱼达莉娅 移动命令',
+      type: 'GainsEffect',
+      netRegex: { effectId: Object.keys(boss1Debuffs) },
+      condition: Conditions.targetIsYou(),
+      durationSeconds: (_data, matches) => parseFloat(matches.duration),
+      countdownSeconds: (_data, matches) => parseFloat(matches.duration),
+      infoText: (_data, matches, output) => {
+        return output[boss1Debuffs[matches.effectId]!]!();
+      },
+      outputStrings: {
+        '前': { en: '向前' },
+        '后': { en: '向后' },
+        '左': { en: '向左' },
+        '右': { en: '向右' },
+      },
     },
     // {
     //   id: 'souma 人鱼达莉娅 空中漫游 B315',
