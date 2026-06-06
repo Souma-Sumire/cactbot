@@ -710,7 +710,7 @@ export class PopupText {
       if (set.id !== undefined) {
         const existing = lastVersionOfId.get(set.id);
         if (existing !== undefined) {
-          console.log(
+          console.debug(
             `Overriding trigger set id '${set.id}' from '${existing.filename}' with '${set.filename}'`,
           );
         }
