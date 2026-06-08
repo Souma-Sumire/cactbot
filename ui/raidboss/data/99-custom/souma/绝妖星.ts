@@ -1,12 +1,14 @@
 import Conditions from '../../../../../resources/conditions';
+import Outputs from '../../../../../resources/outputs';
 import { callOverlayHandler } from '../../../../../resources/overlay_plugin_api';
 import { Responses } from '../../../../../resources/responses';
 import { Directions } from '../../../../../resources/util';
 import { RaidbossData } from '../../../../../types/data';
 import { PluginCombatantState } from '../../../../../types/event';
-import { TriggerSet } from '../../../../../types/trigger';
+import { Matches } from '../../../../../types/net_matches';
+import { Output, TriggerSet } from '../../../../../types/trigger';
 
-console.log('绝妖星已加载');
+console.log('绝妖星已加载，开发成本原因，默认报的标点为1A2，其他标点需自己改。');
 
 type Phase = 'p1-1a' | 'p1-1b' | 'p1-2' | 'p1-3' | 'p2' | 'p3';
 const phases: { [id: string]: Phase } = {
@@ -18,7 +20,139 @@ const phases: { [id: string]: Phase } = {
 // const centerX = 100;
 // const centerY = 100;
 
+const p2OutputStirngs = {
+  扇形组: '左', // 如果不是固定扇形右，就改成“扇形组的”
+  钢铁组: '右', // 如果不是固定钢铁右，就改成“钢铁组的”
+  第1轮踩塔TN: '1轮 踩${lr}塔(你是${gimmick})',
+  第1轮闲人TN: '1轮 闲人${lr}引导(你是${gimmick})',
+  第1轮DPS分摊: '1轮 踩${lr}塔(你是分摊)',
+  第1轮DPS其他: '1轮 ${lr}边看搭档(你是${gimmick})',
+  第2到8轮踩塔单: '${i}轮 踩塔(单${gimmick})',
+  第2到8轮踩塔双: '${i}轮 踩塔(双${gimmick})',
+  第2到8轮引导: '${i}轮 塔外引导',
+  第2到8轮引导tank: '${i}轮 <=左塔外',
+  第2到8轮引导healer: '${i}轮 <=左塔外',
+  第2到8轮引导dps: '${i}轮 右塔外=>',
+  第2到8轮超级跳: '${i}轮 闲人去超级跳',
+  分摊: '分摊',
+  钢铁: '钢铁',
+  扇形: '扇形',
+
+  打法1234: '5轮 闲人中间挂机',
+  打法1238: '8轮 闲人去超级跳',
+  打法1458: '8轮 闲人去超级跳',
+};
+
+const getP2 = (data: Data, _matches: Matches, output: Output) => {
+  let me: { target: string; buff: string; role: 'dps' | 'tank' | 'healer' } | undefined;
+  let stack: { target: string; buff: string; role: 'dps' | 'tank' | 'healer' } | undefined;
+  for (let i = 0; i <= data.p2count; i++) {
+    if (me === undefined) {
+      me = data.p2hm[data.p2count - i - 1]?.find((v) => v.target === data.me);
+    }
+
+    if (stack === undefined && me) {
+      stack = data.p2hm[data.p2count - i - 1]?.find(
+        (v) =>
+          v.buff === '分摊' && v.target !== data.me &&
+          (data.triggerSetConfig.p2一运搭档打法 === 'same'
+            ? (v.role === me!.role)
+            : (v.role !== me!.role)),
+      );
+    }
+    if (me) {
+      break;
+    }
+  }
+
+  const towerCount = data.p2count;
+  const groupA = data.p2第一轮踩塔人.includes(data.me);
+  const ab = data.triggerSetConfig.p2一运打法.split('');
+  const goTower = (groupA && ab.includes(towerCount.toString())) ||
+    (!groupA && !ab.includes(towerCount.toString()));
+
+  const doubleTurn = {
+    '1234': [2, 4, 5, 6],
+    '1238': [2, 4, 6, 8],
+    '1458': [2, 4, 6, 8],
+  };
+
+  const isDoubleTurn = doubleTurn[data.triggerSetConfig.p2一运打法].includes(towerCount);
+
+  if (me === undefined) {
+    console.error(data.me, ' is undefined', data.p2hm);
+    return 'Error';
+  }
+
+  if (data.p2count === 1) {
+    const roleGimmick = data.p2hm[0]!.find((v) => v.buff !== '分摊' && v.role === data.role)!;
+    const lr = output[`${roleGimmick.buff}组`]!();
+    // 第一轮
+    if (data.role === 'tank' || data.role === 'healer') {
+      const inTower = Boolean(me.buff === '分摊' || stack);
+      const gimmick = output[me.buff]!();
+      data.p2报过了 = true;
+      return output[inTower ? '第1轮踩塔TN' : '第1轮闲人TN']!({ gimmick, lr });
+    }
+    if (data.role === 'dps') {
+      if (me.buff === '分摊') {
+        data.p2报过了 = true;
+        return output.第1轮DPS分摊!({ lr });
+      }
+      data.p2报过了 = true;
+      return output['第1轮DPS其他']!({ gimmick: output[me.buff]!(), lr: lr });
+    }
+  }
+
+  if (data.p2BuffCount[data.me] === 0) {
+    if (ab.join('') === '1234' && data.p2count === 5) {
+      data.p2报过了 = true;
+      return output.打法1234!();
+    }
+    if (ab.join('') === '1238' && data.p2count === 8) {
+      data.p2报过了 = true;
+      return output.打法1238!();
+    }
+    if (ab.join('') === '1458' && data.p2count === 8) {
+      data.p2报过了 = true;
+      return output.打法1458!();
+    }
+  }
+
+  const spjp = ['2', '4', '6', '8'];
+  const goSpjp = spjp.includes(towerCount.toString());
+  // 2-8轮
+  if (goTower) {
+    // 踩塔，每一轮
+    data.p2报过了 = true;
+    return output[`第2到8轮踩塔${isDoubleTurn ? '双' : '单'}`]!({
+      i: towerCount,
+      gimmick: output[me.buff]!(),
+    });
+  }
+  if (!goSpjp) {
+    // 不踩塔，奇数轮，引导
+    data.p2报过了 = true;
+    // // 没buff的人按照TN左DPS右引导
+    if (
+      data.p2BuffCount[data.me] === 0 && data.triggerSetConfig.p2一运没debuff的闲人怎么决定去哪个塔 === 'TN左DPS右'
+    ) {
+      return output[`第2到8轮引导${data.role}`]!();
+    }
+    // }
+    return output.第2到8轮引导!({ i: towerCount, gimmick: output[me.buff]!() });
+  }
+  // 不踩塔，偶数轮，超级跳
+  data.p2报过了 = true;
+  return output.第2到8轮超级跳!({ i: towerCount });
+};
+
 export interface Data extends RaidbossData {
+  readonly triggerSetConfig: {
+    p2一运打法: '1238' | '1234' | '1458';
+    p2一运搭档打法: 'same' | 'diff';
+    p2一运没debuff的闲人怎么决定去哪个塔: 'TN左DPS右';
+  };
   // General
   phase: Phase | 'unknown';
   假冰: boolean;
@@ -36,6 +170,35 @@ export interface Data extends RaidbossData {
   eyeTowerIds: string[];
   fakeEyeTowerIds: string[];
   p2未来过去count: number;
+  purpleTowerIds: string[];
+  yellowTowerIds: string[];
+  p2hm: { [key: string]: { target: string; buff: string; role: 'dps' | 'tank' | 'healer' }[] };
+  p2count: number;
+  p2第一轮踩塔人: string[];
+  p2BuffCount: { [key: string]: number };
+  p2报过了: boolean;
+  p4真假: {
+    '新生艾克斯迪司': boolean[];
+    '卡奥斯': boolean[];
+  };
+  p4count: {
+    '新生艾克斯迪司': number;
+    '卡奥斯': number;
+  };
+  p4CastCount: number;
+  p4buffs: {
+    [key: string]: {
+      name: string;
+      tf: string;
+      gimmick: string;
+      time: number;
+      count: number;
+      bossCount: number;
+    }[];
+  };
+  p4Text: {
+    [key: string]: string;
+  };
 }
 
 const headMarkerData = {
@@ -49,6 +212,10 @@ const headMarkerData = {
   '真冰': '02A4',
   '假雷': '02A5',
   '真雷': '02A6',
+
+  '分摊': '02CB',
+  '钢铁': '02CC',
+  '扇形': '02CD',
 } as const;
 
 const arrowBuffs = {
@@ -62,10 +229,71 @@ const arrowBuffs = {
   '130E': '右',
   '130F': '左',
 };
+type P3Boss = '卡奥斯' | '新生艾克斯迪司';
+const p4buff: {
+  [key: string]: { name: string; true: string; false: string; source: P3Boss };
+} = {
+  '15A8': { name: '叉形闪电', true: '雷分散', false: '水分摊', source: '新生艾克斯迪司' },
+  '15A9': { name: '水属性压缩', true: '水分摊', false: '雷分散', source: '新生艾克斯迪司' },
+  '15A7': { name: '诅咒之嚎', true: '背对眼', false: '面对眼', source: '新生艾克斯迪司' },
+  '15AA': { name: '加速度炸弹', true: '停手', false: '移动', source: '新生艾克斯迪司' },
+  '15AB': { name: '混沌之炎', true: '钢铁', false: '月环', source: '卡奥斯' },
+  '15AC': { name: '混沌之水', true: '月环', false: '钢铁', source: '卡奥斯' },
+  '566': { name: '超越死亡', true: '死超', false: '亚拉戈', source: '新生艾克斯迪司' },
+  '1C6': { name: '亚拉戈领域', true: '亚拉戈', false: '死超', source: '新生艾克斯迪司' },
+  '15A5': { name: '生者之伤', true: '吃蓝', false: '吃紫', source: '新生艾克斯迪司' },
+  '15A6': { name: '死者之伤', true: '吃紫', false: '吃蓝', source: '新生艾克斯迪司' },
+};
 
 const triggerSet: TriggerSet<Data> = {
   id: 'DancingMadUltimate',
   zoneId: 1363,
+  config: [
+    {
+      id: 'p2一运打法',
+      name: {
+        en: 'p2一运打法',
+      },
+      comment: { en: '我只测试过1234+TLB打法。' },
+      type: 'select',
+      options: {
+        en: {
+          '1238': '1238',
+          '1234（TLB）': '1234',
+          '1458': '1458',
+        },
+      },
+      default: '1234',
+    },
+    {
+      id: 'p2一运搭档打法',
+      name: {
+        en: 'p2一运决定自己是否踩塔的方法',
+      },
+      type: 'select',
+      options: {
+        en: {
+          '同职能（MT找ST）': 'same',
+          '异职能（MT找H1）': 'diff',
+        },
+      },
+      default: 'same',
+    },
+    {
+      id: 'p2一运没debuff的闲人怎么决定去哪个塔',
+      name: {
+        en: 'p2一运没debuff的闲人怎么决定去哪个塔',
+      },
+      comment: { en: '其他打法我不知道，我们团是这么打的。' },
+      type: 'select',
+      options: {
+        en: {
+          'TN左DPS右': 'TN左DPS右',
+        },
+      },
+      default: 'TN左DPS右',
+    },
+  ],
   timeline: `
 hideall "--Reset--"
 hideall "--sync--"
@@ -390,6 +618,24 @@ hideall "--sync--"
       eyeTowerIds: [],
       fakeEyeTowerIds: [],
       p2未来过去count: 0,
+      purpleTowerIds: [],
+      yellowTowerIds: [],
+      p2hm: {},
+      p2count: 1,
+      p2第一轮踩塔人: [],
+      p2BuffCount: {},
+      p2报过了: false,
+      p4真假: {
+        '新生艾克斯迪司': [],
+        '卡奥斯': [],
+      },
+      p4count: {
+        '新生艾克斯迪司': 0,
+        '卡奥斯': 0,
+      },
+      p4CastCount: 0,
+      p4buffs: {},
+      p4Text: {},
     };
   },
   triggers: [
@@ -432,8 +678,8 @@ hideall "--sync--"
       preRun: (data, matches) => {
         const id = parseInt(matches.id, 16);
         // const blueTowers = [id, id - 1]; // First tower is blue and highest ID
-        // const purpleTowers = [id - 2, id - 4]; // Next are in pair with yellow
-        // const yellowTowers = [id - 3, id - 5];
+        const purpleTowers = [id - 2, id - 4]; // Next are in pair with yellow
+        const yellowTowers = [id - 3, id - 5];
         const eyeTowers = [id - 7, id - 9]; // Next are in paire with fake
         const fakeEyeTowers = [id - 6, id - 8];
 
@@ -441,8 +687,8 @@ hideall "--sync--"
           return id.toString(16).toUpperCase();
         };
         // data.blueTowerIds = blueTowers.map((id) => toStringId(id));
-        // data.purpleTowerIds = purpleTowers.map((id) => toStringId(id));
-        // data.yellowTowerIds = yellowTowers.map((id) => toStringId(id));
+        data.purpleTowerIds = purpleTowers.map((id) => toStringId(id));
+        data.yellowTowerIds = yellowTowers.map((id) => toStringId(id));
         data.eyeTowerIds = eyeTowers.map((id) => toStringId(id));
         data.fakeEyeTowerIds = fakeEyeTowers.map((id) => toStringId(id));
       },
@@ -547,7 +793,7 @@ hideall "--sync--"
       },
       outputStrings: {
         text: { en: '传毒（出去）' },
-        idle: { en: '传毒' },
+        idle: { en: '吃毒' },
       },
     },
     {
@@ -604,8 +850,11 @@ hideall "--sync--"
         });
       },
       outputStrings: {
-        text: { en: '${dir1} / ${dir2}' },
-        ...Directions.outputStrings8Dir,
+        text: { en: '${dir1}${dir2}' },
+        dirNE: { en: '二' },
+        dirSE: { en: '三' },
+        dirSW: { en: '四' },
+        dirNW: { en: '一' },
       },
     },
     {
@@ -795,34 +1044,6 @@ hideall "--sync--"
       },
     },
     {
-      id: 'DMU P3 究极冲击波',
-      type: 'AbilityExtra',
-      netRegex: { id: 'BAE3' },
-      preRun: (data, matches) => {
-        data.p3究极冲击波hdg.push(parseFloat(matches.heading));
-      },
-      alertText: (data, _matches, output) => {
-        if (data.p3究极冲击波hdg.length === 2) {
-          const [c1, c2] = data.p3究极冲击波hdg as [number, number];
-          const dir1 = Directions.hdgTo8DirNum(c1);
-          const dir2 = Directions.hdgTo8DirNum(c2);
-          const start = Directions.outputFrom8DirNum(dir1);
-          const clock = (dir2 - dir1 === 1) || (dir2 === 0 && dir1 === 7);
-          const clk = clock ? '顺' : '逆';
-          return output.text!({
-            start: output[start]!(),
-            clk: output[clk]!(),
-          });
-        }
-      },
-      outputStrings: {
-        text: '${start} ${clk}',
-        顺: '逆→',
-        逆: '顺←',
-        ...Directions.outputStrings8Dir,
-      },
-    },
-    {
       id: 'DMU P1 Ave Maria',
       // BAB3 Ave Maria
       // The animation is visible ~9.89s before cast goes off, however
@@ -859,6 +1080,38 @@ hideall "--sync--"
       },
     },
     {
+      id: 'DMU P1 Impertinent Will',
+      type: 'ActorControlExtra',
+      netRegex: { category: '019D', param1: '40', param2: '80', capture: true },
+      condition: (data, matches) => data.yellowTowerIds.includes(matches.id),
+      alertText: (_data, _matches, output) => output.goWest!(),
+      outputStrings: {
+        goWest: Outputs.getLeftAndWest,
+      },
+    },
+    {
+      id: 'DMU P1 Gravitational Wave',
+      type: 'ActorControlExtra',
+      netRegex: { category: '019D', param1: '40', param2: '80', capture: true },
+      condition: (data, matches) => data.purpleTowerIds.includes(matches.id),
+      alertText: (_data, _matches, output) => output.goEast!(),
+      outputStrings: {
+        goEast: Outputs.getRightAndEast,
+      },
+    },
+    {
+      id: 'DMU P2 双腕',
+      type: 'StartsUsing',
+      netRegex: { id: 'C24D' },
+      response: Responses.sharedTankBuster(),
+    },
+    {
+      id: 'DMU P2 遗弃末世',
+      type: 'StartsUsing',
+      netRegex: { id: 'BABC' },
+      response: Responses.bigAoe(),
+    },
+    {
       id: 'DMU P2 未来终结',
       type: 'StartsUsing',
       netRegex: { id: 'BAD2' },
@@ -874,8 +1127,8 @@ hideall "--sync--"
         return output.text!();
       },
       outputStrings: {
-        text: '未来，塔对面',
-        text4: '未来，穿过去',
+        text: '未来，塔对面，对面，对面',
+        text4: '未来，要穿，要穿，要穿',
       },
     },
     {
@@ -894,8 +1147,407 @@ hideall "--sync--"
         return output.text!();
       },
       outputStrings: {
-        text: '过去，塔中间',
-        text4: '过去，留原地',
+        text: '过去，塔中间，中间，中间',
+        text4: '过去，留原地，原地，原地',
+      },
+    },
+    {
+      id: 'DMU P2 HM',
+      type: 'HeadMarker',
+      netRegex: {
+        id: [
+          headMarkerData.分摊,
+          headMarkerData.钢铁,
+          headMarkerData.扇形,
+        ],
+      },
+      preRun: (data, matches) => {
+        data.p2hm[data.p2count - 1] ??= [];
+        data.p2hm[data.p2count - 1]!.push({
+          target: matches.target,
+          buff: {
+            [headMarkerData.分摊]: '分摊',
+            [headMarkerData.钢铁]: '钢铁',
+            [headMarkerData.扇形]: '扇形',
+          }[matches.id]!,
+          role: data.party.nameToRole_[matches.target] as 'dps' | 'tank' | 'healer',
+        });
+      },
+    },
+    {
+      id: 'DMU P2 第一轮踩塔',
+      type: 'Ability',
+      netRegex: { id: 'BABE' },
+      preRun: (data, matches) => {
+        if (data.p2第一轮踩塔人.length >= 4) {
+          return;
+        }
+        data.p2第一轮踩塔人.push(matches.target);
+      },
+    },
+    {
+      id: 'DMU P2 踩塔计数',
+      type: 'Ability',
+      netRegex: { id: 'BABE' },
+      preRun: (data) => {
+        data.p2count++;
+        data.p2报过了 = false;
+      },
+      suppressSeconds: 1,
+    },
+    {
+      id: 'DMU P2 事',
+      type: 'GainsEffect',
+      netRegex: {
+        effectId: '13DB',
+      },
+      preRun: (data, matches) => {
+        data.p2BuffCount[matches.target] = Number(matches.count);
+      },
+    },
+    {
+      id: 'DMU P2 没事干了',
+      type: 'LosesEffect',
+      netRegex: {
+        effectId: '13DB',
+      },
+      preRun: (data, matches) => {
+        data.p2BuffCount[matches.target] = 0;
+      },
+      delaySeconds: (data) => data.triggerSetConfig.p2一运打法 === '1234' ? 6 : 0.25,
+      infoText: (data, matches, output) => {
+        if (data.p2count === 9) {
+          return;
+        }
+        if (data.p2报过了) {
+          return;
+        }
+        return getP2(data, matches, output);
+      },
+      outputStrings: {
+        ...p2OutputStirngs,
+      },
+    },
+    {
+      id: 'DMU P2 HM判',
+      comment: {
+        en: '为了尽量适配所有打法 + 尽量不引入职能分配悬浮窗。第一轮DPS请自己判断是否进塔……',
+      },
+      type: 'HeadMarker',
+      netRegex: {
+        id: [
+          headMarkerData.分摊,
+          headMarkerData.钢铁,
+          headMarkerData.扇形,
+        ],
+      },
+      delaySeconds: 0.25,
+      durationSeconds: 10,
+      suppressSeconds: 1,
+      infoText: (data, matches, output) => {
+        if (data.p2报过了) {
+          return;
+        }
+        return getP2(data, matches, output);
+      },
+      outputStrings: {
+        ...p2OutputStirngs,
+      },
+    },
+    {
+      id: 'DMU P2 Light of Judgment',
+      type: 'StartsUsing',
+      netRegex: { id: 'BABD', capture: false },
+      response: Responses.bigAoe('alert'),
+    },
+    {
+      id: 'DMU P2 Single Wing of Destruction',
+      // BACD Wings of Destruction, Left wing highlight
+      // BACE Wingso of Desctruction, Right wing highlight
+      // Halfroom cleaves
+      type: 'StartsUsing',
+      netRegex: { id: ['BACD', 'BACE'], capture: true },
+      infoText: (_data, matches, output) => {
+        if (matches.id === 'BACD')
+          return output.right!();
+        return output.left!();
+      },
+      outputStrings: {
+        right: Outputs.right,
+        left: Outputs.left,
+      },
+    },
+    {
+      id: 'DMU P2 Wings of Destruction',
+      type: 'StartsUsing',
+      netRegex: { id: 'C487', capture: false },
+      response: (data, _matches, output) => {
+        // cactbot-builtin-response
+        output.responseOutputStrings = {
+          maxMeleeAvoidTanks: {
+            en: 'Max Melee: Avoid Tanks',
+            cn: '最大近战距离，避开坦克',
+          },
+          wingsBeNearFar: {
+            en: 'Wings: Be Near/Far',
+            cn: '双翅膀：近或远',
+          },
+        };
+        if (data.role === 'tank')
+          return { alertText: output.wingsBeNearFar!() };
+        return { infoText: output.maxMeleeAvoidTanks!() };
+      },
+    },
+    {
+      id: 'DMU P2 Aero III Assault',
+      // Knockback from boss that can't be resisted
+      // Applies 306 Down for the Count
+      type: 'StartsUsing',
+      netRegex: { id: 'C3F7', capture: false },
+      response: Responses.getUnder('alert'),
+    },
+    {
+      id: 'DMU P3 究极冲击波',
+      type: 'AbilityExtra',
+      netRegex: { id: 'BAE3' },
+      preRun: (data, matches) => {
+        data.p3究极冲击波hdg.push(parseFloat(matches.heading));
+      },
+      alertText: (data, _matches, output) => {
+        if (data.p3究极冲击波hdg.length === 2) {
+          const [c1, c2] = data.p3究极冲击波hdg as [number, number];
+          const dir1 = Directions.hdgTo8DirNum(c1);
+          const dir2 = Directions.hdgTo8DirNum(c2);
+          const start = Directions.outputFrom8DirNum(dir1);
+          const clock = (dir2 - dir1 === 1) || (dir2 === 0 && dir1 === 7);
+          const clk = clock ? '顺' : '逆';
+          return output.text!({
+            start: output[start]!(),
+            clk: output[clk]!(),
+          });
+        }
+      },
+      outputStrings: {
+        text: '${start} ${clk}',
+        顺: '逆→',
+        逆: '顺←',
+        dirNW: '1',
+        dirN: 'A',
+        dirNE: '2',
+        dirE: 'B',
+        dirSE: '3',
+        dirS: 'C',
+        dirSW: '4',
+        dirW: 'D',
+        unknown: 'unknown',
+      },
+    },
+    {
+      id: 'DMU P4 真假大十字',
+      type: 'GainsEffect',
+      // 45F = 卡奥斯 假
+      // 460 = 卡奥斯 真
+      // 461 = 新生艾克斯迪司 假
+      // 462 = 新生艾克斯迪司 真
+      netRegex: { effectId: '808' },
+      condition: (data) => data.phase === 'p3',
+      delaySeconds: (data) => data.p4真假.新生艾克斯迪司.length === 3 ? 0 : 3,
+      run: (data, matches) => {
+        data.p4真假[['45F', '460'].includes(matches.count) ? '卡奥斯' : '新生艾克斯迪司'].push(
+          [
+            '460',
+            '462',
+          ].includes(matches.count),
+        );
+      },
+    },
+    {
+      id: 'DMU P4 BUFF 判定前提示',
+      type: 'GainsEffect',
+      netRegex: { effectId: Object.keys(p4buff), capture: true },
+      condition: (data, matches) => {
+        return data.phase === 'p3' && matches.target === data.me &&
+          !['生者之伤', '死者之伤', '亚拉戈领域', '超越死亡'].includes(p4buff[matches.effectId]!.name);
+      },
+      delaySeconds: (data, matches, output) => {
+        const buff = p4buff[matches.effectId]!;
+        const source = buff.source;
+        const sourceTF = data.p4真假[source][data.p4count[source] - 1];
+        // console.warn(
+        //   data.me,
+        //   matches.timestamp,
+        //   source,
+        //   data.p4真假[source][data.p4count[source] - 1],
+        // );
+        const gimmick = buff[sourceTF ? 'true' : 'false'];
+        const { timestamp, target, duration, effectId } = matches;
+        data.p4Text[`${timestamp}|${target}|${duration}|${effectId}`] = output[gimmick]!();
+        return parseFloat(duration) - 5.5;
+      },
+      durationSeconds: 5.5,
+      countdownSeconds: 5.5,
+      infoText: (data, matches, output) => {
+        const { timestamp, target, duration, effectId } = matches;
+        const i = data.p4buffs[data.me]!.findIndex((v) =>
+          v.name === p4buff[matches.effectId]!.name
+        );
+        const d = data.p4buffs[data.me]![i];
+        const g = d!.time;
+        const pre = data.p4buffs[data.me]![i - 1];
+        const diff = Math.abs(pre!.time - g);
+        // 如果这次机制与上一个机制时间小于3秒，则这次机制不报
+        if (diff <= 3)
+          return undefined;
+        const next = data.p4buffs[data.me]![i + 1];
+        if (next === undefined) {
+          return;
+        }
+        const nextDiff = Math.abs(next.time - g);
+        // 如果这次机制与下一个机制小于3秒，则一起报下一个机制
+        if (nextDiff <= 3) {
+          return output[d!.gimmick]!() + output.plus!() + output[next.gimmick]!();
+        }
+        return data.p4Text[`${timestamp}|${target}|${duration}|${effectId}`];
+      },
+      outputStrings: {
+        plus: { en: ' + ' },
+        雷分散: { en: '雷分散' },
+        水分摊: { en: '水分摊' },
+        背对眼: { en: '背对' },
+        面对眼: { en: '面对' },
+        停手: { en: '停手' },
+        移动: { en: '移动' },
+        钢铁: { en: '钢铁' },
+        月环: { en: '月环' },
+      },
+    },
+    {
+      id: 'DMU P4 BUFF 长时间提示',
+      type: 'GainsEffect',
+      netRegex: { effectId: Object.keys(p4buff), capture: false },
+      condition: (data) => data.phase === 'p3',
+      delaySeconds: 0.25,
+      durationSeconds: (data) => {
+        data.p4CastCount++;
+        return [3, 3, 3, 3, 30][data.p4CastCount];
+      },
+      suppressSeconds: 1,
+      response: (data, _matches, output) => {
+        if (data.p4CastCount > 5)
+          return {};
+        if (data.p4CastCount <= 4) {
+          return {
+            infoText: output.n1t4!({
+              text: data.p4buffs[data.me]!.filter((v) => v.count === data.p4CastCount).map((v) =>
+                output[v.gimmick]!()
+              ).join(output.join1!()),
+            }),
+          };
+        }
+        let text = '';
+        const b = data.p4buffs[data.me]!.filter((v) =>
+          !['生者之伤', '死者之伤', '亚拉戈领域', '超越死亡'].includes(v.name)
+        );
+        b.map((v, i) => {
+          text += output[v.gimmick]!();
+          if ((Math.abs((b[i + 1]?.time ?? 0) - v.time)) <= 3) {
+            text += output.plus!();
+          } else {
+            text += output.join5!();
+          }
+        });
+        text = text.replace(new RegExp(`${output.join5!()}$`), '');
+        return { alarmText: output.text5!({ text }) };
+      },
+      outputStrings: {
+        雷分散: { en: '雷分散' },
+        水分摊: { en: '水分摊' },
+        背对眼: { en: '背对' },
+        面对眼: { en: '面对' },
+        停手: { en: '停手' },
+        移动: { en: '移动' },
+        钢铁: { en: '钢铁' },
+        月环: { en: '月环' },
+        plus: { en: '+' },
+        join1: { en: '、' },
+        join5: { en: '→' },
+        n1t4: '${text}',
+        text5: '${text}',
+      },
+    },
+    {
+      id: 'DMU P4 大十字',
+      type: 'StartsUsing',
+      netRegex: { id: 'BB14' },
+      delaySeconds: 2,
+      run: (data) => data.p4count.新生艾克斯迪司++,
+    },
+    {
+      id: 'DMU P4 烈焰/海啸',
+      type: 'StartsUsing',
+      netRegex: { id: ['BB1E', 'BB20', 'BB1F', 'BB21'] },
+      delaySeconds: 2,
+      suppressSeconds: 1,
+      run: (data) => data.p4count.卡奥斯++,
+    },
+    {
+      id: 'DMU P4 BUFF',
+      type: 'GainsEffect',
+      netRegex: { effectId: Object.keys(p4buff) },
+      run: (data, matches) => {
+        if (data.phase !== 'p3')
+          return false;
+        const buff = p4buff[matches.effectId]!;
+        const source = buff.source;
+        const sourceTF = data.p4真假[source][data.p4count[source] - 1];
+        const gimmick = buff[sourceTF ? 'true' : 'false'];
+        (data.p4buffs[matches.target] ??= []).push({
+          name: buff.name,
+          tf: sourceTF ? '真' : '假',
+          gimmick: gimmick,
+          // duration: parseFloat(matches.duration),
+          time: (new Date(matches.timestamp).getTime() / 1000) + parseFloat(matches.duration),
+          count: data.p4CastCount,
+          bossCount: data.p4count[source],
+        });
+        data.p4buffs[matches.target]!.sort((a, b) => a.time - b.time);
+        // return matches.target === data.me;
+      },
+    },
+    {
+      id: 'DMU P4 无之泛滥',
+      type: 'StartsUsing',
+      netRegex: {
+        id: [
+          'C3A1',
+          'C3A2',
+          'C392',
+          'C393',
+        ],
+      },
+      // C3A1左紫右蓝（猜测）
+      // C3A2左蓝右紫（假的）
+      // C392左紫右蓝
+      // C393左蓝右紫
+      delaySeconds: 0.5,
+      alertText: (data, matches, output) => {
+        data.p4count.新生艾克斯迪司++;
+        const tf = data.p4真假['新生艾克斯迪司'][3];
+        const me = data.p4buffs[data.me]!.find((v) => v.name === '生者之伤' || v.name === '死者之伤')!;
+        const st = data.p4buffs[data.me]!.find((v) => v.name === '超越死亡');
+        const eat = (st ? (me.gimmick === '吃蓝' ? '紫' : '蓝') : (me.gimmick === '吃蓝' ? '蓝' : '紫'));
+        const color = (matches.id === 'C392' || matches.id === 'C3A1') ? ['紫', '蓝'] : ['蓝', '紫'];
+        if (tf === false) {
+          color.reverse();
+        }
+        const lr = color.findIndex((v) => v === eat) === 0 ? '左' : '右';
+        return output[`${lr}${eat}`]!();
+      },
+      outputStrings: {
+        '左蓝': '<=左边吃蓝色',
+        '右蓝': '右边吃蓝色=>',
+        '左紫': '<=左边吃紫色',
+        '右紫': '右边吃紫色=>',
       },
     },
   ],
