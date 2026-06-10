@@ -23,24 +23,25 @@ const phases: { [id: string]: Phase } = {
 const p2OutputStirngs = {
   扇形组: '左', // 如果不是固定扇形右，就改成“扇形组的”
   钢铁组: '右', // 如果不是固定钢铁右，就改成“钢铁组的”
-  第1轮踩塔TN: '1轮 踩${lr}塔(你是${gimmick})',
-  第1轮闲人TN: '1轮 闲人${lr}引导(你是${gimmick})',
-  第1轮DPS分摊: '1轮 踩${lr}塔(你是分摊)',
-  第1轮DPS其他: '1轮 ${lr}边看搭档(你是${gimmick})',
-  第2到8轮踩塔单: '${i}轮 踩塔(单${gimmick})',
-  第2到8轮踩塔双: '${i}轮 踩塔(双${gimmick})',
+  第1轮踩塔TN: '1轮 ${gimmick} 踩${lr}塔',
+  第1轮闲人TN: '1轮 闲人 ${lr}引导',
+  第1轮DPS分摊: '1轮 分摊 踩${lr}塔',
+  第1轮DPS其他: '1轮 ${lr}边看搭档',
+  第2到8轮踩塔单: '${i}轮 (单${gimmick}) 踩塔',
+  第2到8轮踩塔双: '${i}轮 (双${gimmick}) 踩塔',
   第2到8轮引导: '${i}轮 塔外引导',
-  第2到8轮引导tank: '${i}轮 <=左塔外',
-  第2到8轮引导healer: '${i}轮 <=左塔外',
-  第2到8轮引导dps: '${i}轮 右塔外=>',
-  第2到8轮超级跳: '${i}轮 闲人去超级跳',
+  第2到8轮引导tank: '${i}轮 ←左塔外',
+  第2到8轮引导healer: '${i}轮 ←左塔外',
+  第2到8轮引导dps: '${i}轮 右塔外→',
+  第2到8轮超级跳: '${i}轮 闲人 去超级跳',
+  第2到8轮踩塔分摊: '${i}轮 分摊 踩塔 （另一个分摊是${player}）',
   分摊: '分摊',
   钢铁: '钢铁',
   扇形: '扇形',
 
-  打法1234: '5轮 闲人中间挂机',
-  打法1238: '8轮 闲人去超级跳',
-  打法1458: '8轮 闲人去超级跳',
+  打法1234: '5轮 闲人 中间挂机',
+  打法1238: '8轮 闲人 去超级跳',
+  打法1458: '8轮 闲人 去超级跳',
 };
 
 const getP2 = (data: Data, _matches: Matches, output: Output) => {
@@ -125,6 +126,12 @@ const getP2 = (data: Data, _matches: Matches, output: Output) => {
   if (goTower) {
     // 踩塔，每一轮
     data.p2报过了 = true;
+    if (me.buff === '分摊') {
+      const otherStack = data.p2hm[towerCount - 1]!.find((v) =>
+        v.buff === '分摊' && v.target !== data.me
+      )!;
+      return output.第2到8轮踩塔分摊!({ i: towerCount, player: otherStack.target });
+    }
     return output[`第2到8轮踩塔${isDoubleTurn ? '双' : '单'}`]!({
       i: towerCount,
       gimmick: output[me.buff]!(),
@@ -135,9 +142,11 @@ const getP2 = (data: Data, _matches: Matches, output: Output) => {
     data.p2报过了 = true;
     // // 没buff的人按照TN左DPS右引导
     if (
-      data.p2BuffCount[data.me] === 0 && data.triggerSetConfig.p2一运没debuff的闲人怎么决定去哪个塔 === 'TN左DPS右'
+      data.p2BuffCount[data.me] === 0 &&
+      data.triggerSetConfig.p2一运打法 === '1234' &&
+      data.triggerSetConfig.p2一运1234打法没debuff的闲人怎么决定去哪个塔引导 === 'TN左DPS右'
     ) {
-      return output[`第2到8轮引导${data.role}`]!();
+      return output[`第2到8轮引导${data.role}`]!({ i: towerCount });
     }
     // }
     return output.第2到8轮引导!({ i: towerCount, gimmick: output[me.buff]!() });
@@ -149,9 +158,11 @@ const getP2 = (data: Data, _matches: Matches, output: Output) => {
 
 export interface Data extends RaidbossData {
   readonly triggerSetConfig: {
+    p1击退加真假火冰打法: '正攻' | 'TN左DPS右';
     p2一运打法: '1238' | '1234' | '1458';
     p2一运搭档打法: 'same' | 'diff';
-    p2一运没debuff的闲人怎么决定去哪个塔: 'TN左DPS右';
+    p2一运1234打法没debuff的闲人怎么决定去哪个塔引导: 'TN左DPS右';
+    // p2一运1238打法4567的闲人怎么决定去哪个塔引导: 'TN左DPS右';
   };
   // General
   phase: Phase | 'unknown';
@@ -161,6 +172,7 @@ export interface Data extends RaidbossData {
   p1Tethers: string[];
   p1毒: string[];
   p1Cannon: string[];
+  p1IsTether: boolean;
   combatantData: PluginCombatantState[];
   p1放石头: boolean;
   p1Arrow: { a: string; s: number }[];
@@ -250,20 +262,34 @@ const triggerSet: TriggerSet<Data> = {
   zoneId: 1363,
   config: [
     {
+      id: 'p1击退加真假火冰打法',
+      name: {
+        en: 'p1击退加真假火冰打法',
+      },
+      type: 'select',
+      options: {
+        en: {
+          '正攻（被击退的去下半场）': '正攻',
+          '职能固定（不推荐！）未测试': 'TN左DPS右',
+          // '正攻（报双安全区）未测试': '双安全区',
+        },
+      },
+      default: '正攻',
+    },
+    {
       id: 'p2一运打法',
       name: {
         en: 'p2一运打法',
       },
-      comment: { en: '我只测试过1234+TLB打法。' },
       type: 'select',
       options: {
         en: {
           '1238': '1238',
           '1234（TLB）': '1234',
-          '1458': '1458',
+          '1458 未测试': '1458',
         },
       },
-      default: '1234',
+      default: '1238',
     },
     {
       id: 'p2一运搭档打法',
@@ -273,16 +299,16 @@ const triggerSet: TriggerSet<Data> = {
       type: 'select',
       options: {
         en: {
-          '同职能（MT找ST）': 'same',
-          '异职能（MT找H1）': 'diff',
+          '同职能（MT找ST、DPS自己看）': 'same',
+          '异职能（MT找H1、DPS自己看）未测试': 'diff',
         },
       },
       default: 'same',
     },
     {
-      id: 'p2一运没debuff的闲人怎么决定去哪个塔',
+      id: 'p2一运1234打法没debuff的闲人怎么决定去哪个塔引导',
       name: {
-        en: 'p2一运没debuff的闲人怎么决定去哪个塔',
+        en: 'p2一运1234打法没debuff的闲人怎么决定去哪个塔引导',
       },
       comment: { en: '其他打法我不知道，我们团是这么打的。' },
       type: 'select',
@@ -293,6 +319,20 @@ const triggerSet: TriggerSet<Data> = {
       },
       default: 'TN左DPS右',
     },
+    // {
+    //   id: 'p2一运1238打法4567的闲人怎么决定去哪个塔引导',
+    //   name: {
+    //     en: 'p2一运1238打法4567的闲人怎么决定去哪个塔引导',
+    //   },
+    //   comment: { en: '其他打法我不知道，我们团是这么打的。' },
+    //   type: 'select',
+    //   options: {
+    //     en: {
+    //       'TN左DPS右': 'TN左DPS右',
+    //     },
+    //   },
+    //   default: 'TN左DPS右',
+    // },
   ],
   timeline: `
 hideall "--Reset--"
@@ -636,6 +676,7 @@ hideall "--sync--"
       p4CastCount: 0,
       p4buffs: {},
       p4Text: {},
+      p1IsTether: false,
     };
   },
   triggers: [
@@ -714,9 +755,11 @@ hideall "--sync--"
         if (data.p1Tethers.length !== 0) {
           if (data.p1Tethers.includes(data.me)) {
             data.p1Tethers = [];
+            data.p1IsTether = true;
             return output.tetherOnYou!();
           }
           data.p1Tethers = [];
+          data.p1IsTether = false;
           return output.idle!();
         }
       },
@@ -800,7 +843,7 @@ hideall "--sync--"
       id: 'DMU 头标',
       type: 'HeadMarker',
       netRegex: { id: [headMarkerData.stack, headMarkerData.spread] },
-      delaySeconds: 0.5,
+      delaySeconds: (data) => data.phase === 'p1-1a' ? (data.p1IsTether ? 2.75 : 1.25) : 0.5,
       durationSeconds: 6,
       suppressSeconds: 1,
       alertText: (data, matches, output) => {
@@ -821,11 +864,11 @@ hideall "--sync--"
       },
       outputStrings: {
         stack: { en: '分摊' },
-        spread: { en: '散开' },
-        假雷分摊: { en: '雷内+集合' },
-        真雷分摊: { en: '安全区+集合' },
-        假雷分散: { en: '雷内+分散' },
-        真雷分散: { en: '安全区+分散' },
+        spread: { en: '散开！' },
+        假雷分摊: { en: '危险区+分摊' },
+        真雷分摊: { en: '安全区+分摊' },
+        假雷分散: { en: '危险区+散开' },
+        真雷分散: { en: '安全区+散开' },
       },
     },
     {
@@ -835,19 +878,38 @@ hideall "--sync--"
       condition: (data) => data.phase === 'p1-1a',
       durationSeconds: 6,
       suppressSeconds: 1,
-      infoText: (_data, matches, output) => {
+      infoText: (data, matches, output) => {
         const dirNum = Directions.hdgTo8DirNum(parseFloat(matches.heading));
-        const r = [1, 7, 3, 5];
+        const rr = [1, 7, 3, 5];
         const [n1, n2] = ([(dirNum + 2) % 8, (dirNum + 4 + 2) % 8].sort((a, b) => {
-          return r.indexOf(a) - r.indexOf(b);
+          return rr.indexOf(a) - rr.indexOf(b);
         })) as [
           number,
           number,
         ];
-        return output.text!({
-          dir1: output[Directions.outputFrom8DirNum(n1)]!(),
-          dir2: output[Directions.outputFrom8DirNum(n2)]!(),
-        });
+        if (data.triggerSetConfig.p1击退加真假火冰打法 === 'TN左DPS右') {
+          return output[
+            `${'TN左DPS右'}${Directions.outputFrom8DirNum([5, 7].includes(n1) ? n1 : n2)}`
+          ]!();
+        }
+        if (data.triggerSetConfig.p1击退加真假火冰打法 === '正攻') {
+          const n = (data.p1IsTether ? [3, 5] : [1, 7]).includes(n1) ? n1 : n2;
+          const nn = {
+            3: 1,
+            5: 7,
+            1: 1,
+            7: 7,
+          }[n]!;
+          return output[
+            `${'正攻'}${Directions.outputFrom8DirNum(nn)}${nn !== n ? '击退' : ''}`
+          ]!();
+        }
+        // if (data.triggerSetConfig.p1击退加真假火冰打法 === '双安全区') {
+        //   return output.text!({
+        //     dir1: output[Directions.outputFrom8DirNum(n1)]!(),
+        //     dir2: output[Directions.outputFrom8DirNum(n2)]!(),
+        //   });
+        // }
       },
       outputStrings: {
         text: { en: '${dir1}${dir2}' },
@@ -855,6 +917,18 @@ hideall "--sync--"
         dirSE: { en: '三' },
         dirSW: { en: '四' },
         dirNW: { en: '一' },
+
+        正攻dirNE: { en: '右上' },
+        正攻dirNE击退: { en: '右上击退' },
+        正攻dirSE: { en: '右下' },
+        正攻dirSW: { en: '左下' },
+        正攻dirNW: { en: '左上' },
+        正攻dirNW击退: { en: '左上击退' },
+
+        TN左DPS右dirNE: { en: '右上' },
+        TN左DPS右dirSE: { en: '右下' },
+        TN左DPS右dirSW: { en: '左下' },
+        TN左DPS右dirNW: { en: '左上' },
       },
     },
     {
@@ -1118,8 +1192,8 @@ hideall "--sync--"
       preRun: (data) => {
         data.p2未来过去count++;
       },
-      delaySeconds: 5.5,
-      durationSeconds: (data) => data.p2未来过去count === 4 ? 10 : 6.5,
+      delaySeconds: 7,
+      durationSeconds: (data) => data.p2未来过去count === 4 ? 10 : 5,
       alarmText: (data, _matches, output) => {
         if (data.p2未来过去count === 4) {
           return output.text4!();
@@ -1127,8 +1201,8 @@ hideall "--sync--"
         return output.text!();
       },
       outputStrings: {
-        text: '未来，塔对面，对面，对面',
-        text4: '未来，要穿，要穿，要穿',
+        text: '未来，塔对面，对面',
+        text4: '未来，要穿，要穿',
       },
     },
     {
@@ -1138,8 +1212,8 @@ hideall "--sync--"
       preRun: (data) => {
         data.p2未来过去count++;
       },
-      delaySeconds: 5.5,
-      durationSeconds: (data) => data.p2未来过去count === 4 ? 10 : 6.5,
+      delaySeconds: 7,
+      durationSeconds: (data) => data.p2未来过去count === 4 ? 10 : 5,
       alarmText: (data, _matches, output) => {
         if (data.p2未来过去count === 4) {
           return output.text4!();
@@ -1147,8 +1221,8 @@ hideall "--sync--"
         return output.text!();
       },
       outputStrings: {
-        text: '过去，塔中间，中间，中间',
-        text4: '过去，留原地，原地，原地',
+        text: '过去，塔中间，中间',
+        text4: '过去，留原地，原地',
       },
     },
     {
@@ -1241,7 +1315,9 @@ hideall "--sync--"
           headMarkerData.扇形,
         ],
       },
-      delaySeconds: 0.25,
+      delaySeconds: (data) => {
+        return [3, 5, 7].includes(data.p2count) ? 5 : 0.25;
+      },
       durationSeconds: 10,
       suppressSeconds: 1,
       infoText: (data, matches, output) => {
@@ -1313,6 +1389,7 @@ hideall "--sync--"
       preRun: (data, matches) => {
         data.p3究极冲击波hdg.push(parseFloat(matches.heading));
       },
+      durationSeconds: 20,
       alertText: (data, _matches, output) => {
         if (data.p3究极冲击波hdg.length === 2) {
           const [c1, c2] = data.p3究极冲击波hdg as [number, number];
@@ -1329,8 +1406,8 @@ hideall "--sync--"
       },
       outputStrings: {
         text: '${start} ${clk}',
-        顺: '逆→',
-        逆: '顺←',
+        顺: '逆',
+        逆: '顺',
         dirNW: '1',
         dirN: 'A',
         dirNE: '2',
@@ -1417,8 +1494,8 @@ hideall "--sync--"
         面对眼: { en: '面对' },
         停手: { en: '停手' },
         移动: { en: '移动' },
-        钢铁: { en: '钢铁' },
-        月环: { en: '月环' },
+        钢铁: { en: '放钢铁后出去' },
+        月环: { en: '放月环等buff' },
       },
     },
     {
@@ -1466,8 +1543,8 @@ hideall "--sync--"
         面对眼: { en: '面对' },
         停手: { en: '停手' },
         移动: { en: '移动' },
-        钢铁: { en: '钢铁' },
-        月环: { en: '月环' },
+        钢铁: { en: '放钢铁' },
+        月环: { en: '放月环' },
         plus: { en: '+' },
         join1: { en: '、' },
         join5: { en: '→' },
