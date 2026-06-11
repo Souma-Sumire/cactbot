@@ -27,6 +27,7 @@ const p2OutputStirngs = {
   第1轮闲人TN: '1轮 闲人 ${lr}引导',
   第1轮DPS分摊: '1轮 分摊 踩${lr}塔',
   第1轮DPS其他: '1轮 ${lr}边看搭档',
+  第1轮TN自由: '1轮 ${lr}边看搭档',
   第2到8轮踩塔单: '${i}轮 (单${gimmick}) 踩塔',
   第2到8轮踩塔双: '${i}轮 (双${gimmick}) 踩塔',
   第2到8轮引导: '${i}轮 塔外引导',
@@ -53,12 +54,10 @@ const getP2 = (data: Data, _matches: Matches, output: Output) => {
     }
 
     if (stack === undefined && me) {
-      stack = data.p2hm[data.p2count - i - 1]?.find(
-        (v) =>
-          v.buff === '分摊' && v.target !== data.me &&
-          (data.triggerSetConfig.p2一运搭档打法 === 'same'
-            ? (v.role === me!.role)
-            : (v.role !== me!.role)),
+      stack = data.p2hm[data.p2count - i - 1]?.find((v) =>
+        v.buff === '分摊' && v.target !== data.me &&
+        ({ tank: 'tn', healer: 'tn', dps: 'dps' }[v.role] ===
+          { tank: 'tn', healer: 'tn', dps: 'dps' }[me!.role])
       );
     }
     if (me) {
@@ -90,8 +89,12 @@ const getP2 = (data: Data, _matches: Matches, output: Output) => {
     const lr = output[`${roleGimmick.buff}组`]!();
     // 第一轮
     if (data.role === 'tank' || data.role === 'healer') {
-      const inTower = Boolean(me.buff === '分摊' || stack);
       const gimmick = output[me.buff]!();
+      if (data.triggerSetConfig.p2一运搭档打法 === 'free' && me.buff !== '分摊') {
+        data.p2报过了 = true;
+        return output.第1轮TN自由!({ gimmick, lr });
+      }
+      const inTower = Boolean(me.buff === '分摊' || stack);
       data.p2报过了 = true;
       return output[inTower ? '第1轮踩塔TN' : '第1轮闲人TN']!({ gimmick, lr });
     }
@@ -160,7 +163,7 @@ export interface Data extends RaidbossData {
   readonly triggerSetConfig: {
     p1击退加真假火冰打法: '正攻' | 'TN左DPS右';
     p2一运打法: '1238' | '1234' | '1458';
-    p2一运搭档打法: 'same' | 'diff';
+    p2一运搭档打法: 'same' | 'free';
     p2一运1234打法没debuff的闲人怎么决定去哪个塔引导: 'TN左DPS右';
     // p2一运1238打法4567的闲人怎么决定去哪个塔引导: 'TN左DPS右';
   };
@@ -299,8 +302,8 @@ const triggerSet: TriggerSet<Data> = {
       type: 'select',
       options: {
         en: {
-          '同职能（MT找ST、DPS自己看）': 'same',
-          '异职能（MT找H1、DPS自己看）未测试': 'diff',
+          'TH同职能、DPS自己看': 'same',
+          '全都自己看': 'free',
         },
       },
       default: 'same',
@@ -843,7 +846,7 @@ hideall "--sync--"
       id: 'DMU 头标',
       type: 'HeadMarker',
       netRegex: { id: [headMarkerData.stack, headMarkerData.spread] },
-      delaySeconds: (data) => data.phase === 'p1-1a' ? (data.p1IsTether ? 2.75 : 1.25) : 0.5,
+      delaySeconds: (data) => data.phase === 'p1-1a' ? (data.p1IsTether ? 2.1 : 0.9) : 0.5,
       durationSeconds: 6,
       suppressSeconds: 1,
       alertText: (data, matches, output) => {
@@ -1492,8 +1495,8 @@ hideall "--sync--"
         水分摊: { en: '水分摊' },
         背对眼: { en: '背对' },
         面对眼: { en: '面对' },
-        停手: { en: '停手' },
-        移动: { en: '移动' },
+        停手: { en: '静剑' },
+        移动: { en: '动剑' },
         钢铁: { en: '放钢铁后出去' },
         月环: { en: '放月环等buff' },
       },
@@ -1541,8 +1544,8 @@ hideall "--sync--"
         水分摊: { en: '水分摊' },
         背对眼: { en: '背对' },
         面对眼: { en: '面对' },
-        停手: { en: '停手' },
-        移动: { en: '移动' },
+        停手: { en: '静剑' },
+        移动: { en: '动剑' },
         钢铁: { en: '放钢铁' },
         月环: { en: '放月环' },
         plus: { en: '+' },
