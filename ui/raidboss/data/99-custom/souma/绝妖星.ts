@@ -256,6 +256,8 @@ const p4buff: {
   '15AC': { name: '混沌之水', true: '月环', false: '钢铁', source: '卡奥斯' },
   '566': { name: '超越死亡', true: '死超', false: '亚拉戈', source: '新生艾克斯迪司' },
   '1C6': { name: '亚拉戈领域', true: '亚拉戈', false: '死超', source: '新生艾克斯迪司' },
+  '1317': { name: '生者之伤', true: '吃蓝', false: '吃紫', source: '新生艾克斯迪司' }, // ?
+  '1318': { name: '死者之伤', true: '吃紫', false: '吃蓝', source: '新生艾克斯迪司' }, // ?
   '15A5': { name: '生者之伤', true: '吃蓝', false: '吃紫', source: '新生艾克斯迪司' },
   '15A6': { name: '死者之伤', true: '吃紫', false: '吃蓝', source: '新生艾克斯迪司' },
 };
@@ -1179,7 +1181,7 @@ hideall "--sync--"
     {
       id: 'DMU P2 双腕',
       type: 'StartsUsing',
-      netRegex: { id: 'C24D' },
+      netRegex: { id: 'C24C' },
       response: Responses.sharedTankBuster(),
     },
     {
@@ -1474,10 +1476,12 @@ hideall "--sync--"
         const d = data.p4buffs[data.me]![i];
         const g = d!.time;
         const pre = data.p4buffs[data.me]![i - 1];
-        const diff = Math.abs(pre!.time - g);
-        // 如果这次机制与上一个机制时间小于3秒，则这次机制不报
-        if (diff <= 3)
-          return undefined;
+        if (pre) {
+          const diff = Math.abs(pre.time - g);
+          // 如果这次机制与上一个机制时间小于3秒，则这次机制不报
+          if (diff <= 3)
+            return undefined;
+        }
         const next = data.p4buffs[data.me]![i + 1];
         if (next === undefined) {
           return;
@@ -1614,6 +1618,7 @@ hideall "--sync--"
         data.p4count.新生艾克斯迪司++;
         const tf = data.p4真假['新生艾克斯迪司'][3];
         const me = data.p4buffs[data.me]!.find((v) => v.name === '生者之伤' || v.name === '死者之伤')!;
+        // console.warn('无之泛滥', data.p4buffs[data.me]?.slice(), me);
         const st = data.p4buffs[data.me]!.find((v) => v.name === '超越死亡');
         const eat = (st ? (me.gimmick === '吃蓝' ? '紫' : '蓝') : (me.gimmick === '吃蓝' ? '蓝' : '紫'));
         const see = (matches.id === 'C392' || matches.id === 'C3A1') ? ['紫', '蓝'] : ['蓝', '紫'];
@@ -1624,6 +1629,7 @@ hideall "--sync--"
         const lr = color.findIndex((v) => v === eat) === 0 ? 'left' : 'right';
         // 我们要去哪个"玩家实际看到的颜色"
         const c = see[lr === 'left' ? 0 : 1];
+        // console.warn('无之泛滥', lr, c);
         return output[lr]!({ c: c });
       },
       outputStrings: {
