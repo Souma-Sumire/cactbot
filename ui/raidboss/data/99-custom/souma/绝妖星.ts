@@ -1616,18 +1616,19 @@ hideall "--sync--"
         const me = data.p4buffs[data.me]!.find((v) => v.name === '生者之伤' || v.name === '死者之伤')!;
         const st = data.p4buffs[data.me]!.find((v) => v.name === '超越死亡');
         const eat = (st ? (me.gimmick === '吃蓝' ? '紫' : '蓝') : (me.gimmick === '吃蓝' ? '蓝' : '紫'));
-        const color = (matches.id === 'C392' || matches.id === 'C3A1') ? ['紫', '蓝'] : ['蓝', '紫'];
+        const see = (matches.id === 'C392' || matches.id === 'C3A1') ? ['紫', '蓝'] : ['蓝', '紫'];
+        const color = see.slice();
         if (tf === false) {
           color.reverse();
         }
-        const lr = color.findIndex((v) => v === eat) === 0 ? '左' : '右';
-        return output[`${lr}${eat}`]!();
+        const lr = color.findIndex((v) => v === eat) === 0 ? 'left' : 'right';
+        // 我们要去哪个"玩家实际看到的颜色"
+        const c = see[lr === 'left' ? 0 : 1];
+        return output[lr]!({ c: c });
       },
       outputStrings: {
-        '左蓝': '<=左边吃蓝色',
-        '右蓝': '右边吃蓝色=>',
-        '左紫': '<=左边吃紫色',
-        '右紫': '右边吃紫色=>',
+        left: '<=左 踩${c}色',
+        right: '右=> 踩${c}色',
       },
     },
   ],
