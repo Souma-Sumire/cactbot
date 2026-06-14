@@ -94,7 +94,7 @@ const getP2 = (data: Data, _matches: Matches, output: Output) => {
         data.p2报过了 = true;
         return output.第1轮TN自由!({ gimmick, lr });
       }
-      const inTower = Boolean(me.buff === '分摊' || stack);
+      const inTower = Boolean(me.buff === '分摊' || (stack && stack.role === data.role));
       data.p2报过了 = true;
       return output[inTower ? '第1轮踩塔TN' : '第1轮闲人TN']!({ gimmick, lr });
     }
@@ -192,6 +192,12 @@ export interface Data extends RaidbossData {
   p2第一轮踩塔人: string[];
   p2BuffCount: { [key: string]: number };
   p2报过了: boolean;
+  p3buffs: { [key: string]: { name: string; duration: number }[] };
+  p3jjcjb: {
+    c1: number;
+    c2: number;
+    clk: '顺' | '逆';
+  } | undefined;
   p4真假: {
     '新生艾克斯迪司': boolean[];
     '卡奥斯': boolean[];
@@ -245,6 +251,26 @@ const arrowBuffs = {
   '130F': '左',
 };
 type P3Boss = '卡奥斯' | '新生艾克斯迪司';
+const p3buff: {
+  [key: string]: { name: string };
+} = {
+  '640': { name: '混沌之炎' },
+  '641': { name: '混沌之水' },
+  '642': { name: '混沌之风' },
+  '643': { name: '混沌之逆风' },
+};
+const p3mj: {
+  [key: string]: number;
+} = {
+  '0150': 1,
+  '0151': 2,
+  '0152': 3,
+  '0153': 4,
+  '01B5': 5,
+  '01B6': 6,
+  '01B7': 7,
+  '01B8': 8,
+};
 const p4buff: {
   [key: string]: { name: string; true: string; false: string; source: P3Boss };
 } = {
@@ -254,11 +280,16 @@ const p4buff: {
   '15AA': { name: '加速度炸弹', true: '停手', false: '移动', source: '新生艾克斯迪司' },
   '15AB': { name: '混沌之炎', true: '钢铁', false: '月环', source: '卡奥斯' },
   '15AC': { name: '混沌之水', true: '月环', false: '钢铁', source: '卡奥斯' },
+  // ?为什么有2个ID
+  '1558': { name: '超越死亡', true: '死超', false: '亚拉戈', source: '新生艾克斯迪司' },
   '566': { name: '超越死亡', true: '死超', false: '亚拉戈', source: '新生艾克斯迪司' },
+  // ?为什么亚拉戈就1个ID
   '1C6': { name: '亚拉戈领域', true: '亚拉戈', false: '死超', source: '新生艾克斯迪司' },
-  '1317': { name: '生者之伤', true: '吃蓝', false: '吃紫', source: '新生艾克斯迪司' }, // ?
-  '1318': { name: '死者之伤', true: '吃紫', false: '吃蓝', source: '新生艾克斯迪司' }, // ?
+  // ?为什么有2个ID
+  '1317': { name: '生者之伤', true: '吃蓝', false: '吃紫', source: '新生艾克斯迪司' },
   '15A5': { name: '生者之伤', true: '吃蓝', false: '吃紫', source: '新生艾克斯迪司' },
+  // ?为什么有2个ID
+  '1318': { name: '死者之伤', true: '吃紫', false: '吃蓝', source: '新生艾克斯迪司' },
   '15A6': { name: '死者之伤', true: '吃紫', false: '吃蓝', source: '新生艾克斯迪司' },
 };
 
@@ -339,6 +370,7 @@ const triggerSet: TriggerSet<Data> = {
     //   default: 'TN左DPS右',
     // },
   ],
+  overrideTimelineFile: true,
   timeline: `
 hideall "--Reset--"
 hideall "--sync--"
@@ -347,303 +379,168 @@ hideall "--sync--"
 
 0.0 "--sync--" InCombat { inGameCombat: "1" } window 0,1
 
-### Phase 1 - Kefka
-# TODO: Add voiceline sync?
-# en (auto-translate): 'This is my first time, so please take it easy!'
-10.6 "--sync--" StartsUsing { id: "C403" } window 20,10
-15.6 "Revolting Ruin III 1" Ability { id: "C403" }
-18.7 "Revolting Ruin III 2" Ability { id: "C4E1" }
-24.8 "--middle--" Ability { id: "C3FD" }
+# P1
+15.2 "恶狠狠毁荡 1",
+18.3 "恶狠狠毁荡 2",
+37.9 "呼啦啦爆炎",
+42.1 "波动炮",
+45.9 "爆炸",
+49.4 "连环环陷阱",
+62.4 "制裁之光",
+65.6 "超驱动 1",
+67.7 "超驱动 2",
+69.8 "超驱动 3",
+87.2 "重力弹",
+91.2 "岩石弹",
+97.1 "恶狠狠毁荡",
+100.2 "恶狠狠毁荡",
+105.7 "重力弹",
+109.7 "岩石弹",
+118 "连环环陷阱",
+120.7 "强重力",
+123.6 "强重力",
+132.2 "制裁之光",
+135.4 "超驱动 1",
+137.5 "超驱动 2",
+139.6 "超驱动 3",
+159.3 "唰啦啦传送 1",
+162.2 "唰啦啦传送 2",
+167.7 "连环环陷阱",
+173.3 "睡魔的神气",
+173.4 "圣母的神气",
+186.4 "圣母颂",
+187 "呼啦啦爆炎",
 
-29.2 "Graven Image 1" Ability { id: "BCF2" }
-35.1 "Pulse Wave" Ability { id: "BAA9" }
-37.4 "Mystery Magic" Ability { id: "BA94" }
-37.4 "Blizzard III Blowout" #Ability { id: ["BA9B", "BA98"] }
-38.3 "Flagrant Fire III" Ability { id: ["BAA2", "BAA3"] }
-42.5 "Wave Cannon" Ability { id: "BAA8" }
-44.6 "Double-trouble Trap 1" Ability { id: "BAA6" }
-46.0 "Explosion" Ability { id: "BAAA" }
-49.6 "--knockback--" # From Double-trouble Trap 1
-49.7 "Double-trouble Trap 2" Ability { id: "BAA7" }
-53.7 "Mystery Magic" Ability { id: "BA94" }
-53.7 "Thrumming Thunder III" #Ability { id: ["BAA1", "BA9F"] }
-53.7 "Blizzard III Blowout" #Ability { id: ["BA9B", "BA98"] }
-62.7 "Light of Judgment" Ability { id: "C622" }
-65.8 "Hyperdrive 1" #Ability { id: "C24B" }
-67.8 "Hyperdrive 2" #Ability { id: "C24B" }
-69.8 "Hyperdrive 3" #Ability { id: "C24B" }
-75.6 "--middle--" Ability { id: "C3FD" }
+# P2
+220.1 "终末双腕",
+235.3 "遗弃末世",
+248.5 "光之波动",
+249.2 "咏唱危机",
+258.1 "过去/未来终结",
+258.6 "光之波动",
+259.2 "咏唱危机",
+269.6 "光之波动",
+270.2 "咏唱危机",
+279.2 "过去/未来终结",
+279.7 "光之波动",
+280.2 "咏唱危机",
+290.6 "光之波动",
+291.3 "咏唱危机",
+300.4 "过去/未来终结",
+300.7 "光之波动",
+301.2 "咏唱危机",
+311.6 "光之波动",
+312.3 "咏唱危机",
+321.5 "过去/未来终结",
+321.7 "光之波动",
+322.3 "咏唱危机",
+342.1 "制裁之光",
+370.7 "破坏之翼",
+377.8 "终末双腕",
 
-80.0 "Graven Image 2" Ability { id: "BCF2" } window 10,10
-87.1 "Blizzard III Blowout" #Ability { id: ["BA9B", "BA98"] }
-87.2 "Gravitas" Ability { id: "BAAC" }
-91.2 "Vitrophyre" Ability { id: "BAB0" }
-97.1 "Revolting Ruin III 1" Ability { id: "C403" }
-100.2 "Revolting Ruin III 2" Ability { id: "C4E1" }
-101.1 "Intemperate Will/Gravitational Wave" Ability { id: ["BAB2", "BAB1"] }
-105.8 "Gravitas" Ability { id: "BAAC" }
-109.8 "Vitrophyre" Ability { id: "BAB0" }
-114.4 "Intemperate Will/Gravitational Wave" Ability { id: ["BAB2", "BAB1"] }
-117.0 "Gravity III (Pop Window)" #Ability { id: "BAAF" } duration 6 # ~1s remaining on debuff and until 45s on next
-118.0 "--knockback--" # From Double-trouble Trap 2
-118.1 "Double-Trouble Trap 3" Ability { id: "BAA7" } # NOTE: If it was passed after first set.
-132.4 "Light of Judgment" Ability { id: "C622" }
-135.6 "Hyperdrive 1" #Ability { id: "C24B" }
-137.7 "Hyperdrive 2" #Ability { id: "C24B" }
-139.7 "Hyperdrive 3" #Ability { id: "C24B" }
-151.5 "Tele-trouncing (castbar)" Ability { id: "BAB9" }
-159.4 "Tele-trouncing 1" Ability { id: "BABA" }
-162.4 "Tele-trouncing 2" Ability { id: "BABA" }
+# P3
+450.5 "深层痛楚",
+469.6 "混沌之炎",
+479.1 "暴雷 1",
+482.1 "暴雷 2",
+497.6 "海啸",
+507.9 "究极冲击波 x3",
+512.1 "本影爆碎",
+513.9 "究极冲击波 x3",
+519 "龙卷风",
+519.9 "究极冲击波 x4",
+537.6 "暴雷 1",
+540.7 "暴雷 2",
+554.8 "暴雷 1",
+557.8 "暴雷 2",
+567.4 "地震 1",
+571.9 "地震 2",
+578.6 "重冲击",
+585.9 "无之波动",
+593 "无之波动",
+596.3 "暴雷 1",
+599.3 "暴雷 2",
+609 "冲击波",
+616.5 "无之波动",
+618.1 "地震",
+621.5 "无之波动",
+623.2 "地震",
+626.7 "无之波动",
+628.3 "地震",
+637.6 "暴雷",
+640.6 "暴雷",
+650.8 "无之波动",
+652.5 "地震",
+655.9 "无之波动",
+657.5 "地震",
+660.9 "无之波动",
+662.5 "地震",
+672 "白洞",
+677.1 "重冲击",
+684.3 "无之波动",
+685.9 "地震",
+691.3 "无之波动",
+692.9 "地震",
+705.8 "轰击",
+706.1 "轰隆隆跺脚",
+707.5 "轰隆隆跺脚",
+708.7 "轰隆隆跺脚",
+710 "轰隆隆跺脚",
+711.4 "轰击",
 
-163.6 "Graven Image 3" Ability { id: "BCF2" } window 10,10
-168.7 "--sync--" Ability { id: "C554" }
-170.6 "--knockback--" # From Double-trouble Trap 3
-173.4 "Indulgent Will" Ability { id: "BAB5" }
-173.4 "Idyllic Will" #Ability { id: "BAB6" }
-177.7 "--sync--" Ability { id: "C555" }
-179.7 "--middle--" Ability { id: "C3FD" }
-186.3 "Mystery Magic" Ability { id: "BA94" }
-186.3 "Thrumming Thunder III" #Ability { id: ["BAA1", "BA9F"] }
-186.3 "Indolent Will/Ave Maria" #Ability { id: ["BAB4", "BAB3"] }
-187.1 "Flagrant Fire III" Ability { id: ["BAA2", "BAA3"] }
-202.5 "Light of Judgment (Enrage)?" Ability { id: "BABB" } # Kefka >15% HP
+# P4
+755.5 "大十字",
+760.7 "烈焰",
+770.5 "大十字",
+775.6 "海啸",
+785.5 "大十字",
+798.1 "死者暗黑光",
+798.2 "生者暗黑光",
+801.9 "死亡波涛",
+806.6 "死亡波纹",
+806.7 "死亡落雷",
+815.7 "死亡尖叫",
+824.6 "扑腾腾究极",
+831.6 "死亡落雷",
+831.7 "死亡波纹",
+839.6 "死亡尖叫",
+863.6 "扑腾腾究极",
 
-### Phase 2 - God Kefka
-# TODO: Update with network log, this uses FFLOGS
-# TODO: Get fake ending route?
-# TODO: Add voiceline sync / branch to complete?
-# Complete Path:
-# en: 'Yes... I am filled with glorious purpose!'
-# Duty Complete Path:
-# en: 'How boring. Guess I'll have to spice things up!'
-216.5 "Ultimate Embrace" Ability { id: "C24C" } window 220,5
-231.7 "Forsaken" Ability { id: "BABC" }
+# P5
+902.8 "连续究极 x2",
+907.7 "魔击 x3",
+910.9 "魔击",
+914 "魔击",
+920.3 "混沌洪水 x4",
+933.3 "神圣",
+933.3 "核爆",
+936.5 "混沌核爆",
+936.6 "神圣",
+940 "混沌神圣",
+940 "核爆扩散",
+944.6 "魔击 x2",
+963.3 "三星",
+969.3 "三星",
+975.4 "三星",
+984.8 "连续究极 x2",
+989.7 "魔击 x2",
+1016.3 "混沌涡旋",
+1025.4 "神圣",
+1025.4 "核爆",
+1028.6 "混沌核爆",
+1028.7 "神圣",
+1032.1 "核爆扩散",
+1032.1 "混沌神圣",
+1036.7 "魔击 x3",
+1054.3 "遗弃末世",
+1059.4 "遗弃末狱",
+1062.5 "遗弃末世",
+1067.5 "遗弃末狱",
+1070.6 "遗弃末世",
+1075.7 "遗弃末狱",
+1078.7 "遗弃末世",
+1083.8 "遗弃末狱",
 
-# Set 1
-# NOTE: The BAC0 Spelldriver, BAC2 Spellwave, BAC0 Spellscatter can be resolved in different orders
-244.9 "The Path of Light 1" Ability { id: "BABE" }
-245.6 "Spelldriver/Spellscatter/Spellwave" Ability { id: ["BAC0", "BAC1", "BAC2"] }
-254.3 "Future's End/Past's End 1" Ability { id: ["BAD2", "BAD3"] }
-255.0 "The Path of Light 2" Ability { id: "BABE" }
-255.7 "Spelldriver/Spellscatter/Spellwave" Ability { id: ["BAC0", "BAC1", "BAC2"] }
-265.7 "All Things Ending" #Ability { id: ["BACD", "BADC", "BADD"] }
-
-# Set 2
-265.9 "The Path of Light 3" Ability { id: "BABE" }
-266.4 "Spelldriver/Spellscatter/Spellwave" Ability { id: ["BAC0", "BAC1", "BAC2"] }
-275.4 "Future's End/Past's End 2" Ability { id: ["BAD2", "BAD3"] }
-275.8 "The Path of Light 4" Ability { id: "BABE" }
-276.5 "Spelldriver/Spellscatter/Spellwave" Ability { id: ["BAC0", "BAC1", "BAC2"] }
-286.7 "All Things Ending" #Ability { id: ["BACD", "BADD"] }
-
-# Set 3
-286.7 "The Path of Light 5" Ability { id: "BABE" }
-287.1 "Spelldriver/Spellscatter/Spellwave" Ability { id: ["BAC0", "BAC1", "BAC2"] }
-296.1 "Future's End/Past's End 3" Ability { id: ["BAD2", "BAD3"] }
-296.4 "The Path of Light 6" Ability { id: "BABE" }
-297.1 "Spelldriver/Spellscatter/Spellwave" Ability { id: ["BAC0", "BAC1", "BAC2"] }
-307.5 "All Things Ending" #Ability { id: ["BACD", "BADC", "BADD"] }
-
-# Set 4
-307.5 "The Path of Light 7" Ability { id: "BABE" }
-308.0 "Spelldriver/Spellscatter/Spellwave" Ability { id: ["BAC0", "BAC1", "BAC2"] }
-317.0 "Future's End/Past's End 4" Ability { id: ["BAD2", "BAD3"] }
-317.4 "The Path of Light 8" Ability { id: "BABE" }
-318.1 "Spelldriver/Spellscatter/Spellwave" Ability { id: ["BAC0", "BAC1", "BAC2"] }
-328.3 "All Things Ending" Ability { id: ["BACD", "BADC", "BADD"] }
-
-# Trines
-337.4 "Light of Judgment" Ability { id: "BABD" }
-348.6 "Trine" Ability { id: "BADF" }
-355.7 "Wings of Destruction" Ability { id: "BACD" }
-361.5 "Trine 1" #Ability { id: "BAE0" }
-363.5 "Trine 2" #Ability { id: "BAE0" }
-365.5 "Trine 3" #Ability { id: "BAE0" }
-365.9 "Wings of Destruction" Ability { id: "C487" }
-365.9 "Wings of Destruction" #Ability { id: "BACF" }
-372.9 "Ultimate Embrace" Ability { id: "C24C" }
-
-376.2 "--sync--" StartsUsing { id: "BAE1" } jump "p2-enrage"
-379.3 "--sync--" StartsUsing { id: "C3F7" } jump "p2-success"
-381.2 "Light of Judgment (Enrage)?" #Ability { id: "BAE1" } # Kefka > 0% HP
-382.3 "Aero III Assault?" Ability { id: "C3F7" } forcejump "p2-success"
-
-# TODO: Earlier sync on jump middle
-497.0 label "p2-success"
-500.0 "Aero III Assault" Ability { id: "C3F7" } window 500,20
-
-### Phase 3 - Chaos and Exdeath
-# TODO: Cleanup p3 as there are multiple sequences that could happen
-# TODO: Update with network log
-# TODO: Add voiceline sync?
-# en: 'Hmph. I see what's going on here.'
-537.7 "Definition of Insanity" Ability { id: "BAE2" }
-543.8 "the Decisive Battle" Ability { id: "C2E3" }
-543.8 "the Decisive Battle" #Ability { id: "C2E2" }
-548.0 "--sync--" Ability { id: "C554" }
-
-# Fire, Water, and Wind Elements
-563.1 "Bowels of Agony" Ability { id: "BAF2" }
-582.1 "Stray Spray" Ability { id: "BAF6" }
-582.1 "Thunder III" #Ability { id: "BB12" }
-583.1 "Tsunami" Ability { id: "BAF5" }
-584.9 "Cyclone" Ability { id: "BAF8" }
-591.3 "Thunder III" Ability { id: "BB09" }
-591.3 "Thunder III" #Ability { id: "BB0C" }
-594.3 "Thunder III" #Ability { id: "BB0C" }
-597.0 "--sync--" Ability { id: "C555" }
-603.0 "Trance" Ability { id: "C2D6" }
-604.2 "Longitudinal Implosion/Latitudinal Implosion" Ability { id: ["BAFD", "BAFE"] }
-605.0 "Shockwave" #Ability { id: "BAFF" }
-607.0 "Shockwave" #Ability { id: "BAFF" }
-609.0 "Stray Flames" Ability { id: "BAF3" }
-610.0 "Inferno" Ability { id: "BAF4" }
-611.7 "Cyclone" Ability { id: "BAF8" }
-
-# Limit Cut Preview
-620.3 "Ultima Blaster" #Ability { id: "BAE3" }
-622.3 "Ultima Blaster" #Ability { id: "BAE3" }
-624.3 "Ultima Blaster" #Ability { id: "BAE3" }
-624.4 "Umbra Smash" Ability { id: "BB00" }
-626.3 "Ultima Blaster" #Ability { id: "BAE3" }
-627.3 "Vacuum Wave" Ability { id: "BB13" }
-628.3 "Ultima Blaster" #Ability { id: "BAE3" }
-630.3 "Ultima Blaster" #Ability { id: "BAE3" }
-631.3 "Cyclone" Ability { id: "BAF8" }
-632.4 "Ultima Blaster" #Ability { id: "BAE3" }
-632.7 "Aetherlink" #Ability { id: "C2E5" }
-632.7 "Aetherlink" #Ability { id: "C2E4" }
-
-# Limit Cut
-634.4 "Ultima Blaster" #Ability { id: "BAE3" }
-642.4 "Ultima Blaster 1" #Ability { id: "BAE4" }
-642.6 "Ultima Blaster 2" #Ability { id: "BAE4" }
-642.8 "Ultima Blaster 3" #Ability { id: "BAE4" }
-643.0 "Ultima Blaster 4" #Ability { id: "BAE4" }
-643.2 "Ultima Blaster 5" #Ability { id: "BAE4" }
-643.4 "Ultima Blaster 6" #Ability { id: "BAE4" }
-643.6 "Ultima Blaster 7" #Ability { id: "BAE4" }
-643.8 "Ultima Blaster 8" #Ability { id: "BAE4" }
-649.7 "Thunder III" Ability { id: "BB09" }
-649.7 "Thunder III" #Ability { id: "BB0C" }
-652.7 "Thunder III" #Ability { id: "BB0C" }
-657.7 "the Decisive Battle" Ability { id: "C2E3" }
-657.7 "the Decisive Battle" #Ability { id: "C2E2" }
-666.8 "Thunder III" Ability { id: "BB09" }
-666.8 "Thunder III" #Ability { id: "BB0C" }
-
-# Giant Kefka + Earth Element
-668.6 "Max" Ability { id: "BAE5" }
-669.8 "Thunder III" #Ability { id: "BB0C" }
-671.8 "Earthquake" Ability { id: "C571" }
-671.8 "Earthquake" #Ability { id: "C572" }
-680.5 "Earthquake" Ability { id: "BAFA" }
-684.1 "Earthquake" Ability { id: "BAFA" }
-687.4 "Slap Happy" Ability { id: "BAE7" }
-688.2 "Slap Happy" #Ability { id: "BAE8" }
-688.9 "Slap Happy" #Ability { id: "BAE8" }
-689.7 "Slap Happy" #Ability { id: "BAE8" }
-690.9 "Slap Happy" Ability { id: "BAE9" }
-690.9 "Shockwave" #Ability { id: "BAEB" }
-
-691.2 "Black Hole" Ability { id: "BAFB" }
-698.3 "Nothingness" Ability { id: "BAFC" }
-698.3 "Aetherlink" #Ability { id: "C2E5" }
-698.3 "Aetherlink" #Ability { id: "C2E4" }
-705.3 "Nothingness" Ability { id: "BAFC" }
-708.4 "Thunder III" Ability { id: "BB09" }
-708.4 "Thunder III" #Ability { id: "BB0C" }
-711.4 "Thunder III" #Ability { id: "BB0C" }
-712.7 "Earthquake" Ability { id: "BAFA" }
-716.5 "Damning Edict" Ability { id: "BB01" }
-717.7 "Slap Happy" Ability { id: "BAE7" }
-718.5 "Slap Happy" #Ability { id: "BAE8" }
-719.2 "Slap Happy" #Ability { id: "BAE8" }
-720.0 "Slap Happy" #Ability { id: "BAE8" }
-721.2 "Slap Happy" Ability { id: "BAE9" }
-721.2 "Shockwave" #Ability { id: "BAEB" }
-724.6 "Black Spark" Ability { id: "BCCD" }
-728.6 "Nothingness" Ability { id: "BAFC" }
-730.2 "Earthquake" Ability { id: "BAFA" }
-733.8 "Nothingness" #Ability { id: "BAFC" }
-733.8 "Nothingness" #Ability { id: "BAFC" }
-735.4 "Earthquake" Ability { id: "BAFA" }
-739.0 "Nothingness" Ability { id: "BAFC" }
-744.0 "Damning Edict" Ability { id: "BB01" }
-744.4 "Look upon Me and Despair" Ability { id: "BAEC" }
-745.4 "Look upon Me and Despair" Ability { id: "BAEE" }
-747.5 "Blackblood" Ability { id: "C4BA" }
-747.5 "Earthquake" Ability { id: "BAFA" }
-749.7 "Thunder III" Ability { id: "BB09" }
-749.7 "Thunder III" #Ability { id: "BB0C" }
-752.7 "Thunder III" #Ability { id: "BB0C" }
-762.8 "Nothingness" #Ability { id: "BAFC" }
-762.8 "Nothingness" #Ability { id: "BAFC" }
-764.4 "Earthquake" Ability { id: "BAFA" }
-765.0 "Aetherlink" Ability { id: "C2E5" }
-765.0 "Aetherlink" #Ability { id: "C2E4" }
-768.0 "Nothingness" #Ability { id: "BAFC" }
-768.0 "Nothingness" #Ability { id: "BAFC" }
-769.6 "Earthquake" Ability { id: "BAFA" }
-773.2 "Nothingness" #Ability { id: "BAFC" }
-773.2 "Nothingness" #Ability { id: "BAFC" }
-
-784.2 "White Hole" Ability { id: "BD66" }
-784.2 "Longitudinal Implosion/Latitudinal Implosion" Ability { id: ["BAFD", "BAFE"] }
-785.0 "Shockwave" #Ability { id: "BAFF" }
-785.9 "Slap Happy" Ability { id: "BAE6" }
-786.8 "Slap Happy" #Ability { id: "BAE8" }
-787.2 "Shockwave" #Ability { id: "BAFF" }
-787.4 "Slap Happy" #Ability { id: "BAE8" }
-788.1 "Slap Happy" #Ability { id: "BAE8" }
-789.3 "Slap Happy" Ability { id: "BAE9" }
-789.3 "Shocking Impact" Ability { id: "BAEA" }
-792.5 "Black Spark" Ability { id: "BCCD" }
-796.5 "Nothingness" #Ability { id: "BAFC" }
-796.5 "Nothingness" #Ability { id: "BAFC" }
-802.2 "Look upon Me and Despair" Ability { id: "BAED" }
-803.2 "Look upon Me and Despair" Ability { id: "BAEE" }
-803.5 "Nothingness" #Ability { id: "BAFC" }
-
-# Blizzards and Towers
-# Summary:
-# 1. Bait 2 Puddles
-# 2. Role 1 4-Stack
-# 3. Role 2 2-NW Towers
-# 4. Role 2 2-NE Towers
-# 5. Role 1 2-NW Towers
-# 6. Role 1 2-NE Towers
-# 7. Role 2 4-Stack
-# 8. Deep Freeze (Blizzard)
-805.3 "--sync--" Ability { id: "C533" }
-812.4 "Blizzard III (castbar)" Ability { id: "BB0F" }
-814.3 "Earthquake?" #Ability { id: "BAFA" }
-815.4 "Blizzard III 1" Ability { id: "BB0D" }
-816.3 "Stomp-a-Mole (castbar)" Ability { id: "BAEF" } # Possibly determines which foot he starts with and/or its based on facing?
-817.9 "Knock Down 1" Ability { id: "BB02" }
-818.0 "Stomp-a-Mole 1" Ability { id: "BAF0" }
-818.4 "Blizzard III 2" Ability { id: "BB0D" }
-819.3 "Stomp-a-Mole 2" Ability { id: "BAF0" }
-820.6 "Stomp-a-Mole 3" Ability { id: "BAF0" }
-821.9 "Stomp-a-Mole 4" Ability { id: "BAF0" }
-823.3 "Knock Down 2" Ability { id: "BB03" }
-826.4 "Blizzard III" Ability { id: "BB11" }
-827.4 "Big Bang" Ability { id: "BB05" }
-827.4 "Big Bang" #Ability { id: "BB06" }
-
-840.8 "--sync--" StartsUsing { id: "C258" } jump "p3-enrage"
-840.8 "--sync--" StartsUsing { id: "C259" } jump "p3-enrage"
-845.8 "Meteor (Enrage)?" Ability { id: "C258" } # Exdeath >0% HP?
-845.8 "Bowels of Agony (Enrage)?" Ability { id: "C259" } # Chaos >0% HP?
-
-# Phase 2 Enrage Sequence
-10376.2 label "p2-enrage"
-10381.2 "Light of Judgment (Enrage)" Ability { id: "BAE1" } # Kefka > 0% HP
-
-# Phase 3 Enrage Sequence
-10840.8 label "p3-enrage"
-10845.8 "Meteor (Enrage)" Ability { id: "C258" } # Exdeath >0% HP?
-10845.8 "Bowels of Agony (Enrage)" Ability { id: "C259" } # Chaos >0% HP?
 `,
   initData: () => {
     return {
@@ -670,6 +567,8 @@ hideall "--sync--"
       p2第一轮踩塔人: [],
       p2BuffCount: {},
       p2报过了: false,
+      p3buffs: {},
+      p3jjcjb: undefined,
       p4真假: {
         '新生艾克斯迪司': [],
         '卡奥斯': [],
@@ -848,7 +747,7 @@ hideall "--sync--"
       id: 'DMU 头标',
       type: 'HeadMarker',
       netRegex: { id: [headMarkerData.stack, headMarkerData.spread] },
-      delaySeconds: (data) => data.phase === 'p1-1a' ? (data.p1IsTether ? 1.65 : 0.7) : 0.5,
+      delaySeconds: (data) => data.phase === 'p1-1a' ? (data.p1IsTether ? 1.65 : 0.5) : 0.5,
       durationSeconds: 6,
       suppressSeconds: 1,
       alertText: (data, matches, output) => {
@@ -869,7 +768,7 @@ hideall "--sync--"
       },
       outputStrings: {
         stack: { en: '分摊' },
-        spread: { en: '散开！' },
+        spread: { en: '散开散开！' },
         假雷分摊: { en: '危险区+分摊' },
         真雷分摊: { en: '安全区+分摊' },
         假雷分散: { en: '危险区+散开' },
@@ -998,7 +897,7 @@ hideall "--sync--"
       type: 'Tether',
       netRegex: { id: '002D' },
       condition: (data, matches) => data.phase === 'p1-2' && matches.target === data.me,
-      durationSeconds: 6,
+      durationSeconds: 7,
       promise: async (data, matches) => {
         data.combatantData = [];
         data.combatantData = (await callOverlayHandler({
@@ -1133,7 +1032,7 @@ hideall "--sync--"
       netRegex: { category: '019D', param1: '40', param2: '80', capture: true },
       condition: (data, matches) => data.fakeEyeTowerIds.includes(matches.id),
       durationSeconds: 10,
-      countdownSeconds: 3.4, // Estimated time debuff would expire
+      countdownSeconds: 10,
       alarmText: (_data, _matches, output) => output.lookAt!(),
       outputStrings: {
         lookAt: {
@@ -1149,7 +1048,7 @@ hideall "--sync--"
       netRegex: { category: '019D', param1: '40', param2: '80', capture: true },
       condition: (data, matches) => data.eyeTowerIds.includes(matches.id),
       durationSeconds: 10,
-      countdownSeconds: 3.4, // Estimated time debuff would expire
+      countdownSeconds: 10,
       alarmText: (_data, _matches, output) => output.lookAway!(),
       outputStrings: {
         lookAway: {
@@ -1388,6 +1287,93 @@ hideall "--sync--"
       response: Responses.getUnder('alert'),
     },
     {
+      id: 'DMU P3 debuff',
+      type: 'StartsUsing',
+      netRegex: { id: ['C2E2', 'C2E3'] },
+      suppressSeconds: 1,
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: '获取防火墙',
+      },
+    },
+    {
+      id: 'DMU P3 深层痛楚',
+      type: 'StartsUsing',
+      netRegex: { id: 'BAF2' },
+      response: Responses.aoe(),
+    },
+    {
+      id: 'DMU P3-1 debuff',
+      type: 'GainsEffect',
+      netRegex: {
+        effectId: Object.keys(p3buff),
+      },
+      preRun: (data, matches) => {
+        data.p3buffs[matches.target] ??= [];
+        data.p3buffs[matches.target]!.push({
+          name: p3buff[matches.effectId]!.name,
+          duration: parseFloat(matches.duration),
+        });
+      },
+    },
+    {
+      id: 'DMU P3-1 debuff 风',
+      type: 'GainsEffect',
+      netRegex: {
+        effectId: ['642', '643'],
+      },
+      condition: (data, matches) => {
+        return data.phase === 'p3' && matches.target === data.me;
+      },
+      delaySeconds: 68 - 10,
+      durationSeconds: 10,
+      suppressSeconds: 300,
+      countdownSeconds: 7,
+      response: (_data, matches, output) => {
+        // console.warn(_data.me, matches.effect, matches.effectId);
+        // return {};
+        return {
+          [matches.id === '643' ? 'infoText' : 'alertText']: output[matches.effectId]!(),
+        };
+      },
+      outputStrings: {
+        '643': '面向艾克斯迪斯',
+        '642': '背对BOSS',
+      },
+    },
+    {
+      id: 'DMU P3-1 debuff 水火',
+      type: 'GainsEffect',
+      netRegex: {
+        effectId: ['640', '641'],
+      },
+      condition: (data, matches) => {
+        // console.warn(data.phase);
+        return data.phase === 'p3' && matches.target === data.me;
+      },
+      delaySeconds: 0.5,
+      durationSeconds: (_data, matches) => {
+        return parseFloat(matches.duration);
+      },
+      suppressSeconds: 200,
+      countdownSeconds: (_data, matches) => {
+        return parseFloat(matches.duration);
+      },
+      infoText: (_data, matches, output) => {
+        return output[
+          `${parseFloat(matches.duration) > 60 ? '长' : '短'}${
+            matches.effectId === '640' ? '火' : '水'
+          }`
+        ]!();
+      },
+      outputStrings: {
+        长火: '长火',
+        短火: '短火',
+        长水: '长水',
+        短水: '短水',
+      },
+    },
+    {
       id: 'DMU P3 究极冲击波',
       type: 'AbilityExtra',
       netRegex: { id: 'BAE3' },
@@ -1403,6 +1389,11 @@ hideall "--sync--"
           const start = Directions.outputFrom8DirNum(dir1);
           const clock = (dir2 - dir1 === 1) || (dir2 === 0 && dir1 === 7);
           const clk = clock ? '顺' : '逆';
+          data.p3jjcjb = {
+            c1,
+            c2,
+            clk,
+          };
           return output.text!({
             start: output[start]!(),
             clk: output[clk]!(),
@@ -1411,8 +1402,8 @@ hideall "--sync--"
       },
       outputStrings: {
         text: '${start} ${clk}',
-        顺: '逆',
-        逆: '顺',
+        顺: '逆←',
+        逆: '顺→',
         dirNW: '1',
         dirN: 'A',
         dirNE: '2',
@@ -1423,6 +1414,122 @@ hideall "--sync--"
         dirW: 'D',
         unknown: 'unknown',
       },
+    },
+    {
+      id: 'DMU P3 MJ',
+      type: 'HeadMarker',
+      netRegex: { id: Object.keys(p3mj), capture: true },
+      condition: (data, matches) => data.phase === 'p3' && matches.target === data.me,
+      durationSeconds: 12,
+      infoText: (data, matches, output) => {
+        const n = p3mj[matches.id]!;
+        // 这里的clk没取反，是boss的冲锋顺序，所以下面的判断是!==
+        const { c1, clk } = data.p3jjcjb!;
+        const dir1 = Directions.hdgTo8DirNum(c1);
+        const p = (clk !== '顺' ? +1 : -1);
+        const g = dir1 * 2 + p + (2 * (n - 1)) * p;
+        const r = (g + 16) % 16;
+        const [a1, a2] = [
+          Directions.outputFrom8DirNum(((r - 1 + 16) % 16) / 2),
+          Directions.outputFrom8DirNum(((r + 1) % 16) / 2),
+        ];
+        const r1 = output[a1]!();
+        const r2 = output[a2]!();
+        // console.log(
+        //   `${data.me}:${n}麻,${dir1}${clk}，g=${g},r1=${r1},r2=${r2},去${r1}/${r2}`,
+        // );
+        return output.text!({ n, r1, r2 });
+      },
+      outputStrings: {
+        text: '${n}麻，去 ${r1}${r2}之间',
+        dirNW: '1',
+        dirN: 'A',
+        dirNE: '2',
+        dirE: 'B',
+        dirSE: '3',
+        dirS: 'C',
+        dirSW: '4',
+        dirW: 'D',
+      },
+    },
+    {
+      id: 'DMU P3 暴雷钢铁',
+      type: 'StartsUsing',
+      netRegex: { id: 'BB12', capture: false },
+      condition: (data) => data.phase === 'p3',
+      durationSeconds: 1,
+      infoText: (_data, _matches, output) => {
+        return output.text!();
+      },
+      outputStrings: {
+        text: '远离艾克斯迪斯',
+      },
+    },
+    {
+      id: 'DMU P3 暴雷死刑',
+      type: 'StartsUsing',
+      netRegex: { id: 'BB09', capture: true },
+      condition: (data) => data.phase === 'p3',
+      countdownSeconds: 4.5,
+      response: Responses.tankBuster(),
+    },
+    {
+      id: 'DMU P3 暴雷死刑2',
+      type: 'StartsUsing',
+      netRegex: { id: 'BB09', capture: true },
+      condition: (data) => data.phase === 'p3',
+      delaySeconds: 4.5,
+      countdownSeconds: 3,
+      response: Responses.tankBuster(),
+    },
+    {
+      id: 'DMU P3 纬度聚爆',
+      type: 'StartsUsing',
+      netRegex: { id: 'BAFE', capture: false },
+      condition: (data) => data.phase === 'p3',
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: '去前后' },
+    },
+    {
+      id: 'DMU P3 经度聚爆',
+      type: 'StartsUsing',
+      netRegex: { id: 'BAFD', capture: false },
+      condition: (data) => data.phase === 'p3',
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: '去左右' },
+    },
+    {
+      id: 'DMU P3 闪亮亮耳光BAE6',
+      type: 'StartsUsing',
+      netRegex: { id: 'BAE6', capture: false },
+      condition: (data) => data.phase === 'p3',
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: '右分摊' },
+    },
+    {
+      id: 'DMU P3 闪亮亮耳光BAE7',
+      type: 'StartsUsing',
+      netRegex: { id: 'BAE7', capture: false },
+      condition: (data) => data.phase === 'p3',
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: '左职能刀' },
+    },
+    {
+      id: 'DMU P3 本色出演的你',
+      type: 'StartsUsing',
+      netRegex: { id: ['BAEC', 'BAED'], capture: false },
+      condition: (data) => data.phase === 'p3',
+      suppressSeconds: 1,
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: '去两侧' },
+    },
+    {
+      id: 'DMU P3 诅咒赦令',
+      type: 'StartsUsing',
+      netRegex: { id: 'BB01', capture: false },
+      condition: (data) => data.phase === 'p3',
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: '去背后' },
     },
     {
       id: 'DMU P4 真假大十字',
@@ -1526,6 +1633,7 @@ hideall "--sync--"
                 output[v.gimmick]!()
               ).join(output.join1!()),
             }),
+            tts: null,
           };
         }
         let text = '';
@@ -1541,7 +1649,7 @@ hideall "--sync--"
           }
         });
         text = text.replace(new RegExp(`${output.join5!()}$`), '');
-        return { alarmText: output.text5!({ text }) };
+        return { alarmText: output.text5!({ text }), tts: null };
       },
       outputStrings: {
         雷分散: { en: '雷分散' },
@@ -1609,113 +1717,36 @@ hideall "--sync--"
           'C393',
         ],
       },
-      // C3A1左紫右蓝（猜测）
+      // C3A1左紫右蓝（假的？）（猜的）
       // C3A2左蓝右紫（假的）
-      // C392左紫右蓝
-      // C393左蓝右紫
+      // C392左紫右蓝（真的）
+      // C393左蓝右紫（真的）
       delaySeconds: 0.5,
       alertText: (data, matches, output) => {
         data.p4count.新生艾克斯迪司++;
         const tf = data.p4真假['新生艾克斯迪司'][3];
         const me = data.p4buffs[data.me]!.find((v) => v.name === '生者之伤' || v.name === '死者之伤')!;
-        // console.warn('无之泛滥', data.p4buffs[data.me]?.slice(), me);
-        const st = data.p4buffs[data.me]!.find((v) => v.name === '超越死亡');
-        const eat = (st ? (me.gimmick === '吃蓝' ? '紫' : '蓝') : (me.gimmick === '吃蓝' ? '蓝' : '紫'));
-        const see = (matches.id === 'C392' || matches.id === 'C3A1') ? ['紫', '蓝'] : ['蓝', '紫'];
-        const color = see.slice();
-        if (tf === false) {
-          color.reverse();
+        // me已经处理过真假
+        let eat = me.gimmick === '吃蓝' ? '蓝' : '紫';
+        const st = data.p4buffs[data.me]!.find((v) => v.name === '超越死亡' || v.name === '亚拉戈领域')!;
+        if (st === undefined) {
+          console.warn(data.me, data.p4buffs[data.me]?.slice());
         }
-        const lr = color.findIndex((v) => v === eat) === 0 ? 'left' : 'right';
-        // 我们要去哪个"玩家实际看到的颜色"
-        const c = see[lr === 'left' ? 0 : 1];
-        // console.warn('无之泛滥', lr, c);
-        return output[lr]!({ c: c });
+        if (st.gimmick === '死超')
+          eat = eat === '蓝' ? '紫' : '蓝';
+        if (tf)
+          eat = eat === '蓝' ? '紫' : '蓝';
+
+        const see = (matches.id === 'C392' || matches.id === 'C3A1') ? ['紫', '蓝'] : ['蓝', '紫'];
+        const index = see.findIndex((v) => v === eat);
+        const dir = index === 0 ? 'left' : 'right';
+        return output[dir]!({ c: eat, tf: output[tf ? 'real' : 'fake']!() });
       },
       outputStrings: {
-        left: '<=左 踩${c}色',
-        right: '右=> 踩${c}色',
-      },
-    },
-  ],
-  timelineReplace: [
-    {
-      'locale': 'en',
-      'replaceText': {
-        'Future\'s End/Past\'s End': 'Future/Past\'s End',
-      },
-    },
-    {
-      'locale': 'cn',
-      'replaceText': {
-        'Revolting Ruin III': '恶狠狠毁荡',
-        'Graven Image': '众神之像',
-        'Pulse Wave': '波动冲击',
-        'Mystery Magic': '玄乎乎魔法',
-        'Blizzard III Blowout': '扩大大冰封',
-        'Flagrant Fire III': '呼啦啦爆炎',
-        'Wave Cannon': '波动炮',
-        'Double-trouble Trap': '连环环陷阱',
-        'Explosion': '大引爆',
-        'Thrumming Thunder III': '劈啪啪暴雷',
-        'Light of Judgment': '制裁之光',
-        'Hyperdrive': '超驱动',
-        'Gravitas': '重力弹',
-        'Vitrophyre': '岩石弹',
-        'Intemperate Will': '扑杀的神气',
-        'Gravitational Wave': '重力波',
-        'Double-Trouble Trap': '连环环陷阱',
-        'Gravity III': '强重力',
-        'Tele-trouncing': '唰啦啦传送',
-        'Indulgent Will': '圣母的神气',
-        'Idyllic Will': '睡魔的神气',
-        'Indolent Will': '懒惰的神气',
-        'Ave Maria': '圣母颂',
-        'Ultimate Embrace': '终末双腕',
-        'Forsaken': '遗弃末世',
-        'The Path of Light': '光之波动',
-        'Spelldriver': '咏唱危机·驱动',
-        'Spellwave': '咏唱危机·波动',
-        'Spellscatter': '咏唱危机·散碎',
-        'Future\'s End': '未来终结',
-        'Past\'s End': '过去终结',
-        'All Things Ending': '消灭之脚',
-        'Trine': '异三角',
-        'Wings of Destruction': '破坏之翼',
-        'Aero III Assault': '疼飕飕暴风',
-        'Definition of Insanity': '重构',
-        'the Decisive Battle': '决战',
-        'Bowels of Agony': '深层痛楚',
-        'Thunder III': '暴雷',
-        'Stray Flames': '混沌之炎',
-        'Inferno': '地狱之火炎',
-        'Cyclone': '气旋',
-        'Stray Spray': '混沌之水',
-        'Tsunami': '大海啸',
-        'Trance': '幻化',
-        'Longitudinal Implosion': '经度聚爆',
-        'Shockwave': '震荡波',
-        'Latitudinal Implosion': '纬度聚爆',
-        'Ultima Blaster': '究极冲击波',
-        'Umbra Smash': '本影爆碎',
-        'Vacuum Wave': '真空波',
-        'Aetherlink': '以太连接',
-        'Max': '放大',
-        'Earthquake': '地震',
-        'Slap Happy': '响亮亮耳光',
-        'Black Hole': '黑洞',
-        'Nothingness': '无之波动',
-        'Damning Edict': '诅咒敕令',
-        'Black Spark': '暗黑火花',
-        'Look upon Me and Despair': '本色出演的我',
-        'Blackblood': 'Blackblood',
-        'White Hole': '白洞',
-        'Shocking Impact': '重冲击',
-        'Blizzard III': '冰封',
-        'Stomp-a-Mole': '轰隆隆跺脚',
-        'Knock Down': '轰击',
-        'Big Bang': '顶起',
-        'Meteor': '陨石流星',
+        left: '<=左 吃${tf}${c}色',
+        right: '右=> 吃${tf}${c}色',
+        real: '真的',
+        fake: '假的',
       },
     },
   ],
