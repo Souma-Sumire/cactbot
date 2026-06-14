@@ -6,7 +6,7 @@ import { Directions } from '../../../../../resources/util';
 import { RaidbossData } from '../../../../../types/data';
 import { PluginCombatantState } from '../../../../../types/event';
 import { Matches } from '../../../../../types/net_matches';
-import { Output, TriggerSet } from '../../../../../types/trigger';
+import { NetRegexTrigger, Output, TriggerSet } from '../../../../../types/trigger';
 
 console.log('绝妖星已加载，开发成本原因，默认报的标点为1A2，其他标点需自己改。');
 
@@ -314,6 +314,7 @@ const p4buff: {
 //   ],
 // ];
 
+// 你听说过古法编程吗
 const p3timeline = [
   // { time: 0, text: '黑洞开始' },
   { time: 3326, text: '回中间，“攻击1”接线' },
@@ -1578,20 +1579,14 @@ hideall "--sync--"
       alertText: (_data, _matches, output) => output.text!(),
       outputStrings: { text: '左职能刀' },
     },
-    // {
-    //   id: 'DMU P3 黑洞接线',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'BAFB', capture: false },
-    //   condition: (data) => data.phase === 'p3',
-    //   suppressSeconds: 999,
-    // },
-    ...p3timeline.map((item) => {
+    ...p3timeline.map((item): NetRegexTrigger<Data> => {
       const { time, text } = item;
       return {
         id: `DMU P3 黑洞接线 ${time}`,
         type: 'StartsUsing',
         netRegex: { id: 'BAFB', capture: false },
         condition: (data) => data.phase === 'p3',
+        delaySeconds: time / 1000,
         infoText: (_data, _matches, output) => output.text!(),
         outputStrings: { text: text },
       };
