@@ -1592,7 +1592,7 @@ hideall "--sync--"
         type: 'StartsUsing',
         netRegex: { id: 'BAFB', capture: false },
         condition: (data) => data.phase === 'p3',
-        infoText: (_data, _matches, output) => text,
+        infoText: (_data, _matches, output) => output.text!(),
         outputStrings: { text: text },
       };
     }),
