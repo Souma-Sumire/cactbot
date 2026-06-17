@@ -2110,6 +2110,44 @@ hideall "--sync--"
       },
     },
     {
+      id: 'DMU P4 第二次石化',
+      type: 'StartsUsing',
+      netRegex: { id: 'C5DE' },
+      condition: (data) => data.phase === 'p4' && data.p4魔法储存 !== undefined,
+      delaySeconds: 24,
+      alertText: (data, _matches, output) => {
+        const buffs = Object.entries(data.p4buffs);
+        const eyes: Array<{
+          player: string;
+          gimmick: string;
+          time: number;
+        }> = [];
+        // 只需要背对眼或面对眼的数组
+        buffs.forEach(([k, v]) => {
+          const eye = v.find((p) => p.gimmick === '背对眼' || p.gimmick === '面对眼');
+          if (eye) {
+            eyes.push({
+              player: k,
+              gimmick: eye.gimmick,
+              time: eye.time,
+            });
+          }
+        });
+        // 关键diff
+        eyes.sort((a, b) => b.time - a.time);
+        const isEyes = eyes.find((v, i) => v.player === data.me && i < 2);
+        if (isEyes) {
+          // 石化眼通过个人buff报，这里不管。
+          return;
+        }
+        return output[`人群${eyes[0]!.gimmick}`]!();
+      },
+      outputStrings: {
+        '人群背对眼': { en: '躲石化' },
+        '人群面对眼': { en: '看石化' },
+      },
+    },
+    {
       id: 'DMU P4 扩大大冰封',
       type: 'StartsUsing',
       netRegex: { id: 'BA95' },
