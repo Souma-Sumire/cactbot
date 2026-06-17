@@ -218,9 +218,7 @@ export interface Data extends RaidbossData {
       bossCount: number;
     }[];
   };
-  p4Text: {
-    [key: string]: string;
-  };
+  p4ReportedTimes?: number[];
   p4魔法储存?: {
     假雷: boolean | undefined;
     假冰: boolean | undefined;
@@ -638,7 +636,7 @@ hideall "--sync--"
       },
       p4CastCount: 0,
       p4buffs: {},
-      p4Text: {},
+      p4ReportedTimes: [],
       p1IsTether: false,
       p4魔法储存: undefined,
       p4魔法放出: false,
@@ -1760,59 +1758,119 @@ hideall "--sync--"
       type: 'GainsEffect',
       netRegex: { effectId: Object.keys(p4buff), capture: true },
       condition: (data, matches) => {
-        return data.phase === 'p4' && matches.target === data.me &&
+        return data.phase === 'p4' &&
           !['生者之伤', '死者之伤', '亚拉戈领域', '超越死亡'].includes(p4buff[matches.effectId]!.name);
       },
-      delaySeconds: (data, matches, output) => {
-        const buff = p4buff[matches.effectId]!;
-        const source = buff.source;
-        const sourceTF = data.p4真假[source][data.p4count[source] - 1];
-        // console.warn(
-        //   data.me,
-        //   matches.timestamp,
-        //   source,
-        //   data.p4真假[source][data.p4count[source] - 1],
-        // );
-        const gimmick = buff[sourceTF ? 'true' : 'false'];
-        const { timestamp, target, duration, effectId } = matches;
-        data.p4Text[`${timestamp}|${target}|${duration}|${effectId}`] = output[gimmick]!();
-        return parseFloat(duration) - 6;
+      delaySeconds: (_data, matches) => {
+        return parseFloat(matches.duration) - 5.5;
       },
-      durationSeconds: 6,
-      countdownSeconds: 6,
+      durationSeconds: 5.5,
+      countdownSeconds: 5.5,
       infoText: (data, matches, output) => {
-        const { timestamp, target, duration, effectId } = matches;
-        const i = data.p4buffs[data.me]!.findIndex((v) =>
-          v.name === p4buff[matches.effectId]!.name
-        );
-        const d = data.p4buffs[data.me]![i];
-        const g = d!.time;
-        const pre = data.p4buffs[data.me]![i - 1];
-        if (pre) {
-          const diff = Math.abs(pre.time - g);
-          // 如果这次机制与上一个机制时间小于3秒，则这次机制不报
-          if (diff <= 3)
+        const resolveTime = (new Date(matches.timestamp).getTime() / 1000) +
+          parseFloat(matches.duration);
+        data.p4ReportedTimes ??= [];
+        if (data.p4ReportedTimes.some((t) => Math.abs(t - resolveTime) <= 1)) {
+          return undefined;
+        }
+        data.p4ReportedTimes.push(resolveTime);
+
+        // 遍历data.p4buffs,按照time进行归组，相差在1秒钟之内的归为一组，否则新开一组。
+        const groupedByTime: Record<number, {
+          player: string;
+          name: string;
+          tf: string;
+          gimmick: string;
+          time: number;
+          count: number;
+          bossCount: number;
+        }[]> = {};
+        Object.entries(data.p4buffs).forEach(([player, v]) => {
+          v.forEach((item) => {
+            if (!['生者之伤', '死者之伤', '亚拉戈领域', '超越死亡'].includes(item.name)) {
+              // 寻找相差在1秒钟之内的组
+              const matchKey = Object.keys(groupedByTime).find((key) => {
+                return Math.abs(item.time - parseFloat(key)) <= 1;
+              });
+              if (matchKey !== undefined) {
+                groupedByTime[parseFloat(matchKey)]!.push({
+                  player,
+                  ...item,
+                });
+              } else {
+                groupedByTime[item.time] = [{
+                  player,
+                  ...item,
+                }];
+              }
+            }
+          });
+        });
+
+        // 按照时间顺序排序所有的组
+        const sortedTimes = Object.keys(groupedByTime).map(Number).sort((a, b) => a - b);
+
+        const myGimmickByTime: Record<number, string> = {};
+        sortedTimes.forEach((time) => {
+          const group = groupedByTime[time]!;
+          const myBuffs = group.filter((item) => item.player === data.me);
+          const hasWater = group.some((item) => item.gimmick === '水分摊');
+          if (myBuffs.length > 0) {
+            const gimmickStr = myBuffs.map((item) => output[item.gimmick]!()).join(output.plus!());
+            const onlySword = myBuffs.every((item) =>
+              item.gimmick === '移动' || item.gimmick === '停手'
+            );
+            if (hasWater && onlySword) {
+              myGimmickByTime[time] = gimmickStr + output.plus!() + output['水分摊']!();
+            } else {
+              myGimmickByTime[time] = gimmickStr;
+            }
+          } else {
+            if (hasWater) {
+              myGimmickByTime[time] = output['水分摊']!();
+            }
+          }
+        });
+
+        const gTime = sortedTimes.find((t) => Math.abs(t - resolveTime) <= 1);
+        if (gTime === undefined) {
+          return undefined;
+        }
+
+        const currentGimmick = myGimmickByTime[gTime];
+        if (currentGimmick === undefined) {
+          return undefined;
+        }
+
+        // 检查上一个自己需要做的机制时间
+        const idx = sortedTimes.indexOf(gTime);
+        let preTime: number | undefined;
+        for (let j = idx - 1; j >= 0; j--) {
+          const t = sortedTimes[j]!;
+          if (myGimmickByTime[t] !== undefined) {
+            preTime = t;
+            break;
+          }
+        }
+
+        if (preTime !== undefined) {
+          const diff = Math.abs(preTime - gTime);
+          // 如果这次机制与上一个自己有提示的机制时间相差小于等于3秒，则这次不报
+          if (diff <= 3) {
             return undefined;
+          }
         }
-        const next = data.p4buffs[data.me]![i + 1];
-        if (next === undefined) {
-          return;
-        }
-        const nextDiff = Math.abs(next.time - g);
-        // 如果这次机制与下一个机制小于1秒，则一起报下一个机制
-        if (nextDiff <= 1) {
-          return output[d!.gimmick]!() + output.plus!() + output[next.gimmick]!();
-        }
-        return data.p4Text[`${timestamp}|${target}|${duration}|${effectId}`];
+
+        return currentGimmick;
       },
       outputStrings: {
-        plus: { en: ' + ' },
+        plus: { en: '+' },
         雷分散: { en: '雷分散' },
         水分摊: { en: '水分摊' },
         背对眼: { en: '出去背对' },
-        面对眼: { en: '靠近面对' },
-        停手: { en: '静剑' },
-        移动: { en: '动剑' },
+        面对眼: { en: '脚底互看' },
+        停手: { en: '静' },
+        移动: { en: '动' },
         钢铁: { en: '放钢铁后出去' },
         月环: { en: '放月环等buff' },
       },
@@ -1841,31 +1899,67 @@ hideall "--sync--"
             tts: null,
           };
         }
-        let text = '';
-        const b = data.p4buffs[data.me]!.filter((v) =>
-          !['生者之伤', '死者之伤', '亚拉戈领域', '超越死亡'].includes(v.name)
-        );
+        // 遍历data.p4buffs,按照time进行归组，相差在1秒钟之内的归为一组，否则新开一组。
+        const groupedByTime: Record<number, {
+          player: string;
+          name: string;
+          tf: string;
+          gimmick: string;
+          time: number;
+          count: number;
+          bossCount: number;
+        }[]> = {};
+        Object.entries(data.p4buffs).forEach(([player, v]) => {
+          v.forEach((item) => {
+            if (!['生者之伤', '死者之伤', '亚拉戈领域', '超越死亡'].includes(item.name)) {
+              // 寻找相差在1秒钟之内的组
+              const matchKey = Object.keys(groupedByTime).find((key) => {
+                return Math.abs(item.time - parseFloat(key)) <= 1;
+              });
+              if (matchKey !== undefined) {
+                groupedByTime[parseFloat(matchKey)]!.push({
+                  player,
+                  ...item,
+                });
+              } else {
+                groupedByTime[item.time] = [{
+                  player,
+                  ...item,
+                }];
+              }
+            }
+          });
+        });
 
-        // 遍历data.p4buffs,按照count进行归组
-        const groupedByCount = b.reduce((acc, v) => {
-          if (!acc[v.count]) {
-            acc[v.count] = [];
-          }
-          acc[v.count]!.push(v);
-          return acc;
-        }, {} as Record<number, Array<{ time: number; gimmick: string }>>);
+        // 按照时间顺序排序所有的组
+        const sortedTimes = Object.keys(groupedByTime).map(Number).sort((a, b) => a - b);
 
-        console.log(groupedByCount);
-
-        b.map((v, i) => {
-          text += output[v.gimmick]!();
-          if ((Math.abs((b[i + 1]?.time ?? 0) - v.time)) <= 1) {
-            text += output.plus!();
+        const myGimmicks: string[] = [];
+        sortedTimes.forEach((time) => {
+          const group = groupedByTime[time]!;
+          // 找到当前玩家在此机制组中的buff
+          const myBuffs = group.filter((item) => item.player === data.me);
+          const hasWater = group.some((item) => item.gimmick === '水分摊');
+          if (myBuffs.length > 0) {
+            // 如果玩家自己有buff，播报自己的buff（有多个则用 plus (+) 连接）
+            const gimmickStr = myBuffs.map((item) => output[item.gimmick]!()).join(output.plus!());
+            const onlySword = myBuffs.every((item) =>
+              item.gimmick === '移动' || item.gimmick === '停手'
+            );
+            if (hasWater && onlySword) {
+              myGimmicks.push(gimmickStr + output.plus!() + output['水分摊']!());
+            } else {
+              myGimmicks.push(gimmickStr);
+            }
           } else {
-            text += output.join5!();
+            // 如果自己在这个机制轮次里没有对应的buff（即没事可做），且别人有“水分摊”，则需要去帮忙分摊
+            if (hasWater) {
+              myGimmicks.push(output['水分摊']!());
+            }
           }
         });
-        text = text.replace(new RegExp(`${output.join5!()}$`), '');
+
+        const text = myGimmicks.join(output.join5!());
         return { alarmText: output.text5!({ text }), tts: null };
       },
       outputStrings: {
