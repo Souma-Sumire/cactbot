@@ -1668,7 +1668,7 @@ hideall "--sync--"
         return output.text!({ dir1, dir2 });
       },
       outputStrings: {
-        text: '${dir1},${dir2}',
+        text: 't奶去${dir1},dps去${dir2}',
         dirNW: '1',
         dirN: 'A',
         dirNE: '2',
@@ -1763,10 +1763,10 @@ hideall "--sync--"
           !['生者之伤', '死者之伤', '亚拉戈领域', '超越死亡'].includes(p4buff[matches.effectId]!.name);
       },
       delaySeconds: (_data, matches) => {
-        return parseFloat(matches.duration) - 5.5;
+        return parseFloat(matches.duration) - 6.5;
       },
-      durationSeconds: 5.5,
-      countdownSeconds: 5.5,
+      durationSeconds: 6.5,
+      countdownSeconds: 6.5,
       infoText: (data, matches, output) => {
         const resolveTime = (new Date(matches.timestamp).getTime() / 1000) +
           parseFloat(matches.duration);
@@ -1872,8 +1872,8 @@ hideall "--sync--"
         面对眼: { en: '脚底互看' },
         停手: { en: '静' },
         移动: { en: '动' },
-        钢铁: { en: '放钢铁后出去' },
-        月环: { en: '放月环等buff' },
+        钢铁: { en: '放钢铁' },
+        月环: { en: '放月环' },
       },
     },
     {
@@ -1893,14 +1893,15 @@ hideall "--sync--"
         if (data.p4CastCount > 5)
           return {};
         if (data.p4CastCount <= 4) {
-          return {
-            infoText: output.n1t4!({
-              text: data.p4buffs[data.me]!.filter((v) => v.count === data.p4CastCount).map((v) =>
-                output[v.gimmick]!()
-              ).join(output.join1!()),
-            }),
-            tts: null,
-          };
+          return {};
+          // return {
+          //   infoText: output.n1t4!({
+          //     text: data.p4buffs[data.me]!.filter((v) => v.count === data.p4CastCount).map((v) =>
+          //       output[v.gimmick]!()
+          //     ).join(output.join1!()),
+          //   }),
+          //   tts: null,
+          // };
         }
         // 遍历data.p4buffs,按照time进行归组，相差在1秒钟之内的归为一组，否则新开一组。
         const groupedByTime: Record<number, {
@@ -1975,11 +1976,52 @@ hideall "--sync--"
         钢铁: { en: '放钢铁' },
         月环: { en: '放月环' },
         plus: { en: '+' },
-        join1: { en: '、' },
+        // join1: { en: '、' },
         join5: { en: '→' },
-        n1t4: '${text}',
+        // n1t4: '${text}',
         text5: '${text}',
       },
+    },
+    {
+      id: 'DMU P4 放钢铁瞬间提示',
+      type: 'GainsEffect',
+      netRegex: { effectId: ['15AB', '15AC'] },
+      condition: (data, matches) => {
+        if (data.phase !== 'p4' || matches.target !== data.me)
+          return false;
+        const buff = p4buff[matches.effectId];
+        if (!buff)
+          return false;
+        const sourceTF = data.p4真假.卡奥斯[data.p4count.卡奥斯 - 1];
+        if (sourceTF === undefined)
+          return false;
+        const gimmick = buff[sourceTF ? 'true' : 'false'];
+        return gimmick === '钢铁';
+      },
+      delaySeconds: (_data, matches) => parseFloat(matches.duration),
+      infoText: (_data, _matches, output) => output.go!(),
+      outputStrings: { go: { en: '走!' } },
+    },
+    {
+      id: 'DMU P4 放月环瞬间提示',
+      type: 'GainsEffect',
+      netRegex: { effectId: ['15AB', '15AC'] },
+      condition: (data, matches) => {
+        if (data.phase !== 'p4' || matches.target !== data.me)
+          return false;
+        const buff = p4buff[matches.effectId];
+        if (!buff)
+          return false;
+        const sourceTF = data.p4真假.卡奥斯?.[data.p4count.卡奥斯 - 1];
+        if (sourceTF === undefined)
+          return false;
+        const gimmick = buff[sourceTF ? 'true' : 'false'];
+        return gimmick === '月环';
+      },
+      delaySeconds: (_data, matches) => parseFloat(matches.duration) - 4,
+      countdownSeconds: 4,
+      infoText: (_data, _matches, output) => output.wait!(),
+      outputStrings: { wait: { en: '月环' } },
     },
     {
       id: 'DMU P4 大十字',
@@ -2192,14 +2234,14 @@ hideall "--sync--"
       id: 'DMU P4 魔法放出 提示',
       type: 'StartsUsing',
       netRegex: { id: 'BAA5', capture: false },
-      delaySeconds: 6,
-      durationSeconds: 4,
+      delaySeconds: 3,
+      durationSeconds: 7,
       alertText: (data, _matches, output) => output[data.p4魔法放出暂存!]!(),
       outputStrings: {
-        '真冰真雷': { en: '都不吃' },
-        '真冰假雷': { en: '吃直条' },
-        '假冰真雷': { en: '吃扇形' },
-        '假冰假雷': { en: '都躲开' },
+        '真冰真雷': { en: '（稍后）都不吃' },
+        '真冰假雷': { en: '（稍后）吃直条' },
+        '假冰真雷': { en: '（稍后）吃扇形' },
+        '假冰假雷': { en: '（稍后）都躲开' },
       },
     },
   ],
