@@ -546,6 +546,7 @@ hideall "--sync--"
 711.4 "轰击"
 
 # P4
+741.4 "闹哄哄魂击" Ability { id: "C2DC" } window 60,60
 755.5 "大十字"
 760.7 "烈焰"
 770.5 "大十字"
@@ -1585,8 +1586,8 @@ hideall "--sync--"
       condition: (data) => data.phase === 'p3',
       durationSeconds: 4.7,
       countdownSeconds: 4.7,
-      infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: '前后 => 两侧' },
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: '前后' },
     },
     {
       id: 'DMU P3 经度聚爆',
@@ -1595,8 +1596,8 @@ hideall "--sync--"
       condition: (data) => data.phase === 'p3',
       durationSeconds: 4.7,
       countdownSeconds: 4.7,
-      infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: '两侧 => 前后' },
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: '两侧' },
     },
     {
       id: 'DMU P3 响亮亮耳光BAE6',
@@ -1647,10 +1648,10 @@ hideall "--sync--"
       type: 'StartsUsingExtra',
       netRegex: { id: ['BAEC', 'BAED'], capture: false },
       condition: (data) => data.phase === 'p3',
-      durationSeconds: 3.7,
+      durationSeconds: 4.7,
       suppressSeconds: 1,
-      alertText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: '躲辣尾' },
+      alarmText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: '去两侧！' },
     },
     {
       id: 'DMU P3 本色出演的你2',
@@ -1683,7 +1684,7 @@ hideall "--sync--"
       type: 'HeadMarker',
       netRegex: { id: '00A1' },
       condition: (data) => data.phase === 'p3',
-      durationSeconds: 10,
+      durationSeconds: 4,
       infoText: (data, matches, output) => {
         const r = data.party.nameToRole_[matches.target];
         if (r === 'dps') {
@@ -1694,8 +1695,8 @@ hideall "--sync--"
         return data.role === 'dps' ? output.tower!() : output.stack!();
       },
       outputStrings: {
-        stack: '分摊',
-        tower: '踩塔',
+        stack: '场中分摊',
+        tower: '外面踩塔',
       },
     },
     {
@@ -1883,9 +1884,11 @@ hideall "--sync--"
       delaySeconds: 0.25,
       durationSeconds: (data) => {
         data.p4CastCount++;
-        return [3, 3, 3, 3, 30][data.p4CastCount];
+        return [3, 3, 3, 3, 3, 30][data.p4CastCount];
       },
       suppressSeconds: 1,
+      sound: '',
+      soundVolume: 0,
       response: (data, _matches, output) => {
         if (data.p4CastCount > 5)
           return {};
