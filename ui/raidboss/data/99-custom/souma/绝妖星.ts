@@ -5,21 +5,22 @@ import { Responses } from '../../../../../resources/responses';
 import { Directions } from '../../../../../resources/util';
 import { RaidbossData } from '../../../../../types/data';
 import { PluginCombatantState } from '../../../../../types/event';
-import { Matches } from '../../../../../types/net_matches';
+import { Matches, NetMatches } from '../../../../../types/net_matches';
 import { NetRegexTrigger, Output, TriggerSet } from '../../../../../types/trigger';
 
 console.log('绝妖星已加载，开发成本原因，默认报的标点为1A2，其他标点需自己改。');
 
-type Phase = 'p1-1a' | 'p1-1b' | 'p1-2' | 'p1-3' | 'p2' | 'p3' | 'p4';
+type Phase = 'p1-1a' | 'p1-1b' | 'p1-2' | 'p1-3' | 'p2' | 'p3' | 'p4' | 'p5';
 const phases: { [id: string]: Phase } = {
   'BAB9': 'p1-3',
   'C24C': 'p2', // Ultimate Embrace, God Kefka
   'C3F7': 'p3', // Aero III Assault (from Kefka), Chaos and Exdeath
   'C2DC': 'p4', // 闹哄哄魂击
+  'BB40': 'p5', // 连续究极
 };
 
-// const centerX = 100;
-// const centerY = 100;
+const centerX = 100;
+const centerY = 100;
 
 const p2OutputStirngs = {
   扇形组: '左', // 如果不是固定扇形右，就改成“扇形组的”或者空格
@@ -36,7 +37,7 @@ const p2OutputStirngs = {
   第2到8轮引导healer: '${i}轮 ←左塔外',
   第2到8轮引导dps: '${i}轮 右塔外→',
   第2到8轮超级跳: '${i}轮 闲人 去超级跳',
-  第2到8轮踩塔分摊: '${i}轮 分摊 踩塔 （另一个分摊是${player}）',
+  第2到8轮踩塔分摊: '${i}轮 分摊 踩塔',
   分摊: '分摊',
   钢铁: '钢铁',
   扇形: '扇形',
@@ -218,12 +219,16 @@ export interface Data extends RaidbossData {
       bossCount: number;
     }[];
   };
-  p4ReportedTimes?: number[];
+  p4ReportedTimes: number[];
   p4魔法储存?: {
     假雷: boolean | undefined;
     假冰: boolean | undefined;
   };
   p4魔法放出暂存: string | undefined;
+  p5洪水: NetMatches['StartsUsingExtra'][];
+  p5buff: string[];
+  p5三星塔: NetMatches['CombatantMemory'][];
+  p5三星count: number;
 }
 
 const headMarkerData = {
@@ -344,11 +349,24 @@ const p3timeline = [
   // 固定队改
   { id: 'step18', time: 99500, text: '禁止2准备', duration: 2500 },
   { id: 'step19', time: 102000, text: '禁止2接两根', duration: 7000 },
-  { id: 'step20', time: 109000, text: '禁止1接 + 去两侧', duration: 6000 },
-  // { time: 99500, text: '“禁一二”准备', duration: 2500 },
-  // { time: 102000, text: '“禁一二”接', duration: 7000 },
-  // { time: 109000, text: '“禁2”接 + 去两侧', duration: 6000 },
+  { id: 'step20', time: 109000, text: '禁止1接', duration: 6000 },
+  // { time: 99500, text: '“禁止1,2”准备', duration: 2500 },
+  // { time: 102000, text: '“禁止1,2”接', duration: 7000 },
+  // { time: 109000, text: “禁止2接', duration: 6000 },
 ];
+
+const p5water: Record<string, string[]> = {
+  '82.292|89.372|0.785': ['A', 'B'],
+  '110.582|82.292|-0.785': ['B', 'C'],
+  '75.242|96.452|0.785': ['C', 'D'],
+  '103.532|75.242|-0.785': ['D', 'A'],
+};
+
+const p5buff = {
+  'BB6': '雷',
+  '41C': '风',
+  'B57': '冰',
+};
 
 const triggerSet: TriggerSet<Data> = {
   id: 'DancingMadUltimate',
@@ -431,6 +449,8 @@ const triggerSet: TriggerSet<Data> = {
   timeline: `
 hideall "--Reset--"
 hideall "--sync--"
+hideall "准备魔击x2"
+hideall "准备魔击x3"
 
 0.0 "--Reset--" ActorControl { command: "4000000F" } window 0,100000 jump 0
 
@@ -565,30 +585,26 @@ hideall "--sync--"
 863.6 "扑腾腾究极"
 
 # P5
-902.8 "连续究极 x2"
+902.8 "连续究极 x4" StartsUsing { id: "BB40" } window 20,20
+903.8 "准备魔击x3"
 907.7 "魔击 x3"
-910.9 "魔击"
-914 "魔击"
 920.3 "混沌洪水 x4"
-933.3 "神圣"
-933.3 "核爆"
-936.5 "混沌核爆"
-936.6 "神圣"
-940 "混沌神圣"
-940 "核爆扩散"
+933.3 "癫狂交响曲"
+936.5 "混沌核爆/神圣"
+940 "核爆扩散/混沌神圣"
+940.0 "准备魔击x2"
 944.6 "魔击 x2"
 963.3 "三星"
 969.3 "三星"
 975.4 "三星"
-984.8 "连续究极 x2"
+984.8 "连续究极 x4"
+985.8 "准备魔击x2"
 989.7 "魔击 x2"
 1016.3 "混沌涡旋"
-1025.4 "神圣"
-1025.4 "核爆"
-1028.6 "混沌核爆"
-1028.7 "神圣"
-1032.1 "核爆扩散"
-1032.1 "混沌神圣"
+1025.4 "癫狂交响曲"
+1028.6 "混沌核爆/神圣"
+1032.1 "核爆扩散/混沌神圣"
+1032.8 "准备魔击x3"
 1036.7 "魔击 x3"
 1054.3 "遗弃末世"
 1059.4 "遗弃末狱"
@@ -627,29 +643,79 @@ hideall "--sync--"
       p2报过了: false,
       p3buffs: {},
       p3jjcjb: undefined,
-      p4真假: {
-        '新生艾克斯迪司': [],
-        '卡奥斯': [],
-      },
-      p4count: {
-        '新生艾克斯迪司': 0,
-        '卡奥斯': 0,
-      },
+      p4真假: { '新生艾克斯迪司': [], '卡奥斯': [] },
+      p4count: { '新生艾克斯迪司': 0, '卡奥斯': 0 },
       p4CastCount: 0,
       p4buffs: {},
       p4ReportedTimes: [],
       p1IsTether: false,
       p4魔法储存: undefined,
-      p4魔法放出: false,
       p4魔法放出暂存: undefined,
+      p5洪水: [],
+      p5buff: [],
+      p5三星塔: [],
+      p5三星count: 0,
     };
   },
+  timelineTriggers: [
+    {
+      id: 'DMU P5 魔击',
+      regex: /^准备魔击x(?<count>2|3)$/,
+      infoText: (_data, matches, output) => output.text!({ count: matches.count }),
+      outputStrings: { text: { en: '平A (${count}次)' } },
+    },
+    {
+      id: 'DMU P5 癫狂交响曲',
+      regex: /^癫狂交响曲$/,
+      beforeSeconds: 10,
+      durationSeconds: 10,
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: '准备八方' } },
+    },
+  ],
   triggers: [
     {
       id: 'DMU Phase Tracker',
       type: 'StartsUsing',
       netRegex: { id: Object.keys(phases) },
-      run: (data, matches) => data.phase = phases[matches.id] ?? 'unknown',
+      run: (data, matches) => {
+        data.phase = phases[matches.id] ?? 'unknown';
+        if (data.phase === 'p5') {
+          data.假冰 = false;
+          data.假火 = false;
+          data.假雷 = false;
+          data.p1Tethers = [];
+          data.p1毒 = [];
+          data.p1Cannon = [];
+          data.combatantData = [];
+          data.p1放石头 = false;
+          data.p1Arrow = [];
+          data.p1石头count = 1;
+          data.p3究极冲击波hdg = [];
+          data.p1收集 = [];
+          data.eyeTowerIds = [];
+          data.fakeEyeTowerIds = [];
+          data.p2未来过去count = 0;
+          data.purpleTowerIds = [];
+          data.yellowTowerIds = [];
+          data.p2hm = {};
+          data.p2count = 1;
+          data.p2第一轮踩塔人 = [];
+          data.p2BuffCount = {};
+          data.p2报过了 = false;
+          data.p3buffs = {};
+          data.p3jjcjb = undefined;
+          data.p4真假 = { '新生艾克斯迪司': [], '卡奥斯': [] };
+          data.p4count = { '新生艾克斯迪司': 0, '卡奥斯': 0 };
+          data.p4CastCount = 0;
+          data.p4buffs = {};
+          data.p4ReportedTimes = [];
+          data.p1IsTether = false;
+          data.p4魔法储存 = undefined;
+          data.p4魔法放出暂存 = undefined;
+          data.p5洪水 = [];
+        }
+      },
     },
     {
       id: 'DMU Phase P1 Tracker',
@@ -749,12 +815,12 @@ hideall "--sync--"
       },
       preRun: (data, matches) => {
         if (matches.id === headMarkerData.假冰) {
-          if (data.phase === 'p4' && data.p4魔法储存 !== undefined) {
+          if (data.phase === 'p4' && data.p4魔法储存 !== undefined && data.p4魔法储存.假冰 === undefined) {
             data.p4魔法储存.假冰 = true;
           }
           data.假冰 = true;
         } else if (matches.id === headMarkerData.真冰) {
-          if (data.phase === 'p4' && data.p4魔法储存 !== undefined) {
+          if (data.phase === 'p4' && data.p4魔法储存 !== undefined && data.p4魔法储存.假冰 === undefined) {
             data.p4魔法储存.假冰 = false;
           }
           data.假冰 = false;
@@ -763,12 +829,12 @@ hideall "--sync--"
         } else if (matches.id === headMarkerData.真火) {
           data.假火 = false;
         } else if (matches.id === headMarkerData.假雷) {
-          if (data.phase === 'p4' && data.p4魔法储存 !== undefined) {
+          if (data.phase === 'p4' && data.p4魔法储存 !== undefined && data.p4魔法储存.假雷 === undefined) {
             data.p4魔法储存.假雷 = true;
           }
           data.假雷 = true;
         } else if (matches.id === headMarkerData.真雷) {
-          if (data.phase === 'p4' && data.p4魔法储存 !== undefined) {
+          if (data.phase === 'p4' && data.p4魔法储存 !== undefined && data.p4魔法储存.假雷 === undefined) {
             data.p4魔法储存.假雷 = false;
           }
           data.假雷 = false;
@@ -1224,6 +1290,43 @@ hideall "--sync--"
           role: data.party.nameToRole_[matches.target] as 'dps' | 'tank' | 'healer',
         });
       },
+      delaySeconds: 0.2,
+      durationSeconds: 9,
+      soundVolume: 0,
+      alertText: (data, matches, output) => {
+        if (matches.target === data.me) {
+          if (matches.id === headMarkerData.分摊) {
+            const otherStack = data.p2hm[data.p2count - 1]!.find((v) =>
+              v.target !== data.me && v.buff === '分摊'
+            );
+            if (otherStack) {
+              return output.stack!({ target: data.party.member(otherStack.target) });
+            }
+          }
+          if (matches.id === headMarkerData.钢铁) {
+            const otherSpread = data.p2hm[data.p2count - 1]!.find((v) =>
+              v.target !== data.me && v.buff === '钢铁'
+            );
+            if (otherSpread) {
+              return output.spread!({ target: data.party.member(otherSpread.target) });
+            }
+          }
+          if (matches.id === headMarkerData.扇形) {
+            const otherFan = data.p2hm[data.p2count - 1]!.find((v) =>
+              v.target !== data.me && v.buff === '扇形'
+            );
+            if (otherFan) {
+              return output.fan!({ target: data.party.member(otherFan.target) });
+            }
+          }
+        }
+      },
+      tts: null,
+      outputStrings: {
+        stack: '分摊(和${target.job})',
+        spread: '钢铁(和${target.job})',
+        fan: '扇形(和${target.job})',
+      },
     },
     {
       id: 'DMU P2 第一轮踩塔',
@@ -1403,8 +1506,6 @@ hideall "--sync--"
       suppressSeconds: 300,
       countdownSeconds: 7,
       response: (_data, matches, output) => {
-        // console.warn(_data.me, matches.effect, matches.effectId);
-        // return {};
         return {
           [matches.id === '643' ? 'infoText' : 'alertText']: output[matches.effectId]!(),
         };
@@ -1421,7 +1522,6 @@ hideall "--sync--"
         effectId: ['640', '641'],
       },
       condition: (data, matches) => {
-        // console.warn(data.phase);
         return data.phase === 'p3' && matches.target === data.me;
       },
       delaySeconds: 0.5,
@@ -1511,9 +1611,6 @@ hideall "--sync--"
         ];
         const r1 = output[a1]!();
         const r2 = output[a2]!();
-        // console.warn(
-        //   `${data.me}:${n}麻,${dir1}${clk}，g=${g},r1=${r1},r2=${r2},去${r1}/${r2}`,
-        // );
         return output.text!({ n, r1, r2 });
       },
       outputStrings: {
@@ -1547,8 +1644,8 @@ hideall "--sync--"
       type: 'StartsUsing',
       netRegex: { id: 'BB09', capture: true },
       condition: (data) => data.phase === 'p3',
-      durationSeconds: 7.6,
-      countdownSeconds: 7.6,
+      durationSeconds: 8.6,
+      countdownSeconds: 8.6,
       // response: Responses.tankBuster(),
       response: (data, _matches, output) => {
         return {
@@ -1587,7 +1684,7 @@ hideall "--sync--"
       durationSeconds: 4.7,
       countdownSeconds: 4.7,
       alertText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: '前后' },
+      outputStrings: { text: '前后 => 左右' },
     },
     {
       id: 'DMU P3 经度聚爆',
@@ -1597,28 +1694,61 @@ hideall "--sync--"
       durationSeconds: 4.7,
       countdownSeconds: 4.7,
       alertText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: '两侧' },
+      outputStrings: { text: '左右 => 前后' },
     },
     {
-      id: 'DMU P3 响亮亮耳光BAE6',
-      type: 'StartsUsing',
-      netRegex: { id: 'BAE6', capture: false },
+      id: 'DMU P3 响亮亮耳光',
+      type: 'StartsUsingExtra',
+      netRegex: { id: ['BAE6', 'BAE7'], capture: true },
       condition: (data) => data.phase === 'p3',
       durationSeconds: 9,
       countdownSeconds: 9,
-      alarmText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: '右分摊' },
+      alarmText: (data, matches, output) => {
+        const d = Directions.hdgTo8DirNum(parseFloat(matches.heading));
+        const dirBase = Directions.outputFrom8DirNum((d + 4) % 8);
+        if (matches.id === 'BAE6') {
+          const stackIn = Directions.outputFrom8DirNum((d + 4 + 2) % 8);
+          return output.text!({
+            role: output.all!(),
+            dir: output[dirBase]!(),
+            gmk: output[matches.id]!(),
+            in: output[stackIn]!(),
+          });
+        } else if (matches.id === 'BAE7') {
+          const spreadIn = Directions.outputFrom8DirNum(
+            (d + 4 + ({
+              'tank': -1,
+              'healer': -2,
+              'dps': -3,
+            }[data.role as 'tank' | 'healer' | 'dps'])) % 8,
+          );
+          return output.text!({
+            role: output[data.role]!(),
+            dir: output[dirBase]!(),
+            gmk: output[matches.id]!(),
+            in: output[spreadIn]!(),
+          });
+        }
+      },
+      outputStrings: {
+        text: '看${dir}，${gmk}（${role}去${in}）',
+        all: '都',
+        tank: '坦克',
+        healer: '治疗',
+        dps: '输出',
+        BAE6: '右分摊',
+        BAE7: '左职能刀',
+        dirNW: '1',
+        dirN: 'A',
+        dirNE: '2',
+        dirE: 'B',
+        dirSE: '3',
+        dirS: 'C',
+        dirSW: '4',
+        dirW: 'D',
+      },
     },
-    {
-      id: 'DMU P3 响亮亮耳光BAE7',
-      type: 'StartsUsing',
-      netRegex: { id: 'BAE7', capture: false },
-      condition: (data) => data.phase === 'p3',
-      durationSeconds: 9,
-      countdownSeconds: 9,
-      alarmText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: '左职能刀' },
-    },
+
     ...p3timeline.map((item): NetRegexTrigger<Data> => {
       const { time, text, id } = item;
       return {
@@ -1632,17 +1762,17 @@ hideall "--sync--"
         outputStrings: { text: text },
       };
     }),
-    // {
-    //   id: 'DMU P3 白洞',
-    //   type: 'StartsUsing',
-    //   netRegex: { id: 'BD66', capture: false },
-    //   condition: (data) => data.phase === 'p3',
-    //   durationSeconds: 4.7,
-    //   countdownSeconds: 4.7,
-    //   alarmText: (_data, _matches, output) => output.text!(),
-    //   tts: null,
-    //   outputStrings: { text: '满血检测！' },
-    // },
+    {
+      id: 'DMU P3 白洞',
+      type: 'StartsUsing',
+      netRegex: { id: 'BD66', capture: false },
+      condition: (data) => data.phase === 'p3',
+      durationSeconds: 4.7,
+      countdownSeconds: 4.7,
+      infoText: (_data, _matches, output) => output.text!(),
+      tts: null,
+      outputStrings: { text: '满血检测' },
+    },
     {
       id: 'DMU P3 本色出演的你1',
       type: 'StartsUsingExtra',
@@ -1763,11 +1893,11 @@ hideall "--sync--"
           !['生者之伤', '死者之伤', '亚拉戈领域', '超越死亡'].includes(p4buff[matches.effectId]!.name);
       },
       delaySeconds: (_data, matches) => {
-        return parseFloat(matches.duration) - 6.5;
+        return parseFloat(matches.duration) - 8.5;
       },
-      durationSeconds: 6.5,
-      countdownSeconds: 6.5,
-      infoText: (data, matches, output) => {
+      durationSeconds: 8.5,
+      countdownSeconds: 8.5,
+      alertText: (data, matches, output) => {
         const resolveTime = (new Date(matches.timestamp).getTime() / 1000) +
           parseFloat(matches.duration);
         data.p4ReportedTimes ??= [];
@@ -1866,12 +1996,12 @@ hideall "--sync--"
       },
       outputStrings: {
         plus: { en: '+' },
-        雷分散: { en: '雷分散' },
-        水分摊: { en: '水分摊' },
+        雷分散: { en: '出去分散' },
+        水分摊: { en: '3人分摊' },
         背对眼: { en: '出去背对' },
         面对眼: { en: '脚底互看' },
-        停手: { en: '静' },
-        移动: { en: '动' },
+        停手: { en: '静止停停' },
+        移动: { en: '保持移动' },
         钢铁: { en: '放钢铁' },
         月环: { en: '放月环' },
       },
@@ -1884,10 +2014,10 @@ hideall "--sync--"
       delaySeconds: 0.25,
       durationSeconds: (data) => {
         data.p4CastCount++;
-        return [3, 3, 3, 3, 3, 30][data.p4CastCount];
+        return [3, 3, 3, 3, 3, 60][data.p4CastCount];
       },
       suppressSeconds: 1,
-      sound: '',
+      // sound: '',
       soundVolume: 0,
       response: (data, _matches, output) => {
         if (data.p4CastCount > 5)
@@ -2021,7 +2151,7 @@ hideall "--sync--"
       delaySeconds: (_data, matches) => parseFloat(matches.duration) - 4,
       countdownSeconds: 4,
       infoText: (_data, _matches, output) => output.wait!(),
-      outputStrings: { wait: { en: '月环' } },
+      outputStrings: { wait: { en: '等月环' } },
     },
     {
       id: 'DMU P4 大十字',
@@ -2116,6 +2246,7 @@ hideall "--sync--"
       delaySeconds: 0.25,
       alertText: (data, _matches, output) => {
         const thunder = data.p4魔法储存?.假雷 ? '假雷' : '真雷';
+        // console.log('假雷是', thunder, data.p4魔法储存?.假雷);
         const buffs = Object.entries(data.p4buffs);
         const eyes: Array<{
           player: string;
@@ -2241,7 +2372,129 @@ hideall "--sync--"
         '真冰真雷': { en: '（稍后）都不吃' },
         '真冰假雷': { en: '（稍后）吃直条' },
         '假冰真雷': { en: '（稍后）吃扇形' },
-        '假冰假雷': { en: '（稍后）都躲开' },
+        '假冰假雷': { en: '（稍后）都吃' },
+      },
+    },
+    {
+      id: 'DMU P5 连续究极',
+      type: 'StartsUsing',
+      netRegex: { id: 'BB40', capture: false },
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: 'AoE x4' },
+    },
+    {
+      id: 'DMU P5 洪水',
+      type: 'StartsUsingExtra',
+      netRegex: { id: 'C183' },
+      condition: (data) => data.phase === 'p5',
+      preRun: (data, matches) => {
+        data.p5洪水.push(matches);
+      },
+      durationSeconds: 7,
+      alertText: (data, _matches, output) => {
+        if (data.p5洪水.length === 4) {
+          const w1 = data.p5洪水.slice(0, 2).sort((a, b) => (parseInt(a.x)) - (parseInt(b.x)));
+          const w3 = data.p5洪水.slice(2, 4).sort((a, b) => (parseInt(a.x)) - (parseInt(b.x)));
+          const key1 = `${w1[0]?.x}|${w1[0]?.y}|${w1[0]?.heading}`;
+          const key3 = `${w3[0]?.x}|${w3[0]?.y}|${w3[0]?.heading}`;
+          const s1 = p5water[key1]!;
+          const s3 = p5water[key3]!;
+          const start = s1.find((v) => s3.includes(v))!;
+          const d = s1.find((v) => !s3.includes(v))!;
+          // console.warn(`s1=${s1.join(',')}, s3=${s3.join(',')}, start=${start}, d=${d}`);
+          const idx1 = ['A', 'B', 'C', 'D'].indexOf(start);
+          const idx2 = ['A', 'B', 'C', 'D'].indexOf(d);
+          const clk = ((idx1 - idx2 + 4) % 4) === 1 ? '顺时针' : '逆时针';
+          return output.text!({ start: output[start]!(), clk: output[clk]!() });
+        }
+      },
+      outputStrings: {
+        text: '${start}，${clk}',
+        A: 'A',
+        B: 'BOY',
+        C: 'C',
+        D: 'DOG',
+        顺时针: { en: '左 <=' },
+        逆时针: { en: '右 =>' },
+      },
+    },
+    {
+      id: 'DMU P5 神圣',
+      type: 'Ability',
+      netRegex: { id: 'BB54' },
+      condition: Conditions.targetIsYou(),
+      suppressSeconds: 1,
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: '走' } },
+    },
+    {
+      id: 'DMU P5 三星',
+      type: 'GainsEffect',
+      netRegex: {
+        effectId: [
+          'BB6',
+          '41C',
+          'D2C',
+        ],
+      },
+      condition: (data, matches) => data.phase === 'p5' && matches.target === data.me,
+      preRun: (data, matches) => {
+        data.p5buff.push(p5buff[matches.effectId as keyof typeof p5buff]);
+      },
+    },
+    {
+      id: 'DMU P5 三星1判',
+      type: 'GainsEffect',
+      netRegex: {
+        effectId: [
+          'BB6',
+          '41C',
+          'D2C',
+        ],
+      },
+      condition: (data, matches) => data.phase === 'p5' && matches.target === data.me,
+      delaySeconds: 0.5,
+      suppressSeconds: 1,
+      run: (data) => {
+        data.p5三星count++;
+        if (data.p5三星count === 1) {
+          const towers = data.p5三星塔.map((v) => {
+            const { pairBNpcID, pairPosX, pairPosY } = v;
+            const dir = Directions.xyTo16DirNum(
+              parseFloat(pairPosX!),
+              parseFloat(pairPosY!),
+              centerX,
+              centerY,
+            );
+            return { pairBNpcID, dir };
+          });
+          // 左上，右上，下
+          const tower = {
+            右上: towers.filter((v) => v.dir <= 5.3),
+            下: towers.filter((v) => v.dir > 5.3 && v.dir < 10.6),
+            左上: towers.filter((v) => v.dir > 10.6),
+          };
+          console.log(data.me, tower);
+        }
+      },
+    },
+    {
+      id: 'DMU P5 三星塔',
+      type: 'CombatantMemory',
+      netRegex: {
+        change: 'Add',
+        pair: [{
+          key: 'BNpcID',
+          value: [
+            '1EC03F', // 冰
+            '1EC040', // 雷
+            '1EC03E', // 火
+          ],
+        }],
+      },
+      condition: (data) => data.phase === 'p5',
+      preRun: (data, matches) => {
+        data.p5三星塔.push(matches);
       },
     },
   ],
