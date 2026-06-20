@@ -23,8 +23,10 @@ const centerX = 100;
 const centerY = 100;
 
 const p2OutputStirngs = {
-  扇形组: '左', // 如果不是固定扇形右，就改成“扇形组的”或者空格
-  钢铁组: '右', // 如果不是固定钢铁右，就改成“钢铁组的”或者空格
+  // 如果不是固定扇形右，就改成“扇形组的”或者空格
+  扇形组: '左',
+  // 如果不是固定钢铁右，就改成“钢铁组的”或者空格
+  钢铁组: '右',
   第1轮踩塔TN: '1轮 ${gimmick} 踩${lr}塔',
   第1轮闲人TN: '1轮 闲人 ${lr}引导',
   第1轮DPS分摊: '1轮 分摊 踩${lr}塔',
@@ -226,9 +228,9 @@ export interface Data extends RaidbossData {
   };
   p4魔法放出暂存: string | undefined;
   p5洪水: NetMatches['StartsUsingExtra'][];
-  p5buff: string[];
   p5三星塔: NetMatches['CombatantMemory'][];
   p5三星count: number;
+  p5三星buff: NetMatches['GainsEffect'][];
 }
 
 const headMarkerData = {
@@ -457,107 +459,81 @@ hideall "准备魔击x3"
 0.0 "--sync--" InCombat { inGameCombat: "1" } window 0,1
 
 # P1
-15.2 "恶狠狠毁荡 1"
-18.3 "恶狠狠毁荡 2"
+15.2 "恶狠狠毁荡 x2"
 37.9 "呼啦啦爆炎"
 42.1 "波动炮"
 45.9 "爆炸"
 49.4 "连环环陷阱"
 62.4 "制裁之光"
-65.6 "超驱动 1"
-67.7 "超驱动 2"
-69.8 "超驱动 3"
+65.6 "超驱动 x3"
 87.2 "重力弹"
 91.2 "岩石弹"
-97.1 "恶狠狠毁荡"
-100.2 "恶狠狠毁荡"
+97.1 "恶狠狠毁荡 x2"
 105.7 "重力弹"
 109.7 "岩石弹"
 118 "连环环陷阱"
 120.7 "强重力"
-123.6 "强重力"
 132.2 "制裁之光"
-135.4 "超驱动 1"
-137.5 "超驱动 2"
-139.6 "超驱动 3"
-159.3 "唰啦啦传送 1"
-162.2 "唰啦啦传送 2"
+135.4 "超驱动 x3"
+159.3 "唰啦啦传送 x2"
 167.7 "连环环陷阱"
-173.3 "睡魔的神气"
-173.4 "圣母的神气"
+173.3 "睡魔/圣母的神气"
 186.4 "圣母颂"
 187 "呼啦啦爆炎"
 
 # P2
 220.1 "终末双腕"
 235.3 "遗弃末世"
-248.5 "光之波动"
-249.2 "咏唱危机"
-258.1 "过去/未来终结"
-258.6 "光之波动"
-259.2 "咏唱危机"
-269.6 "光之波动"
-270.2 "咏唱危机"
-279.2 "过去/未来终结"
-279.7 "光之波动"
-280.2 "咏唱危机"
-290.6 "光之波动"
-291.3 "咏唱危机"
-300.4 "过去/未来终结"
-300.7 "光之波动"
-301.2 "咏唱危机"
-311.6 "光之波动"
-312.3 "咏唱危机"
-321.5 "过去/未来终结"
-321.7 "光之波动"
-322.3 "咏唱危机"
+248.5 "塔#1"
+258.6 "塔#2"
+269.6 "塔#3"
+279.7 "塔#4"
+290.6 "塔#5"
+300.7 "塔#6"
+311.6 "塔#7"
+321.7 "塔#8"
 342.1 "制裁之光"
 370.7 "破坏之翼"
 377.8 "终末双腕"
 
 # P3
 450.5 "深层痛楚"
-469.6 "混沌之炎"
-479.1 "暴雷 1"
-482.1 "暴雷 2"
-497.6 "海啸"
+469.6 "混沌之炎/水"
+479.1 "暴雷 x2"
+497.6 "海啸/烈焰"
 507.9 "究极冲击波 x3"
 512.1 "本影爆碎"
 513.9 "究极冲击波 x3"
 519 "龙卷风"
 519.9 "究极冲击波 x4"
-537.6 "暴雷 1"
-540.7 "暴雷 2"
-554.8 "暴雷 1"
-557.8 "暴雷 2"
-567.4 "地震 1"
-571.9 "地震 2"
+537.6 "暴雷 x2"
+554.8 "暴雷 x2"
+567.4 "地震 x2"
 578.6 "重冲击"
-585.9 "无之波动"
-593 "无之波动"
-596.3 "暴雷 1"
-599.3 "暴雷 2"
+585.9 "黑洞（攻1）"
+593 "黑洞（攻12）"
+596.3 "暴雷 x2"
 609 "冲击波"
-616.5 "无之波动"
-618.1 "地震"
-621.5 "无之波动"
-623.2 "地震"
-626.7 "无之波动"
-628.3 "地震"
+616.5 "黑洞（攻123）"
+618.1 "攻1死超"
+621.5 "黑洞（锁1攻23）"
+623.2 "攻2死超"
+626.7 "黑洞（锁12攻3）"
+628.3 "攻3死超"
 637.6 "暴雷"
 640.6 "暴雷"
-650.8 "无之波动"
-652.5 "地震"
-655.9 "无之波动"
-657.5 "地震"
-660.9 "无之波动"
-662.5 "地震"
+650.8 "黑洞（锁123）"
+652.5 "锁1死超"
+655.9 "黑洞（禁1锁23）"
+657.5 "锁2死超"
+660.9 "黑洞（锁12锁3）"
+662.5 "锁3死超"
 672 "白洞"
 677.1 "重冲击"
-684.3 "无之波动"
-685.9 "地震"
-691.3 "无之波动"
-692.9 "地震"
+684.3 "黑洞（禁2）"
+685.9 "禁2死超"
+691.3 "黑洞（禁1）"
+692.9 "禁1死超"
 705.8 "轰击"
 706.1 "轰隆隆跺脚"
 707.5 "轰隆隆跺脚"
@@ -567,21 +543,18 @@ hideall "准备魔击x3"
 
 # P4
 741.4 "闹哄哄魂击" Ability { id: "C2DC" } window 60,60
-755.5 "大十字"
-760.7 "烈焰"
-770.5 "大十字"
-775.6 "海啸"
-785.5 "大十字"
-798.1 "死者暗黑光"
-798.2 "生者暗黑光"
+755.5 "大十字#1"
+760.7 "烈焰/海啸"
+770.5 "大十字#2"
+775.6 "海啸/烈焰"
+785.5 "大十字#3"
+798.1 "鸳鸯锅"
 801.9 "死亡波涛"
-806.6 "死亡波纹"
-806.7 "死亡落雷"
-815.7 "死亡尖叫"
+806.6 "水雷1"
+815.7 "石化眼1"
 824.6 "扑腾腾究极"
-831.6 "死亡落雷"
-831.7 "死亡波纹"
-839.6 "死亡尖叫"
+831.6 "水雷2"
+839.6 "石化眼2"
 863.6 "扑腾腾究极"
 
 # P5
@@ -655,6 +628,7 @@ hideall "准备魔击x3"
       p5buff: [],
       p5三星塔: [],
       p5三星count: 0,
+      p5三星buff: [],
     };
   },
   timelineTriggers: [
@@ -2431,51 +2405,82 @@ hideall "准备魔击x3"
       id: 'DMU P5 三星',
       type: 'GainsEffect',
       netRegex: {
-        effectId: [
-          'BB6',
-          '41C',
-          'D2C',
-        ],
+        effectId: Object.keys(p5buff),
       },
       condition: (data, matches) => data.phase === 'p5' && matches.target === data.me,
       preRun: (data, matches) => {
-        data.p5buff.push(p5buff[matches.effectId as keyof typeof p5buff]);
+        data.p5三星buff.push(matches);
       },
     },
     {
       id: 'DMU P5 三星1判',
       type: 'GainsEffect',
       netRegex: {
-        effectId: [
-          'BB6',
-          '41C',
-          'D2C',
-        ],
+        effectId: Object.keys(p5buff),
       },
-      condition: (data, matches) => data.phase === 'p5' && matches.target === data.me,
-      delaySeconds: 0.5,
+      condition: (data) => data.phase === 'p5',
+      delaySeconds: 0.25,
+      durationSeconds: 5,
       suppressSeconds: 1,
-      run: (data) => {
+      infoText: (data, _matches, output) => {
         data.p5三星count++;
         if (data.p5三星count === 1) {
+          const me = data.p5三星buff.find((v) => v.target === data.me);
+          if (me === undefined) {
+            // 无buff
+            // console.warn(data.me, '无buff');
+            return output.none!();
+          }
+          // 有debuff
           const towers = data.p5三星塔.map((v) => {
-            const { pairBNpcID, pairPosX, pairPosY } = v;
-            const dir = Directions.xyTo16DirNum(
-              parseFloat(pairPosX!),
+              const { pairBNpcID, pairPosX, pairPosY } = v;
+              const dir = Directions.xyTo16DirNum(
+                parseFloat(pairPosX!),
               parseFloat(pairPosY!),
               centerX,
               centerY,
             );
-            return { pairBNpcID, dir };
+          const el: string = ({
+              '1EC03F': '冰',
+              '1EC040': '雷',
+              '1EC03E': '火',
+            } satisfies Record<string, string>)[pairBNpcID as string]!;
+            return { dir, el };
           });
           // 左上，右上，下
-          const tower = {
-            右上: towers.filter((v) => v.dir <= 5.3),
-            下: towers.filter((v) => v.dir > 5.3 && v.dir < 10.6),
-            左上: towers.filter((v) => v.dir > 10.6),
+          const pos = ['左上', '右上', '下'] as const;
+          const getNextPos = (p: typeof pos[number]) => {
+            const idx = pos.indexOf(p);
+            return pos[(idx + 1) % 3];
           };
-          console.log(data.me, tower);
+          const tower = {
+            右上: towers.filter((v) => v.dir <= 5.3).sort((a, b) => a.dir - b.dir),
+            下: towers.filter((v) => v.dir > 5.3 && v.dir < 10.6).sort((a, b) => a.dir - b.dir),
+            左上: towers.filter((v) => v.dir > 10.6).sort((a, b) => a.dir - b.dir),
+          };
+          const myElPos: typeof pos[number] | undefined = (() => {
+            for (const k in tower) {
+              const t = tower[k as keyof typeof tower];
+              if (t[0]?.el === p5buff[me.effectId as keyof typeof p5buff]) {
+                return k as typeof pos[number];
+              }
+            }
+            return undefined;
+          })();
+          if (myElPos === undefined) {
+            console.error('myElPos无效', tower, me, myElPos);
+            return;
+          }
+
+          const next = getNextPos(myElPos)!;
+          const nextEl = tower[next][0]!.el;
+          // console.log(data.me, tower, myElPos, next);
+          return output.text!({ pos: myElPos, el: nextEl });
         }
+      },
+      outputStrings: {
+        text: { en: '${pos}找${el}塔' },
+        none: { en: '闲人，找双属性' }
       },
     },
     {
@@ -2486,9 +2491,12 @@ hideall "准备魔击x3"
         pair: [{
           key: 'BNpcID',
           value: [
-            '1EC03F', // 冰
-            '1EC040', // 雷
-            '1EC03E', // 火
+            // 冰
+            '1EC03F',
+            // 雷
+            '1EC040',
+            // 火
+            '1EC03E',
           ],
         }],
       },
@@ -2497,6 +2505,20 @@ hideall "准备魔击x3"
         data.p5三星塔.push(matches);
       },
     },
+    {
+      id: 'DMU P5 二选一钢铁',
+      type: 'StartsUsing',
+      netRegex: { id: 'C24E', capture: false },
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: '钢铁' } }
+    },
+    {
+      id: 'DMU P5 二选一月环',
+      type: 'StartsUsing',
+      netRegex: { id: 'C24F', capture: false },
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: '月环' } }
+    }
   ],
 };
 
