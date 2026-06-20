@@ -231,6 +231,17 @@ export interface Data extends RaidbossData {
   p5三星塔: NetMatches['CombatantMemory'][];
   p5三星count: number;
   p5三星buff: NetMatches['GainsEffect'][];
+  p5三星暂存?: {
+    next2: string;
+    next3: string;
+  };
+  p5三星是闲人: boolean;
+  p5Tower: {
+    右上: { dir: number; el: string; id: string }[];
+    下: { dir: number; el: string; id: string }[];
+    左上: { dir: number; el: string; id: string }[];
+  };
+  p5三星亮起来: string[];
 }
 
 const headMarkerData = {
@@ -365,8 +376,8 @@ const p5water: Record<string, string[]> = {
 };
 
 const p5buff = {
+  'B56': '火',
   'BB6': '雷',
-  '41C': '风',
   'B57': '冰',
 };
 
@@ -559,19 +570,19 @@ hideall "准备魔击x3"
 
 # P5
 902.8 "连续究极 x4" StartsUsing { id: "BB40" } window 20,20
-903.8 "准备魔击x3"
+904.3 "准备魔击x3"
 907.7 "魔击 x3"
 920.3 "混沌洪水 x4"
 933.3 "癫狂交响曲"
 936.5 "混沌核爆/神圣"
 940 "核爆扩散/混沌神圣"
-940.0 "准备魔击x2"
+941.2 "准备魔击x2"
 944.6 "魔击 x2"
 963.3 "三星"
 969.3 "三星"
 975.4 "三星"
 984.8 "连续究极 x4"
-985.8 "准备魔击x2"
+986.3 "准备魔击x2"
 989.7 "魔击 x2"
 1016.3 "混沌涡旋"
 1025.4 "癫狂交响曲"
@@ -629,6 +640,9 @@ hideall "准备魔击x3"
       p5三星塔: [],
       p5三星count: 0,
       p5三星buff: [],
+      p5三星是闲人: false,
+      p5Tower: { 右上: [], 下: [], 左上: [] },
+      p5三星亮起来: [],
     };
   },
   timelineTriggers: [
@@ -644,7 +658,7 @@ hideall "准备魔击x3"
       beforeSeconds: 10,
       durationSeconds: 10,
       infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: { en: '准备八方' } },
+      outputStrings: { text: { en: '癫狂八方' } },
     },
   ],
   triggers: [
@@ -1705,7 +1719,8 @@ hideall "准备魔击x3"
         }
       },
       outputStrings: {
-        text: '看${dir}，${gmk}（${role}去${in}）',
+        // text: '看${dir}，${gmk}（${role}去${in}）',
+        text: '${gmk}（${role}去${in}）',
         all: '都',
         tank: '坦克',
         healer: '治疗',
@@ -2407,7 +2422,7 @@ hideall "准备魔击x3"
       netRegex: {
         effectId: Object.keys(p5buff),
       },
-      condition: (data, matches) => data.phase === 'p5' && matches.target === data.me,
+      condition: (data) => data.phase === 'p5',
       preRun: (data, matches) => {
         data.p5三星buff.push(matches);
       },
@@ -2419,45 +2434,49 @@ hideall "准备魔击x3"
         effectId: Object.keys(p5buff),
       },
       condition: (data) => data.phase === 'p5',
-      delaySeconds: 0.25,
+      delaySeconds: 0.5,
       durationSeconds: 5,
       suppressSeconds: 1,
       infoText: (data, _matches, output) => {
         data.p5三星count++;
         if (data.p5三星count === 1) {
-          const me = data.p5三星buff.find((v) => v.target === data.me);
-          if (me === undefined) {
-            // 无buff
-            // console.warn(data.me, '无buff');
-            return output.none!();
-          }
-          // 有debuff
           const towers = data.p5三星塔.map((v) => {
-              const { pairBNpcID, pairPosX, pairPosY } = v;
-              const dir = Directions.xyTo16DirNum(
-                parseFloat(pairPosX!),
+            const { pairBNpcID, pairPosX, pairPosY, id } = v;
+            const dir = Directions.xyTo16DirNum(
+              parseFloat(pairPosX!),
               parseFloat(pairPosY!),
               centerX,
               centerY,
             );
-          const el: string = ({
+            const elMap: Record<string, string> = {
               '1EC03F': '冰',
               '1EC040': '雷',
               '1EC03E': '火',
-            } satisfies Record<string, string>)[pairBNpcID as string]!;
-            return { dir, el };
+            };
+            const el: string = elMap[pairBNpcID as string]!;
+            return { dir, el, id };
           });
-          // 左上，右上，下
+
+          const me = data.p5三星buff.find((v) => v.target === data.me);
+          if (me === undefined) {
+            // 无buff
+            data.p5三星是闲人 = true;
+          }
+          // 有debuff
           const pos = ['左上', '右上', '下'] as const;
-          const getNextPos = (p: typeof pos[number]) => {
+          const getNextPos = (p: typeof pos[number]): '左上' | '右上' | '下' => {
             const idx = pos.indexOf(p);
-            return pos[(idx + 1) % 3];
+            return pos[(idx + 1) % 3]!;
           };
           const tower = {
             右上: towers.filter((v) => v.dir <= 5.3).sort((a, b) => a.dir - b.dir),
             下: towers.filter((v) => v.dir > 5.3 && v.dir < 10.6).sort((a, b) => a.dir - b.dir),
             左上: towers.filter((v) => v.dir > 10.6).sort((a, b) => a.dir - b.dir),
           };
+          data.p5Tower = tower;
+          if (me === undefined) {
+            return output.none!();
+          }
           const myElPos: typeof pos[number] | undefined = (() => {
             for (const k in tower) {
               const t = tower[k as keyof typeof tower];
@@ -2468,19 +2487,31 @@ hideall "准备魔击x3"
             return undefined;
           })();
           if (myElPos === undefined) {
-            console.error('myElPos无效', tower, me, myElPos);
             return;
           }
-
-          const next = getNextPos(myElPos)!;
+          const next = getNextPos(myElPos);
           const nextEl = tower[next][0]!.el;
-          // console.log(data.me, tower, myElPos, next);
-          return output.text!({ pos: myElPos, el: nextEl });
+          const next2 = output.text!({
+            pos: getNextPos(next),
+            el: tower[getNextPos(next)][0]!.el,
+          });
+          const next3 = output.text!({
+            pos: getNextPos(getNextPos(next)),
+            el: tower[getNextPos(getNextPos(next))][0]!.el,
+          });
+          data.p5三星暂存 = { next2, next3 };
+          return output.text!({ pos: next, el: nextEl });
+        }
+        if (data.p5三星count === 2) {
+          return data.p5三星暂存?.next2 ?? undefined;
+        }
+        if (data.p5三星count === 3) {
+          return data.p5三星暂存?.next3 ?? undefined;
         }
       },
       outputStrings: {
-        text: { en: '${pos}找${el}塔' },
-        none: { en: '闲人，找双属性' }
+        text: { en: '${pos}找${el}1' },
+        none: { en: '闲人' },
       },
     },
     {
@@ -2506,19 +2537,69 @@ hideall "准备魔击x3"
       },
     },
     {
-      id: 'DMU P5 二选一钢铁',
+      id: 'DMU P5 二选一',
       type: 'StartsUsing',
-      netRegex: { id: 'C24E', capture: false },
-      alertText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: { en: '钢铁' } }
+      netRegex: { id: ['C24E', 'C24F'], capture: true },
+      delaySeconds: (data) => data.p5三星count === 1 ? 0 : 1.5,
+      durationSeconds: (data) => data.p5三星count === 1 ? 4 : 2.5,
+      alertText: (_data, matches, output) => output[matches.id]!(),
+      outputStrings: {
+        'C24E': { en: '钢铁' },
+        'C24F': { en: '月环' },
+      },
     },
     {
-      id: 'DMU P5 二选一月环',
-      type: 'StartsUsing',
-      netRegex: { id: 'C24F', capture: false },
-      alertText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: { en: '月环' } }
-    }
+      id: 'DMU P5 三星塔都亮起来吧收集',
+      type: 'ActorControlExtra',
+      netRegex: {
+        'category': '019D',
+        'param1': '10',
+        'param2': '20',
+        'param3': '0',
+        'param4': '0',
+      },
+      condition: (data) => data.phase === 'p5',
+      preRun: (data, matches) => {
+        data.p5三星亮起来.push(matches.id);
+      },
+    },
+    {
+      id: 'DMU P5 三星塔都亮起来吧',
+      type: 'ActorControlExtra',
+      netRegex: {
+        'category': '019D',
+        'param1': '10',
+        'param2': '20',
+        'param3': '0',
+        'param4': '0',
+        'capture': false,
+      },
+      condition: (data) => data.phase === 'p5',
+      delaySeconds: 0.2,
+      durationSeconds: 5,
+      suppressSeconds: 1,
+      infoText: (data, _matches, output) => {
+        if (!data.p5三星是闲人) {
+          return;
+        }
+        const tower = structuredClone(data.p5Tower);
+        // 看一下哪个区域的塔亮起来了2个
+        for (const k in tower) {
+          const t = tower[k as keyof typeof tower];
+          const count = t.filter((v) => data.p5三星亮起来.includes(v.id)).length;
+          if (count === 2) {
+            data.p5三星亮起来.length = 0;
+            return output.text!({ pos: k, el: t[0]!.el });
+          }
+        }
+        data.p5三星亮起来.length = 0;
+        return output.unknown!();
+      },
+      outputStrings: {
+        text: { en: '${pos}找${el}2' },
+        unknown: { en: '出错了，自己找' },
+      },
+    },
   ],
 };
 
