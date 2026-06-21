@@ -32,6 +32,7 @@ const p2OutputStirngs = {
   第1轮DPS分摊: '1轮 分摊 踩${lr}塔',
   第1轮DPS其他: '1轮 ${lr}边看搭档',
   第1轮TN自由: '1轮 ${lr}边看搭档',
+  第1轮TN自由分摊: '1轮 分摊',
   第2到8轮踩塔单: '${i}轮 (单${gimmick}) 踩塔',
   第2到8轮踩塔双: '${i}轮 (双${gimmick}) 踩塔',
   第2到8轮引导: '${i}轮 塔外引导',
@@ -90,13 +91,18 @@ const getP2 = (data: Data, _matches: Matches, output: Output) => {
 
   if (data.p2count === 1) {
     const roleGimmick = data.p2hm[0]!.find((v) => v.buff !== '分摊' && v.role === data.role)!;
-    const lr = output[`${roleGimmick.buff}组`]!();
+    const lr = data.triggerSetConfig.p2一运是扇形组左钢铁组右吗 === 'yes'
+      ? output[`${roleGimmick.buff}组`]!()
+      : '';
     // 第一轮
     if (data.role === 'tank' || data.role === 'healer') {
       const gimmick = output[me.buff]!();
-      if (data.triggerSetConfig.p2一运搭档打法 === 'free' && me.buff !== '分摊') {
+      if (data.triggerSetConfig.p2一运搭档打法 === 'free') {
         data.p2报过了 = true;
-        return output.第1轮TN自由!({ gimmick, lr });
+        if (me.buff !== '分摊') {
+          return output.第1轮TN自由!({ gimmick, lr });
+        }
+        return output.第1轮TN自由分摊!();
       }
       const inTower = Boolean(me.buff === '分摊' || (stack && stack.role === data.role));
       data.p2报过了 = true;
@@ -168,6 +174,7 @@ export interface Data extends RaidbossData {
     p1击退加真假火冰打法: '正攻' | 'TN左DPS右';
     p2一运打法: '1238' | '1234' | '1458';
     p2一运搭档打法: 'same' | 'free';
+    p2一运是扇形组左钢铁组右吗: 'yes' | 'no';
     p2一运1234打法没debuff的闲人怎么决定去哪个塔引导: 'TN左DPS右';
     // p2一运1238打法4567的闲人怎么决定去哪个塔引导: 'TN左DPS右';
   };
@@ -430,6 +437,20 @@ const triggerSet: TriggerSet<Data> = {
       default: 'same',
     },
     {
+      id: 'p2一运是扇形组左钢铁组右吗',
+      name: {
+        en: 'p2一运是扇形组左钢铁组右吗？',
+      },
+      type: 'select',
+      options: {
+        en: {
+          '是的': 'yes',
+          '不是，你别报左右': 'no',
+        },
+      },
+      default: 'yes',
+    },
+    {
       id: 'p2一运1234打法没debuff的闲人怎么决定去哪个塔引导',
       name: {
         en: 'p2一运1234打法没debuff的闲人怎么决定去哪个塔引导',
@@ -649,15 +670,17 @@ hideall "准备魔击x3"
     {
       id: 'DMU P5 魔击',
       regex: /^准备魔击x(?<count>2|3)$/,
-      infoText: (_data, matches, output) => output.text!({ count: matches.count }),
-      outputStrings: { text: { en: '平A (${count}次)' } },
+      durationSeconds: 5,
+      countdownSeconds: 5,
+      alarmText: (_data, matches, output) => output.text!({ count: matches.count }),
+      outputStrings: { text: { en: '准备平A (${count}次)' } },
     },
     {
       id: 'DMU P5 癫狂交响曲',
       regex: /^癫狂交响曲$/,
-      beforeSeconds: 10,
-      durationSeconds: 10,
-      infoText: (_data, _matches, output) => output.text!(),
+      beforeSeconds: 7,
+      durationSeconds: 7,
+      alarmText: (_data, _matches, output) => output.text!(),
       outputStrings: { text: { en: '癫狂八方' } },
     },
   ],
@@ -2140,6 +2163,7 @@ hideall "准备魔击x3"
       delaySeconds: (_data, matches) => parseFloat(matches.duration) - 4,
       countdownSeconds: 4,
       infoText: (_data, _matches, output) => output.wait!(),
+      tts: null,
       outputStrings: { wait: { en: '等月环' } },
     },
     {
@@ -2256,8 +2280,10 @@ hideall "准备魔击x3"
         eyes.sort((a, b) => a.time - b.time);
         const isEyes = eyes.find((v, i) => v.player === data.me && i < 2);
         if (isEyes) {
-          // 石化眼通过个人buff报，这里不管。
-          return;
+          return output.text!({
+            t: output[thunder]!(),
+            e: output[isEyes.gimmick]!(),
+          });
         }
         const t = output[thunder]!();
         const e = output[`人群${eyes[0]!.gimmick}`]!();
@@ -2270,6 +2296,8 @@ hideall "准备魔击x3"
         'text': { en: '${t}+${e}' },
         '假雷': { en: '吃直条' },
         '真雷': { en: '不吃' },
+        '背对眼': { en: '出去背对' },
+        '面对眼': { en: '脚底互看' },
         '人群背对眼': { en: '躲石化' },
         '人群面对眼': { en: '看石化' },
       },
@@ -2403,18 +2431,18 @@ hideall "准备魔击x3"
         B: 'BOY',
         C: 'C',
         D: 'DOG',
-        顺时针: { en: '左 <=' },
-        逆时针: { en: '右 =>' },
+        顺时针: { en: '左 ←' },
+        逆时针: { en: '右 →' },
       },
     },
     {
       id: 'DMU P5 神圣',
       type: 'Ability',
       netRegex: { id: 'BB54' },
-      condition: Conditions.targetIsYou(),
-      suppressSeconds: 1,
+      condition: (data, matches) =>
+        data.phase === 'p5' && data.role !== 'tank' && matches.target === data.me,
       infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: { en: '走' } },
+      outputStrings: { text: { en: '出去' } },
     },
     {
       id: 'DMU P5 三星',
@@ -2582,7 +2610,7 @@ hideall "准备魔击x3"
         if (!data.p5三星是闲人) {
           return;
         }
-        const tower = structuredClone(data.p5Tower);
+        const tower = data.p5Tower;
         // 看一下哪个区域的塔亮起来了2个
         for (const k in tower) {
           const t = tower[k as keyof typeof tower];
