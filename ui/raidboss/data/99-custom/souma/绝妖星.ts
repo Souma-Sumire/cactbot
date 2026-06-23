@@ -404,7 +404,6 @@ const triggerSet: TriggerSet<Data> = {
         en: {
           '正攻（被击退的去下半场）': '正攻',
           '职能固定（不推荐！）未测试': 'TN左DPS右',
-          // '正攻（报双安全区）未测试': '双安全区',
         },
       },
       default: '正攻',
@@ -433,10 +432,10 @@ const triggerSet: TriggerSet<Data> = {
       options: {
         en: {
           'TH同职能、DPS自己看': 'same',
-          '全都自己看': 'free',
+          '其他（都自己看）': 'free',
         },
       },
-      default: 'same',
+      default: 'free',
     },
     {
       id: 'p2一运是扇形组左钢铁组右吗',
@@ -446,40 +445,12 @@ const triggerSet: TriggerSet<Data> = {
       type: 'select',
       options: {
         en: {
-          '是的': 'yes',
-          '不是，你别报左右': 'no',
+          '钢铁左扇形右': 'yes',
+          '闲固（不报左右）': 'no',
         },
       },
-      default: 'yes',
+      default: 'no',
     },
-    // {
-    //   id: 'p2一运1234打法没debuff的闲人怎么决定去哪个塔引导',
-    //   name: {
-    //     en: 'p2一运1234打法没debuff的闲人怎么决定去哪个塔引导',
-    //   },
-    //   comment: { en: '只影响1234打法' },
-    //   type: 'select',
-    //   options: {
-    //     en: {
-    //       'TN左DPS右': 'TN左DPS右',
-    //     },
-    //   },
-    //   default: 'TN左DPS右',
-    // },
-    // {
-    //   id: 'p2一运1238打法4567的闲人怎么决定去哪个塔引导',
-    //   name: {
-    //     en: 'p2一运1238打法4567的闲人怎么决定去哪个塔引导',
-    //   },
-    //   comment: { en: '其他打法我不知道，我们团是这么打的。' },
-    //   type: 'select',
-    //   options: {
-    //     en: {
-    //       'TN左DPS右': 'TN左DPS右',
-    //     },
-    //   },
-    //   default: 'TN左DPS右',
-    // },
   ],
   overrideTimelineFile: true,
   timeline: `
@@ -593,25 +564,25 @@ hideall "准备魔击x3"
 
 # P5
 902.8 "连续究极 x4" StartsUsing { id: "BB40" } window 20,20
-904.7 "准备魔击x3"
+905.7 "准备魔击x3"
 907.7 "魔击 x3"
 920.3 "混沌洪水 x4"
 933.3 "癫狂交响曲"
 936.5 "混沌核爆/神圣"
 940 "核爆扩散/混沌神圣"
-941.2 "准备魔击x2"
+942.2 "准备魔击x2"
 944.6 "魔击 x2"
 963.3 "三星"
 969.3 "三星"
 975.4 "三星"
 984.8 "连续究极 x4"
-986.3 "准备魔击x2"
+987.3 "准备魔击x2"
 989.7 "魔击 x2"
 1016.3 "混沌涡旋"
 1025.4 "癫狂交响曲"
 1028.6 "混沌核爆/神圣"
 1032.1 "核爆扩散/混沌神圣"
-1033.7 "准备魔击x3"
+1034.7 "准备魔击x3"
 1036.7 "魔击 x3"
 1054.3 "遗弃末世"
 1059.4 "遗弃末狱"
@@ -675,7 +646,7 @@ hideall "准备魔击x3"
     {
       id: 'DMU P5 魔击',
       regex: /^准备魔击x(?<count>2|3)$/,
-      beforeSeconds: 0,
+      beforeSeconds: 0.01,
       durationSeconds: 3,
       alertText: (_data, matches, output) => output.text!({ count: matches.count }),
       outputStrings: { text: { en: '准备平A (${count}次)' } },
@@ -963,12 +934,6 @@ hideall "准备魔击x3"
             `${'正攻'}${Directions.outputFrom8DirNum(nn)}${nn !== n ? '击退' : ''}`
           ]!();
         }
-        // if (data.triggerSetConfig.p1击退加真假火冰打法 === '双安全区') {
-        //   return output.text!({
-        //     dir1: output[Directions.outputFrom8DirNum(n1)]!(),
-        //     dir2: output[Directions.outputFrom8DirNum(n2)]!(),
-        //   });
-        // }
       },
       outputStrings: {
         text: { en: '${dir1}${dir2}' },
@@ -2725,7 +2690,7 @@ hideall "准备魔击x3"
       id: 'DMU P5 狂暴啦',
       type: 'StartsUsing',
       netRegex: { id: 'BB3A', capture: false },
-      countdownSeconds: 25.7,
+      countdownSeconds: 30,
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: { text: { en: '狂暴' } },
     },
