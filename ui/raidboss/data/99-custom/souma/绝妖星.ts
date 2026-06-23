@@ -251,6 +251,7 @@ export interface Data extends RaidbossData {
   p5三星亮起来: string[];
   p5魔击count: number;
   p5神圣: NetMatches['Ability'][];
+  p5软狂暴count: number;
 }
 
 const headMarkerData = {
@@ -668,6 +669,7 @@ hideall "准备魔击x3"
       p5三星亮起来: [],
       p5魔击count: 0,
       p5神圣: [],
+      p5软狂暴count: 0,
     };
   },
   timelineTriggers: [
@@ -2711,8 +2713,14 @@ hideall "准备魔击x3"
       netRegex: { id: 'BB38', capture: false },
       delaySeconds: 4.7,
       countdownSeconds: 4.7,
-      infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: { en: '停' } },
+      infoText: (data, _matches, output) => {
+        data.p5软狂暴count++;
+        if (data.p5软狂暴count === 4) {
+          return output.over!();
+        }
+        return output.text!();
+      },
+      outputStrings: { text: { en: '停' }, over: { en: '结束' } },
     },
     {
       id: 'DMU P5 狂暴啦',
