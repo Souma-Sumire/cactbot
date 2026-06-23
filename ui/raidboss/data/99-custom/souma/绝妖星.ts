@@ -156,8 +156,8 @@ const getP2 = (data: Data, _matches: Matches, output: Output) => {
     // // 没buff的人按照TN左DPS右引导
     if (
       data.p2BuffCount[data.me] === 0 &&
-      data.triggerSetConfig.p2一运打法 === '1234' &&
-      data.triggerSetConfig.p2一运1234打法没debuff的闲人怎么决定去哪个塔引导 === 'TN左DPS右'
+      data.triggerSetConfig.p2一运打法 === '1234'
+      //  && data.triggerSetConfig.p2一运1234打法没debuff的闲人怎么决定去哪个塔引导 === 'TN左DPS右'
     ) {
       return output[`第2到8轮引导${data.role}`]!({ i: towerCount });
     }
@@ -175,8 +175,7 @@ export interface Data extends RaidbossData {
     p2一运打法: '1238' | '1234' | '1458';
     p2一运搭档打法: 'same' | 'free';
     p2一运是扇形组左钢铁组右吗: 'yes' | 'no';
-    p2一运1234打法没debuff的闲人怎么决定去哪个塔引导: 'TN左DPS右';
-    // p2一运1238打法4567的闲人怎么决定去哪个塔引导: 'TN左DPS右';
+    // p2一运1234打法没debuff的闲人怎么决定去哪个塔引导: 'TN左DPS右';
   };
   // General
   phase: Phase | 'unknown';
@@ -453,20 +452,20 @@ const triggerSet: TriggerSet<Data> = {
       },
       default: 'yes',
     },
-    {
-      id: 'p2一运1234打法没debuff的闲人怎么决定去哪个塔引导',
-      name: {
-        en: 'p2一运1234打法没debuff的闲人怎么决定去哪个塔引导',
-      },
-      comment: { en: '其他打法我不知道，我们团是这么打的。' },
-      type: 'select',
-      options: {
-        en: {
-          'TN左DPS右': 'TN左DPS右',
-        },
-      },
-      default: 'TN左DPS右',
-    },
+    // {
+    //   id: 'p2一运1234打法没debuff的闲人怎么决定去哪个塔引导',
+    //   name: {
+    //     en: 'p2一运1234打法没debuff的闲人怎么决定去哪个塔引导',
+    //   },
+    //   comment: { en: '只影响1234打法' },
+    //   type: 'select',
+    //   options: {
+    //     en: {
+    //       'TN左DPS右': 'TN左DPS右',
+    //     },
+    //   },
+    //   default: 'TN左DPS右',
+    // },
     // {
     //   id: 'p2一运1238打法4567的闲人怎么决定去哪个塔引导',
     //   name: {
