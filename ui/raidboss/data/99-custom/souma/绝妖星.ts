@@ -2689,6 +2689,39 @@ hideall "准备魔击x3"
         return n === 0 ? { infoText: output.over!() } : { alertText: output.text!({ n }) };
       },
     },
+    {
+      id: 'DMU P5 软狂暴啦',
+      type: 'StartsUsing',
+      netRegex: { id: 'BB35', capture: false },
+      countdownSeconds: 9.7,
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: '软狂暴集合' } },
+    },
+    {
+      id: 'DMU P5 软狂暴中途1',
+      type: 'StartsUsing',
+      netRegex: { id: 'BB38', capture: false },
+      countdownSeconds: 4.7,
+      alertText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: '走' } },
+    },
+    {
+      id: 'DMU P5 软狂暴中途2',
+      type: 'StartsUsing',
+      netRegex: { id: 'BB38', capture: false },
+      delaySeconds: 4.7,
+      countdownSeconds: 4.7,
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: '停' } },
+    },
+    {
+      id: 'DMU P5 狂暴啦',
+      type: 'StartsUsing',
+      netRegex: { id: 'BB3A', capture: false },
+      countdownSeconds: 25.7,
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: { en: '狂暴' } },
+    },
   ],
 };
 
