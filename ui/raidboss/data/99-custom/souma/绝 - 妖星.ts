@@ -468,13 +468,7 @@ const triggerSet: TriggerSet<Data> = {
       name: {
         en: '打铁发送到聊天频道',
       },
-      type: 'select',
-      options: {
-        en: {
-          '默语': 'e',
-          '小队（破坏队伍团结，极其不推荐）': 'p',
-        },
-      },
+      type: 'string',
       default: 'e',
     },
     {
