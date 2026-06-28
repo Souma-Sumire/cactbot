@@ -460,7 +460,7 @@ const triggerSet: TriggerSet<Data> = {
         en: '开启P3打铁警察',
       },
       type: 'checkbox',
-      default: true,
+      default: false,
       comment: { en: '需要插件“鲶鱼精邮差”' },
     },
     {
