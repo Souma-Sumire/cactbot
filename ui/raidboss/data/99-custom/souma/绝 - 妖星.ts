@@ -23,7 +23,7 @@ const centerX = 100;
 const centerY = 100;
 
 const p2OutputStirngs = {
-  // 如果不是固定扇形右，就改成“扇形组的”或者空格
+  // 如果不是固定扇形左，就改成“扇形组的”或者空格
   扇形组: '左',
   // 如果不是固定钢铁右，就改成“钢铁组的”或者空格
   钢铁组: '右',
@@ -443,13 +443,13 @@ const triggerSet: TriggerSet<Data> = {
     {
       id: 'p2一运是扇形组左钢铁组右吗',
       name: {
-        en: 'p2一运是扇形组左钢铁组右吗？',
+        en: 'p2一运的初始分组是按职能(TN/DPS）的扇形组左钢铁组右吗？',
       },
       type: 'select',
       options: {
         en: {
-          '钢铁左扇形右': 'yes',
-          '闲固（不报左右）': 'no',
+          '是（同职能是扇形则报左，钢铁报右）': 'yes',
+          '不是（不报）': 'no',
         },
       },
       default: 'no',
