@@ -248,24 +248,7 @@ export default class EmulatedPartyInfo extends EventBus {
             Util.jobToRole(Util.jobEnumToJob(firstState.Job)),
           );
         }
-
-        const trimmedDuration = encounter.encounter.duration - encounter.encounter.initialOffset;
-
-        for (const trigger of perspective.triggers) {
-          if (
-            !trigger.status.executed ||
-            trigger.resolvedOffset > encounter.encounter.duration ||
-            trigger.resolvedOffset < encounter.encounter.initialOffset
-          )
-            continue;
-
-          const $e = cloneSafe(this.$triggerItemTemplate);
-          const adjustedOffset = trigger.resolvedOffset - encounter.encounter.initialOffset;
-          $e.style.left = `${(adjustedOffset / trimmedDuration * 100).toString()}%`;
-          const triggerId = trigger.triggerHelper.trigger.id ?? 'Unknown Trigger';
-          this.tooltips.push(new Tooltip($e, 'bottom', triggerId));
-          bar.append($e);
-        }
+        // Trigger bars will be populated on demand when perspective is selected.
       }
     }
 
@@ -275,14 +258,18 @@ export default class EmulatedPartyInfo extends EventBus {
     if (toDisplay === undefined)
       throw new UnreachableCode();
 
-    this.selectPerspective(toDisplay);
+    void this.selectPerspective(toDisplay);
   }
 
-  selectPerspective(id: string): void {
+  async selectPerspective(id: string): Promise<void> {
     if (id === this.currentPerspective)
       return;
 
-    const combatant = this.emulator.currentEncounter?.encounter.combatantTracker?.combatants[id];
+    const enc = this.emulator.currentEncounter;
+    if (!enc)
+      return;
+
+    const combatant = enc.encounter.combatantTracker?.combatants[id];
     if (!combatant?.nextState(0).Job)
       return;
 
@@ -292,6 +279,13 @@ export default class EmulatedPartyInfo extends EventBus {
       throw new UnreachableCode();
 
     this.currentPerspective = id;
+
+    // Lazily analyze this perspective on demand
+    await enc.ensureAnalyzed(id);
+
+    // Refresh trigger info and trigger bar after analysis
+    this.refreshTriggerInfoFor(enc, id, display);
+
     this.$triggerInfo.querySelectorAll('.playerTriggerInfo').forEach((r) =>
       r.classList.add('d-none')
     );
@@ -302,7 +296,52 @@ export default class EmulatedPartyInfo extends EventBus {
     });
     display.$rootElem.classList.add('border');
     display.$rootElem.classList.add('border-success');
+    this.updateTriggerState();
     void this.dispatch('selectPerspective', id);
+  }
+
+  private refreshTriggerInfoFor(
+    encounter: AnalyzedEncounter,
+    id: string,
+    display: PartyInfo,
+  ): void {
+    // Replace trigger info element with fresh content
+    const newTriggerElem = this.getTriggerInfoObjectFor(encounter, id);
+    newTriggerElem.setAttribute('data-id', id);
+    display.$triggerElem.replaceWith(newTriggerElem);
+    display.$triggerElem = newTriggerElem;
+
+    // Populate trigger bar for this perspective
+    const perspective = encounter.perspectives[id];
+    if (!perspective)
+      return;
+
+    const memberIndex = encounter.encounter.combatantTracker?.partyMembers.indexOf(id);
+    if (memberIndex === undefined || memberIndex < 0)
+      return;
+    const bar = this.triggerBars[memberIndex];
+    if (!bar)
+      return;
+
+    // Clear existing trigger items in this bar
+    bar.querySelectorAll('.trigger-item').forEach((n) => n.remove());
+
+    const trimmedDuration = encounter.encounter.duration - encounter.encounter.initialOffset;
+    for (const trigger of perspective.triggers) {
+      if (
+        !trigger.status.executed ||
+        trigger.resolvedOffset > encounter.encounter.duration ||
+        trigger.resolvedOffset < encounter.encounter.initialOffset
+      )
+        continue;
+
+      const $e = cloneSafe(this.$triggerItemTemplate);
+      const adjustedOffset = trigger.resolvedOffset - encounter.encounter.initialOffset;
+      $e.style.left = `${(adjustedOffset / trimmedDuration * 100).toString()}%`;
+      const triggerId = trigger.triggerHelper.trigger.id ?? 'Unknown Trigger';
+      this.tooltips.push(new Tooltip($e, 'bottom', triggerId));
+      bar.append($e);
+    }
   }
 
   updateCombatantInfo(encounter: AnalyzedEncounter, id: string, stateID: number): void {
@@ -362,7 +401,7 @@ export default class EmulatedPartyInfo extends EventBus {
     this.tooltips.push(new Tooltip(ret.$rootElem, 'left', firstState.Name ?? ''));
     $name.innerHTML = firstState.Name ?? '';
     ret.$rootElem.addEventListener('click', () => {
-      this.selectPerspective(id);
+      void this.selectPerspective(id);
     });
     ret.$triggerElem.setAttribute('data-id', id);
     return ret;
@@ -378,7 +417,9 @@ export default class EmulatedPartyInfo extends EventBus {
       throw new UnreachableCode();
 
     const $initDataViewer = cloneSafe(this.$jsonViewerTemplate);
-    $initDataViewer.textContent = JSON.stringify(per.initialData, null, 2);
+    $initDataViewer.textContent = per.initialData
+      ? JSON.stringify(per.initialData, null, 2)
+      : '(Data cloning disabled for memory optimization)';
 
     $container.append(this._wrapCollapse({
       time: '00:00',
@@ -391,7 +432,20 @@ export default class EmulatedPartyInfo extends EventBus {
 
     for (const trigger of per.triggers.sort((l, r) => l.resolvedOffset - r.resolvedOffset)) {
       const $triggerDataViewer = cloneSafe(this.$jsonViewerTemplate);
-      $triggerDataViewer.textContent = JSON.stringify(trigger, null, 2);
+      $triggerDataViewer.textContent = JSON.stringify({
+        triggerId: trigger.triggerHelper.trigger.id,
+        responseType: trigger.status.responseType,
+        responseLabel: trigger.status.responseLabel,
+        executed: trigger.status.executed,
+        condition: trigger.status.condition,
+        delay: trigger.status.delay,
+        resolvedOffset: trigger.resolvedOffset,
+        matches: trigger.triggerHelper.matches,
+        logLine: {
+          networkLine: trigger.logLine.networkLine,
+          convertedLine: trigger.logLine.convertedLine,
+        },
+      }, null, 2);
       const triggerText = trigger.status.responseLabel;
       const type = trigger.status.responseType;
       const $trigger = this._wrapCollapse({

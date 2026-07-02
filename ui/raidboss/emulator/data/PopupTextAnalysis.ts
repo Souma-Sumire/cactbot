@@ -5,7 +5,7 @@ import { LooseTrigger, RaidbossFileData } from '../../../../types/trigger';
 import { ProcessedTrigger, Text, TextText, TriggerHelper } from '../../popup-text';
 import { RaidbossOptions } from '../../raidboss_options';
 import { TimelineLoader } from '../../timeline';
-import EmulatorCommon, { DataType } from '../EmulatorCommon';
+import { DataType } from '../EmulatorCommon';
 import StubbedPopupText from '../overrides/StubbedPopupText';
 
 import LineEvent from './network_log_converter/LineEvent';
@@ -24,6 +24,7 @@ export interface ResolverStatus {
   suppressed: boolean;
   executed: boolean;
   promise?: Promise<void>;
+  triggeringLine?: LineEvent;
 }
 
 type EmulatorTriggerHelper = TriggerHelper & {
@@ -152,16 +153,16 @@ export default class PopupTextAnalysis extends StubbedPopupText {
           continue;
 
         const resolver = this.currentResolver = new Resolver({
-          initialData: EmulatorCommon.cloneData(this.data),
+          initialData: null,
           suppressed: false,
           executed: false,
+          triggeringLine: logObj,
         });
 
         this.OnTrigger(trigger, r, logObj.timestamp);
 
         resolver.setFinal(() => {
           const currentLine = getCurrentLogLine();
-          resolver.status.finalData = EmulatorCommon.cloneData(this.data);
           delete resolver.triggerHelper?.resolver;
           if (this.callback)
             this.callback(currentLine, resolver.triggerHelper, resolver.status, this.data);
@@ -185,9 +186,10 @@ export default class PopupTextAnalysis extends StubbedPopupText {
         }
         if (r !== false) {
           const resolver = this.currentResolver = new Resolver({
-            initialData: EmulatorCommon.cloneData(this.data),
+            initialData: null,
             suppressed: false,
             executed: false,
+            triggeringLine: logObj,
           });
 
           const matches = r.groups ?? {};
@@ -197,7 +199,6 @@ export default class PopupTextAnalysis extends StubbedPopupText {
 
           resolver.setFinal(() => {
             const currentLine = getCurrentLogLine();
-            resolver.status.finalData = EmulatorCommon.cloneData(this.data);
             delete resolver.triggerHelper?.resolver;
             if (this.callback)
               this.callback(currentLine, resolver.triggerHelper, resolver.status, this.data);

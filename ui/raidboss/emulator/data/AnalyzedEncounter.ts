@@ -5,7 +5,7 @@ import raidbossFileData from '../../data/raidboss_manifest.txt';
 import { PopupTextGenerator, TriggerHelper } from '../../popup-text';
 import { RaidbossOptions } from '../../raidboss_options';
 import { TimelineLoader } from '../../timeline';
-import EmulatorCommon, { DataType } from '../EmulatorCommon';
+import { DataType } from '../EmulatorCommon';
 import EventBus from '../EventBus';
 import RaidEmulatorAnalysisTimelineUI from '../overrides/RaidEmulatorAnalysisTimelineUI';
 import RaidEmulatorPopupText from '../overrides/RaidEmulatorPopupText';
@@ -15,7 +15,7 @@ import RaidEmulatorWatchCombatantsOverride from '../overrides/RaidEmulatorWatchC
 import Combatant from './Combatant';
 import Encounter from './Encounter';
 import LineEvent from './network_log_converter/LineEvent';
-import PopupTextAnalysis, { LineRegExpCache, Resolver, ResolverStatus } from './PopupTextAnalysis';
+import PopupTextAnalysis, { Resolver, ResolverStatus } from './PopupTextAnalysis';
 import RaidEmulator from './RaidEmulator';
 
 export type PerspectiveTrigger = {
@@ -33,7 +33,7 @@ type Perspectives = { [id: string]: Perspective };
 
 export default class AnalyzedEncounter extends EventBus {
   perspectives: Perspectives = {};
-  regexCache: LineRegExpCache | undefined;
+  analyzedIds: Set<string> = new Set();
   constructor(
     public options: RaidbossOptions,
     public encounter: Encounter,
@@ -111,16 +111,35 @@ export default class AnalyzedEncounter extends EventBus {
   }
 
   async analyze(): Promise<void> {
-    // @TODO: Make this run in parallel sometime in the future, since it could be really slow?
+    // Initialize empty perspectives for all party members without analyzing.
+    // Analysis is deferred to ensureAnalyzed() which is called on demand.
     if (this.encounter.combatantTracker) {
-      for (const id of this.encounter.combatantTracker.partyMembers)
-        await this.analyzeFor(id);
+      for (const id of this.encounter.combatantTracker.partyMembers) {
+        this.perspectives[id] = {
+          initialData: {},
+          triggers: [],
+        };
+      }
     }
 
-    // Free up this memory
-    delete this.regexCache;
-
     return this.dispatch('analyzed');
+  }
+
+  async ensureAnalyzed(id: string): Promise<void> {
+    if (this.analyzedIds.has(id))
+      return;
+    await this.analyzeFor(id);
+    this.analyzedIds.add(id);
+  }
+
+  evictPerspective(id: string): void {
+    if (!this.analyzedIds.has(id))
+      return;
+    this.perspectives[id] = {
+      initialData: {},
+      triggers: [],
+    };
+    this.analyzedIds.delete(id);
   }
 
   async analyzeFor(id: string): Promise<void> {
@@ -163,9 +182,6 @@ export default class AnalyzedEncounter extends EventBus {
       raidbossFileData,
     );
 
-    if (this.regexCache)
-      popupText.regexCache = this.regexCache;
-
     const generator = new PopupTextGenerator(popupText);
     timelineUI.SetPopupTextInterface(generator);
 
@@ -180,9 +196,10 @@ export default class AnalyzedEncounter extends EventBus {
           throw new UnreachableCode();
 
         const resolver = popupText.currentResolver = new Resolver({
-          initialData: EmulatorCommon.cloneData(popupText.getData()),
+          initialData: null,
           suppressed: false,
           executed: false,
+          triggeringLine: currentLine,
         });
         resolver.triggerHelper = popupText._onTriggerInternalGetHelper(
           trigger,
@@ -197,7 +214,6 @@ export default class AnalyzedEncounter extends EventBus {
           // Get the current log line when the callback is executed instead of the line
           // when the trigger initially fires
           const resolvedLine = getCurLogLine();
-          resolver.status.finalData = EmulatorCommon.cloneData(popupText.getData());
           delete resolver.triggerHelper?.resolver;
           if (popupText.callback) {
             popupText.callback(
@@ -216,17 +232,19 @@ export default class AnalyzedEncounter extends EventBus {
       if (!perspective || !triggerHelper)
         throw new UnreachableCode();
 
+      const triggeringLine = currentTriggerStatus.triggeringLine || log;
+
       perspective.triggers.push({
         triggerHelper: triggerHelper,
         status: currentTriggerStatus,
-        logLine: log,
+        logLine: triggeringLine,
         resolvedOffset: log.timestamp - this.encounter.startTimestamp,
       });
     };
     popupText.triggerResolvers = [];
 
     this.perspectives[id] = {
-      initialData: EmulatorCommon.cloneData(popupText.getData(), []),
+      initialData: null,
       triggers: [],
       finalData: popupText.getData(),
     };
@@ -249,6 +267,6 @@ export default class AnalyzedEncounter extends EventBus {
 
     this.watchCombatantsOverride.clear();
     timelineUI.stop();
-    this.regexCache = popupText.regexCache;
+    // Do not persist regexCache across perspectives to save memory.
   }
 }
