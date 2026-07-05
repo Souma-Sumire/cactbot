@@ -1377,8 +1377,8 @@ hideall "准备魔击x3"
     },
     {
       id: 'DMU P2 HM判',
-      type: 'HeadMarker',
       comment: { en: '这里的 output 和"DMU P2 没事干了"是完全一样的，如果改的话也都改成一样的。' },
+      type: 'HeadMarker',
       netRegex: {
         id: [
           headMarkerData.分摊,
