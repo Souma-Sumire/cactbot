@@ -23,6 +23,17 @@ const centerX = 100;
 const centerY = 100;
 const rpSortArr = ['MT', 'ST', 'H1', 'H2', 'D1', 'D2', 'D3', 'D4'];
 
+const dmuMark = (actorDecID: number, markType: string, localOnly: boolean = false) => {
+  if (/raidemulator\.html/.test(location.href)) {
+    console.debug(`尝试标记${markType}给${actorDecID}(${actorDecID.toString(16).toUpperCase()})`);
+    return;
+  }
+  void callOverlayHandler({
+    call: 'PostNamazu',
+    c: 'mark',
+    p: JSON.stringify({ ActorID: actorDecID, MarkType: markType, LocalOnly: localOnly }),
+  });
+};
 const p2OutputStirngs = {
   第1轮fallback: '${gimmick}组+${buff}',
   第1轮我分摊搭档扇形: '左踩塔（分摊）',
@@ -154,6 +165,10 @@ export interface Data extends RaidbossData {
     p3打铁聊天频道?: 'e' | 'p';
     p3打铁监控范围: 'me' | 'all';
     p3麻将发宏: boolean;
+    p3混沌之土标记: boolean;
+    p3混沌之土标记方法: '美式' | '自定义';
+    p3混沌之土标记美式优先级: string;
+    p3混沌之土标记自定义优先级: string;
   };
   // General
   phase: Phase | 'unknown';
@@ -193,6 +208,15 @@ export interface Data extends RaidbossData {
     c2: number;
     clk: '顺' | '逆';
   } | undefined;
+  p3混沌之泥土: string[];
+  p3第N目标: {
+    target: string;
+    n: number;
+    mud: boolean;
+    role: string;
+    id: number;
+    rp: RP | undefined;
+  }[];
   p4真假: {
     '新生艾克斯迪司': boolean[];
     '卡奥斯': boolean[];
@@ -286,6 +310,13 @@ const p3mj: {
   '01B6': 6,
   '01B7': 7,
   '01B8': 8,
+};
+const p3tar: {
+  [key: string]: number;
+} = {
+  'BBC': 1,
+  'BBD': 2,
+  'BBE': 3,
 };
 const p4buff: {
   [key: string]: { name: string; true: string; false: string; source: P3Boss };
@@ -424,6 +455,44 @@ const triggerSet: TriggerSet<Data> = {
       type: 'checkbox',
       default: false,
       comment: { en: '需要插件“鲶鱼精邮差”' },
+    },
+    {
+      id: 'p3混沌之土标记',
+      name: { en: '开启P3混沌之土标记' },
+      type: 'checkbox',
+      default: true,
+      comment: { en: '需要插件“鲶鱼精邮差”' },
+    },
+    {
+      id: 'p3混沌之土标记方法',
+      name: { en: '开启P3混沌之土标记方法' },
+      type: 'select',
+      options: {
+        en: {
+          '美式（推荐）非泥D/H必是1，双T必是2，泥必是3': '美式',
+          '自定义': '自定义',
+        },
+      },
+      default: '美式',
+    },
+    {
+      id: 'p3混沌之土标记美式优先级',
+      comment: {
+        en: '仅在“美式”方法下生效，此处的D与H必定为“非泥”，mud为“混沌之泥土”。只接受小写"dps"、"healer"、"tank"、"mud"，并用半角“大于号”隔开。',
+      },
+      name: { en: 'P3混沌之土美式优先级' },
+      type: 'string',
+      default: 'dps>healer>tank>mud',
+    },
+    {
+      id: 'p3混沌之土标记自定义优先级',
+      comment: {
+        en:
+          '仅在“自定义”方法下生效，此优先级不考虑混沌之泥土debuff。只接受大写"D1"、"D2"、"D3"、"D4"、"H1"、"H2"、"ST"、"MT"，并用半角“大于号”隔开。必须联动职能分配悬浮窗，若未发现职能则自动降级至美式标记。',
+      },
+      name: { en: 'P3混沌之土自定义优先级' },
+      type: 'string',
+      default: 'MT>ST>H1>H2>D1>D2>D3>D4',
     },
     {
       id: 'p3打铁警察',
@@ -627,6 +696,8 @@ hideall "准备魔击x3"
       p2报过了: false,
       p3buffs: {},
       p3jjcjb: undefined,
+      p3混沌之泥土: [],
+      p3第N目标: [],
       p4真假: { '新生艾克斯迪司': [], '卡奥斯': [] },
       p4count: { '新生艾克斯迪司': 0, '卡奥斯': 0 },
       p4CastCount: 0,
@@ -685,6 +756,7 @@ hideall "准备魔击x3"
           data.p1Arrow = [];
           data.p1石头count = 1;
           data.p3究极冲击波hdg = [];
+          data.p3混沌之泥土 = [];
           data.p1收集 = [];
           data.eyeTowerIds = [];
           data.fakeEyeTowerIds = [];
@@ -923,10 +995,18 @@ hideall "准备魔击x3"
           number,
           number,
         ];
+
         if (data.triggerSetConfig.p1击退加真假火冰打法 === 'TN左DPS右') {
-          return output[
-            `${'TN左DPS右'}${Directions.outputFrom8DirNum([5, 7].includes(n1) ? n1 : n2)}`
-          ]!();
+          const role = data.role === 'dps' ? 'dps' : 'th';
+          const n = (role === 'dps' ? [1, 3] : [5, 7]).includes(n1) ? n1 : n2;
+          const nn = {
+            3: 1,
+            5: 7,
+            1: 1,
+            7: 7,
+          }[n]!;
+          const dir = output[`职能固定${Directions.outputFrom8DirNum(nn)}`]!();
+          return data.p1IsTether ? output.职能固定击退!({ dir }) : dir;
         }
         if (data.triggerSetConfig.p1击退加真假火冰打法 === '正攻') {
           const n = (data.p1IsTether ? [3, 5] : [1, 7]).includes(n1) ? n1 : n2;
@@ -955,10 +1035,11 @@ hideall "准备魔击x3"
         正攻dirNW: { en: '左上' },
         正攻dirNW击退: { en: '左上击退' },
 
-        TN左DPS右dirNE: { en: '右上' },
-        TN左DPS右dirSE: { en: '右下' },
-        TN左DPS右dirSW: { en: '左下' },
-        TN左DPS右dirNW: { en: '左上' },
+        职能固定dirNE: { en: '右上' },
+        职能固定dirSE: { en: '右下' },
+        职能固定dirSW: { en: '左下' },
+        职能固定dirNW: { en: '左上' },
+        职能固定击退: { en: '击退到${dir}' },
       },
     },
     {
@@ -1504,6 +1585,70 @@ hideall "准备魔击x3"
       },
       outputStrings: {
         singleTarget: '恭喜 ${name.job} 打铁成功！${ability}<se.5>',
+      },
+    },
+    {
+      id: 'DMU P3 混沌之泥土',
+      type: 'GainsEffect',
+      netRegex: { effectId: '644' },
+      preRun: (data, matches) => data.p3混沌之泥土.push(matches.target),
+      durationSeconds: 7,
+      alertText: (data, _matches, output) => {
+        if (data.p3混沌之泥土.length === 2 && data.role === 'healer') {
+          if (data.party.nameToRole_[data.p3混沌之泥土[0]!] === 'dps') {
+            data.p3混沌之泥土.reverse();
+          }
+          return output.text!({
+            name1: data.party.member(data.p3混沌之泥土[0]),
+            name2: data.party.member(data.p3混沌之泥土[1]),
+          });
+        }
+        return undefined;
+      },
+      outputStrings: { text: '奶满${name1}和${name2}' },
+    },
+    {
+      id: 'DMU P3 第N目标',
+      type: 'GainsEffect',
+      netRegex: { effectId: Object.keys(p3tar) },
+      preRun: (data, matches) =>
+        data.p3第N目标.push({
+          n: p3tar[matches.effectId]!,
+          target: matches.target,
+          id: parseInt(matches.targetId, 16),
+          mud: data.p3混沌之泥土.includes(matches.target),
+          role: data.party.nameToRole_[matches.target]!,
+          rp: Util?.souma?.getRpByName?.(data, matches.target) ?? undefined,
+        }),
+      delaySeconds: 0.5,
+      run: (data) => {
+        if (data.p3第N目标.length === 8 && data.triggerSetConfig.p3混沌之土标记) {
+          if (data.triggerSetConfig.p3混沌之土标记方法 === '美式' || data.p3第N目标[0]?.rp === undefined) {
+            if (data.triggerSetConfig.p3混沌之土标记方法 === '自定义' && data.p3第N目标[0]?.rp === undefined) {
+              console.warn('未发现玩家职能，已将 混沌之土 标记方法 降级至美式标记');
+            }
+            const sortArr = data.triggerSetConfig.p3混沌之土标记美式优先级.split('>');
+            data.p3第N目标.sort((a, b) =>
+              sortArr.indexOf(a.mud ? 'mud' : a.role) -
+              sortArr.indexOf(b.mud ? 'mud' : b.role)
+            );
+          } else if (data.triggerSetConfig.p3混沌之土标记方法 === '自定义') {
+            const sortArr = data.triggerSetConfig.p3混沌之土标记自定义优先级.split('>');
+            data.p3第N目标.sort((a, b) => sortArr.indexOf(a.rp ?? '') - sortArr.indexOf(b.rp ?? ''));
+          }
+          const m1 = data.p3第N目标.filter((v) => v.n === 1);
+          const m2 = data.p3第N目标.filter((v) => v.n === 2);
+          const m3 = data.p3第N目标.filter((v) => v.n === 3);
+          dmuMark(m1[0]!.id, 'attack1', false);
+          dmuMark(m1[1]!.id, 'attack2', false);
+          dmuMark(m1[2]!.id, 'attack3', false);
+          dmuMark(m2[0]!.id, 'bind1', false);
+          dmuMark(m2[1]!.id, 'bind2', false);
+          dmuMark(m2[2]!.id, 'bind3', false);
+          dmuMark(m3[0]!.id, 'stop1', false);
+          dmuMark(m3[1]!.id, 'stop2', false);
+          // console.log(m1, m2, m3);
+        }
       },
     },
     {
