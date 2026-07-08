@@ -701,16 +701,16 @@ const Util = {
         p: JSON.stringify(actions),
       });
     },
-    mark: (actorHexID: number, markType: string, localOnly: boolean) => {
+    mark: (actorDecID: number, markType: string, localOnly: boolean = false) => {
       if (isRaidemulator) {
-        console.debug(`尝试标记${markType}给${actorHexID}`);
+        console.debug(`尝试标记${markType}给${actorDecID}(${actorDecID.toString(16).toUpperCase()})`);
         return;
       }
       void callOverlayHandler({
         call: 'PostNamazu',
         c: 'mark',
         p: JSON.stringify({
-          ActorID: actorHexID,
+          ActorID: actorDecID,
           MarkType: markType,
           LocalOnly: localOnly,
         }),
