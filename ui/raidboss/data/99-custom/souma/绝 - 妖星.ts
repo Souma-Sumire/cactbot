@@ -1627,13 +1627,13 @@ hideall "准备魔击x3"
             if (data.triggerSetConfig.p3混沌之土标记方法 === '自定义' && data.p3第N目标[0]?.rp === undefined) {
               console.warn('未发现玩家职能，已将 混沌之土 标记方法 降级至美式标记');
             }
-            const sortArr = data.triggerSetConfig.p3混沌之土标记美式优先级.split('>');
+            const sortArr = data.triggerSetConfig.p3混沌之土标记美式优先级.split('>').map((v) => v.trim());
             data.p3第N目标.sort((a, b) =>
               sortArr.indexOf(a.mud ? 'mud' : a.role) -
               sortArr.indexOf(b.mud ? 'mud' : b.role)
             );
           } else if (data.triggerSetConfig.p3混沌之土标记方法 === '自定义') {
-            const sortArr = data.triggerSetConfig.p3混沌之土标记自定义优先级.split('>');
+            const sortArr = data.triggerSetConfig.p3混沌之土标记自定义优先级.split('>').map((v) => v.trim());
             data.p3第N目标.sort((a, b) => sortArr.indexOf(a.rp ?? '') - sortArr.indexOf(b.rp ?? ''));
           }
           const m1 = data.p3第N目标.filter((v) => v.n === 1);
