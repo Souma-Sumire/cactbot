@@ -460,7 +460,7 @@ const triggerSet: TriggerSet<Data> = {
       id: 'p3混沌之土标记',
       name: { en: '开启P3混沌之土标记' },
       type: 'checkbox',
-      default: true,
+      default: false,
       comment: { en: '需要插件“鲶鱼精邮差”' },
     },
     {
