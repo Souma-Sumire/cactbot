@@ -261,6 +261,7 @@ export interface Data extends RaidbossData {
     左上: { dir: number; el: string; id: string }[];
   };
   p5三星亮起来: string[];
+  p5三星报过了: boolean;
   p5魔击count: number;
   p5神圣: NetMatches['Ability'][];
   p5软狂暴count: number;
@@ -722,6 +723,7 @@ hideall "准备魔击x3"
       p5三星是闲人: false,
       p5Tower: { 右上: [], 下: [], 左上: [] },
       p5三星亮起来: [],
+      p5三星报过了: false,
       p5魔击count: 0,
       p5神圣: [],
       p5软狂暴count: 0,
@@ -2865,22 +2867,7 @@ hideall "准备魔击x3"
       preRun: (data, matches) => {
         data.p5三星亮起来.push(matches.id);
       },
-    },
-    {
-      id: 'DMU P5 三星塔都亮起来吧',
-      type: 'ActorControlExtra',
-      netRegex: {
-        'category': '019D',
-        'param1': '10',
-        'param2': '20',
-        'param3': '0',
-        'param4': '0',
-        'capture': false,
-      },
-      condition: (data) => data.phase === 'p5',
-      delaySeconds: 0.2,
       durationSeconds: 5,
-      suppressSeconds: 1,
       infoText: (data, _matches, output) => {
         if (!data.p5三星是闲人) {
           return;
@@ -2892,15 +2879,43 @@ hideall "准备魔击x3"
           const count = t.filter((v) => data.p5三星亮起来.includes(v.id)).length;
           if (count === 2) {
             data.p5三星亮起来.length = 0;
+            data.p5三星报过了 = true;
             return output.text!({ pos: k, el: t[0]!.el });
           }
         }
-        data.p5三星亮起来.length = 0;
-        return output.unknown!();
       },
       outputStrings: {
         text: { en: '${pos}找${el}2' },
-        unknown: { en: '出错了，自己找' },
+      },
+    },
+    {
+      id: 'DMU P5 三星塔都亮起来吧兜底',
+      type: 'ActorControlExtra',
+      netRegex: {
+        'category': '019D',
+        'param1': '10',
+        'param2': '20',
+        'param3': '0',
+        'param4': '0',
+        'capture': false,
+      },
+      condition: (data) => data.phase === 'p5',
+      delaySeconds: 0.25,
+      durationSeconds: 4.75,
+      suppressSeconds: 1,
+      infoText: (data, _matches, output) => {
+        if (!data.p5三星是闲人) {
+          return;
+        }
+        data.p5三星亮起来.length = 0;
+        if (data.p5三星报过了) {
+          data.p5三星报过了 = false;
+        } else {
+          return output.unknown!();
+        }
+      },
+      outputStrings: {
+        unknown: { en: '出错了，自己找塔2' },
       },
     },
     {
