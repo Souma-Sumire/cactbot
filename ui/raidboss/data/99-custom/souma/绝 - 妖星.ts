@@ -4,7 +4,7 @@ import { callOverlayHandler } from '../../../../../resources/overlay_plugin_api'
 import { Responses } from '../../../../../resources/responses';
 import Util, { Directions, type RP } from '../../../../../resources/util';
 import { RaidbossData } from '../../../../../types/data';
-import { PluginCombatantState } from '../../../../../types/event';
+import { PluginCombatantState, PostNamazuCall } from '../../../../../types/event';
 import { Matches, NetMatches } from '../../../../../types/net_matches';
 import { NetRegexTrigger, Output, TriggerSet } from '../../../../../types/trigger';
 
@@ -23,17 +23,42 @@ const centerX = 100;
 const centerY = 100;
 const rpSortArr = ['MT', 'ST', 'H1', 'H2', 'D1', 'D2', 'D3', 'D4'];
 
-const dmuMark = (actorDecID: number, markType: string, localOnly: boolean = false) => {
+const formatQueueAction = (
+  a: { c: PostNamazuCall; p: string; d?: number },
+  idx: number,
+): string => {
+  const delay = a.d !== undefined && a.d > 0 ? ` (${a.d}ms)` : '';
+  try {
+    const { ActorID, Name, MarkType } = JSON.parse(a.p) as {
+      ActorID?: number;
+      Name?: string;
+      MarkType?: string;
+    };
+    if (MarkType !== undefined) {
+      const hex = ActorID !== undefined ? `(${ActorID.toString(16).toUpperCase()})` : '';
+      return `${idx + 1}. [${a.c}] ${MarkType} -> ${Name ?? ''}${hex}${delay}`;
+    }
+  } catch {
+    // 非 JSON 保持原样
+  }
+  return `${idx + 1}. [${a.c}] ${a.p}${delay}`;
+};
+
+const doQueueActions = (actions: { c: PostNamazuCall; p: string; d?: number }[]) => {
   if (/raidemulator\.html/.test(location.href)) {
-    console.debug(`尝试标记${markType}给${actorDecID}(${actorDecID.toString(16).toUpperCase()})`);
+    const list = actions.map(formatQueueAction);
+    console.debug(`尝试执行队列 (${actions.length} 条):\n${list.join('\n')}`);
     return;
   }
   void callOverlayHandler({
     call: 'PostNamazu',
-    c: 'mark',
-    p: JSON.stringify({ ActorID: actorDecID, MarkType: markType, LocalOnly: localOnly }),
+    c: 'queue',
+    p: JSON.stringify(actions),
   });
 };
+
+const randomNum = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+
 const p2OutputStirngs = {
   第1轮fallback: '${gimmick}组+${buff}',
   第1轮我分摊搭档扇形: '左踩塔（分摊）',
@@ -169,7 +194,11 @@ export interface Data extends RaidbossData {
     p3混沌之土标记: boolean;
     p3混沌之土标记方法: '美式' | '自定义';
     p3混沌之土标记美式优先级: string;
-    p3混沌之土标记自定义优先级: string;
+    p3混沌之土标记1麻组自定义优先级: string;
+    p3混沌之土标记2麻组自定义优先级: string;
+    p3混沌之土标记3麻组自定义优先级: string;
+    p3混沌之土标记范围: '1标8' | '只标自己';
+    p3混沌之土标记随机延时范围: string;
   };
   // General
   phase: Phase | 'unknown';
@@ -409,7 +438,7 @@ const triggerSet: TriggerSet<Data> = {
       options: {
         en: {
           '正攻（被击退的去下半场）': '正攻',
-          '职能固定（不推荐！）未测试': 'TN左DPS右',
+          '职能固定': 'TN左DPS右',
         },
       },
       default: 'TN左DPS右',
@@ -473,15 +502,34 @@ const triggerSet: TriggerSet<Data> = {
     },
     {
       id: 'p3混沌之土标记方法',
-      name: { en: '开启P3混沌之土标记方法' },
+      name: { en: 'P3混沌之土攻略法' },
       type: 'select',
       options: {
         en: {
-          '美式（推荐）非泥D/H必是1，双T必是2，泥必是3': '美式',
+          '美式（推荐）非泥D必是1，非泥H/T必是2，泥必是3': '美式',
           '自定义': '自定义',
         },
       },
       default: '美式',
+    },
+    {
+      id: 'p3混沌之土标记范围',
+      name: { en: 'P3混沌之土标记范围' },
+      type: 'select',
+      options: {
+        en: {
+          '常规1标8': '1标8',
+          '只标自己（用于在正常队伍中模拟手摇，仅建议美式使用）': '只标自己',
+        },
+      },
+      default: '1标8',
+    },
+    {
+      id: 'p3混沌之土标记随机延时范围',
+      comment: { en: '用于模拟手摇，每个标记动作之间都会在此范围内随机延时（标8个则会延迟8次）。"~"前必须有数字，且"~"后数字必须大于"~"前数字。' },
+      name: { en: 'P3混沌之土标记随机延时范围（毫秒）' },
+      type: 'string',
+      default: '100~600',
     },
     {
       id: 'p3混沌之土标记美式优先级',
@@ -493,12 +541,26 @@ const triggerSet: TriggerSet<Data> = {
       default: 'dps>healer>tank>mud',
     },
     {
-      id: 'p3混沌之土标记自定义优先级',
+      id: 'p3混沌之土标记1麻组自定义优先级',
       comment: {
         en:
           '仅在“自定义”方法下生效，此优先级不考虑混沌之泥土debuff。只接受大写"D1"、"D2"、"D3"、"D4"、"H1"、"H2"、"ST"、"MT"，并用半角“大于号”隔开。必须联动职能分配悬浮窗，若未发现职能则自动降级至美式标记。',
       },
-      name: { en: 'P3混沌之土自定义优先级' },
+      name: { en: 'P3混沌之土1麻组自定义优先级' },
+      type: 'string',
+      default: 'MT>ST>H1>H2>D1>D2>D3>D4',
+    },
+    {
+      id: 'p3混沌之土标记2麻组自定义优先级',
+      comment: { en: '同上，但只影响2号麻将' },
+      name: { en: 'P3混沌之土2麻组自定义优先级' },
+      type: 'string',
+      default: 'MT>ST>H1>H2>D1>D2>D3>D4',
+    },
+    {
+      id: 'p3混沌之土标记3麻组自定义优先级',
+      comment: { en: '同上，但只影响3号麻将' },
+      name: { en: 'P3混沌之土3麻组自定义优先级' },
       type: 'string',
       default: 'MT>ST>H1>H2>D1>D2>D3>D4',
     },
@@ -1635,20 +1697,53 @@ hideall "准备魔击x3"
               sortArr.indexOf(b.mud ? 'mud' : b.role)
             );
           } else if (data.triggerSetConfig.p3混沌之土标记方法 === '自定义') {
-            const sortArr = data.triggerSetConfig.p3混沌之土标记自定义优先级.split('>').map((v) => v.trim());
-            data.p3第N目标.sort((a, b) => sortArr.indexOf(a.rp ?? '') - sortArr.indexOf(b.rp ?? ''));
+            const sortArr = [
+              data.triggerSetConfig.p3混沌之土标记1麻组自定义优先级.split('>').map((v) => v.trim()),
+              data.triggerSetConfig.p3混沌之土标记2麻组自定义优先级.split('>').map((v) => v.trim()),
+              data.triggerSetConfig.p3混沌之土标记3麻组自定义优先级.split('>').map((v) => v.trim()),
+            ];
+            data.p3第N目标.sort((a, b) =>
+              sortArr[a.n - 1]!.indexOf(a.rp ?? '') - sortArr[b.n - 1]!.indexOf(b.rp ?? '')
+            );
           }
           const m1 = data.p3第N目标.filter((v) => v.n === 1);
           const m2 = data.p3第N目标.filter((v) => v.n === 2);
           const m3 = data.p3第N目标.filter((v) => v.n === 3);
-          dmuMark(m1[0]!.id, 'attack1', false);
-          dmuMark(m1[1]!.id, 'attack2', false);
-          dmuMark(m1[2]!.id, 'attack3', false);
-          dmuMark(m2[0]!.id, 'bind1', false);
-          dmuMark(m2[1]!.id, 'bind2', false);
-          dmuMark(m2[2]!.id, 'bind3', false);
-          dmuMark(m3[0]!.id, 'stop1', false);
-          dmuMark(m3[1]!.id, 'stop2', false);
+          const is18 = data.triggerSetConfig.p3混沌之土标记范围 === '1标8';
+          const markTypes = ['attack', 'bind', 'stop'] as const;
+          const actions: { c: PostNamazuCall; p: string; d?: number }[] = [];
+          const delays = data.triggerSetConfig.p3混沌之土标记随机延时范围.split('~').map((v) =>
+            parseInt(v.trim())
+          ) as [number, number];
+          if (
+            delays.length !== 2 ||
+            delays[0] === undefined || Number.isNaN(delays[0]) ||
+            delays[1] === undefined || Number.isNaN(delays[1]) ||
+            delays[0] > delays[1]
+          ) {
+            console.warn(
+              `混沌之土 标记延时范围格式错误（${data.triggerSetConfig.p3混沌之土标记随机延时范围}），已使用默认延时。`,
+            );
+            delays[0] = 0;
+            delays[1] = 1000;
+          }
+          [m1, m2, m3].forEach((group, gIdx) => {
+            group.forEach((v, idx) => {
+              if (is18 || v.target === data.me) {
+                actions.push({
+                  'c': 'mark',
+                  'p': JSON.stringify({
+                    ActorID: v.id,
+                    Name: v.target,
+                    MarkType: `${markTypes[gIdx]}${idx + 1}`,
+                    LocalOnly: false,
+                  }),
+                  'd': randomNum(delays[0], delays[1]),
+                });
+              }
+            });
+          });
+          doQueueActions(actions);
           // console.log(m1, m2, m3);
         }
       },
@@ -1815,7 +1910,7 @@ hideall "准备魔击x3"
           return output.unknown!({ n });
         }
         if (data.triggerSetConfig.p3麻将发宏) {
-          Util.souma.doQueueActions(
+          doQueueActions(
             macro.map((m, i) => {
               return {
                 'c': 'DoTextCommand',
