@@ -1,8 +1,8 @@
 {
   "name": "cactbot",
-  "version": "0.37.1",
-  "releaseSummary": "Enuo, Enuo EX, Shinryu Unreal, i18n",
-  "releaseInDraft": "true",
+  "version": "0.37.4",
+  "releaseSummary": "Windhurst, more UMAD, i18n",
+  "releaseInDraft": "false",
   "license": "Apache-2.0",
   "type": "module",
   "types": "./types",

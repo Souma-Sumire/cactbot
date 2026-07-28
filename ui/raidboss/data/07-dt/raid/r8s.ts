@@ -633,7 +633,7 @@ const triggerSet: TriggerSet<Data> = {
         }
       },
       infoText: (data, matches, output) => {
-        const dir = output[Directions.output16Dir[data.reignDir ?? -1] ?? 'unknown']!();
+        const dir = output[Directions.outputFrom16DirNum(data.reignDir ?? -1)]!();
         switch (matches.id) {
           case eminentReign1:
           case eminentReign2:
@@ -907,9 +907,9 @@ const triggerSet: TriggerSet<Data> = {
         // Assume towerDirs from Fang if received bad coords for towers
         if (data.towerDirs === undefined) {
           if (y > 99 && y < 100)
-            data.towerDirs === 'NS';
+            data.towerDirs = 'NS';
           else if (x > 99 && x < 101)
-            data.towerDirs === 'EW';
+            data.towerDirs = 'EW';
           else
             return;
         }
@@ -1652,7 +1652,7 @@ const triggerSet: TriggerSet<Data> = {
       },
       infoText: (data, _matches, output) => {
         const inout = output[data.herosBlowInOut ?? 'unknown']!();
-        const dir = output[Directions.output16Dir[data.herosBlowSafeDir ?? -1] ?? 'unknown']!();
+        const dir = output[Directions.outputFrom16DirNum(data.herosBlowSafeDir ?? -1)]!();
         return output.text!({ inout: inout, dir: dir });
       },
       run: (data) => {
