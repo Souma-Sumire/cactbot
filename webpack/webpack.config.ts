@@ -23,8 +23,44 @@ export default (
     cactbotHtmlChunksMap: { [html: string]: HtmlWebpackPlugin.Options };
   },
 ): Configuration => {
+  let filteredModules = { ...cactbotModules };
+  let filteredHtmlChunksMap = { ...cactbotHtmlChunksMap };
+
+  const onlyModulesEnv = process.env.CACTBOT_ONLY;
+  if (onlyModulesEnv !== undefined) {
+    const onlyModules = onlyModulesEnv.split(',').map((m) => m.trim());
+    const matchedModules: { [module: string]: string } = {};
+    const matchedModulePaths: string[] = [];
+
+    for (const onlyModule of onlyModules) {
+      if (onlyModule in cactbotModules) {
+        const modulePath = cactbotModules[onlyModule];
+        if (modulePath !== undefined) {
+          matchedModules[onlyModule] = modulePath;
+          matchedModulePaths.push(modulePath);
+        }
+      } else {
+        console.warn(`Warning: CACTBOT_ONLY module "${onlyModule}" not found in cactbotModules.`);
+      }
+    }
+
+    if (Object.keys(matchedModules).length > 0) {
+      filteredModules = matchedModules;
+      filteredHtmlChunksMap = {};
+      for (const [html, config] of Object.entries(cactbotHtmlChunksMap)) {
+        const chunks = config.chunks;
+        if (
+          Array.isArray(chunks) &&
+          chunks.some((chunk) => matchedModulePaths.includes(chunk))
+        ) {
+          filteredHtmlChunksMap[html] = config;
+        }
+      }
+    }
+  }
+
   const entries: { [module: string]: string } = {};
-  Object.entries(cactbotModules).forEach(([key, module]) => {
+  Object.entries(filteredModules).forEach(([key, module]) => {
     // TODO: Remove when everything is TypeScript, convert to:
     // entries[module] = `./${module}.ts`;
     let extension = 'js';
@@ -50,7 +86,7 @@ export default (
     entries[module] = `./${module}.${extension}`;
   });
 
-  const htmlPluginRules = Object.entries(cactbotHtmlChunksMap).map(([file, config]) => {
+  const htmlPluginRules = Object.entries(filteredHtmlChunksMap).map(([file, config]) => {
     return new HtmlWebpackPlugin({
       template: file,
       filename: file,

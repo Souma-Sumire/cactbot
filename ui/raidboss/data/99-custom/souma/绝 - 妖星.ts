@@ -1745,6 +1745,7 @@ hideall "准备魔击x3"
           });
           doQueueActions(actions);
           // console.log(m1, m2, m3);
+          data.p3第N目标.length = 0;
         }
       },
     },
