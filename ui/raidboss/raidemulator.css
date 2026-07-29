@@ -440,6 +440,15 @@ div.row.encounters-row {
   border-color: green;
 }
 
+.party-info-column .party-tab-bar {
+  flex-wrap: wrap;
+}
+
+.party-info-column .party-tab-bar .btn {
+  padding: 0.15rem 0.35rem;
+  font-size: 0.75rem;
+}
+
 .party-info-column .party {
   position: relative;
 }

@@ -86,10 +86,13 @@ export default class EmulatedPartyInfo extends EventBus {
   private tooltips: Tooltip[] = [];
   private triggerBars: HTMLElement[] = [];
   private displayedParty: PartyInfoMap = {};
+  private $partyTabBar: HTMLElement;
+  private memberGroupMap: { [id: string]: number } = {};
 
   constructor(private emulator: RaidEmulator) {
     super();
     this.$partyInfo = querySelectorSafe(document, '.party-info-column .party');
+    this.$partyTabBar = querySelectorSafe(document, '.party-info-column .party-tab-bar');
     this.$triggerInfo = querySelectorSafe(document, '.trigger-info-column');
     const skipped = querySelectorSafe(document, '.triggerHideSkipped');
     if (!(skipped instanceof HTMLInputElement))
@@ -210,23 +213,58 @@ export default class EmulatedPartyInfo extends EventBus {
     this.displayedParty = {};
     this.latestDisplayedState = 0;
     this.$partyInfo.innerHTML = '';
+    this.$partyTabBar.innerHTML = '';
+    this.memberGroupMap = {};
     this.$triggerBar.querySelectorAll('.trigger-item').forEach((n) => {
       n.remove();
     });
-    const membersToDisplay = tracker.partyMembers.sort((l, r) => {
-      const a = enc.combatantTracker?.combatants[l];
-      const b = enc.combatantTracker?.combatants[r];
-      if (!a || !b)
-        return 0;
-      const aJob = Util.jobEnumToJob(a.nextState(0).Job ?? 0);
-      const bJob = Util.jobEnumToJob(b.nextState(0).Job ?? 0);
-      if (!isJobOrder(aJob) || !isJobOrder(bJob))
-        return 0;
-      return EmulatedPartyInfo.jobOrder.indexOf(aJob) - EmulatedPartyInfo.jobOrder.indexOf(bJob);
-    });
+    // 按 8 人切分为真实小队组，保持小队成员归属，再在小队内部单独按职业排序
+    const partyGroups: string[][] = [];
+    const rawMembers = [...tracker.partyMembers];
+    while (rawMembers.length > 0) {
+      const group = rawMembers.splice(0, 8);
+      group.sort((l, r) => {
+        const a = enc.combatantTracker?.combatants[l];
+        const b = enc.combatantTracker?.combatants[r];
+        if (!a || !b)
+          return 0;
+        const aJob = Util.jobEnumToJob(a.nextState(0).Job ?? 0);
+        const bJob = Util.jobEnumToJob(b.nextState(0).Job ?? 0);
+        if (!isJobOrder(aJob) || !isJobOrder(bJob))
+          return 0;
+        return EmulatedPartyInfo.jobOrder.indexOf(aJob) - EmulatedPartyInfo.jobOrder.indexOf(bJob);
+      });
+      partyGroups.push(group);
+    }
+
+    const membersToDisplay: string[] = [];
+    for (const [gIdx, group] of partyGroups.entries()) {
+      for (const id of group) {
+        membersToDisplay.push(id);
+        this.memberGroupMap[id] = gIdx;
+      }
+    }
+
     document.querySelectorAll('.playerTriggerInfo').forEach((n) => {
       n.remove();
     });
+
+    if (membersToDisplay.length > 8) {
+      this.$partyTabBar.classList.remove('d-none');
+      const groupCount = partyGroups.length;
+      for (let g = 0; g < groupCount; ++g) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline-light';
+        btn.textContent = String.fromCharCode(65 + g);
+        btn.addEventListener('click', () => {
+          this.switchPartyTab(g);
+        });
+        this.$partyTabBar.append(btn);
+      }
+    } else {
+      this.$partyTabBar.classList.add('d-none');
+    }
 
     for (const [i, id] of membersToDisplay.entries()) {
       const obj = this.getPartyInfoObjectFor(encounter, id);
@@ -252,6 +290,10 @@ export default class EmulatedPartyInfo extends EventBus {
       }
     }
 
+    if (membersToDisplay.length > 8) {
+      this.switchPartyTab(0);
+    }
+
     this.updateTriggerState();
 
     const toDisplay = membersToDisplay[0];
@@ -259,6 +301,30 @@ export default class EmulatedPartyInfo extends EventBus {
       throw new UnreachableCode();
 
     void this.selectPerspective(toDisplay);
+  }
+
+  private switchPartyTab(groupIndex: number): void {
+    const buttons = this.$partyTabBar.querySelectorAll('button');
+    buttons.forEach((btn, idx) => {
+      if (idx === groupIndex) {
+        btn.classList.add('active', 'btn-primary');
+        btn.classList.remove('btn-outline-light');
+      } else {
+        btn.classList.remove('active', 'btn-primary');
+        btn.classList.add('btn-outline-light');
+      }
+    });
+
+    for (const id in this.displayedParty) {
+      const partyObj = this.displayedParty[id];
+      if (!partyObj)
+        continue;
+      const gIdx = this.memberGroupMap[id];
+      if (gIdx === groupIndex)
+        partyObj.$rootElem.classList.remove('d-none');
+      else
+        partyObj.$rootElem.classList.add('d-none');
+    }
   }
 
   async selectPerspective(id: string): Promise<void> {
