@@ -398,14 +398,12 @@ hideall "--sync--"
       type: 'CombatantMemory',
       netRegex: {
         'pair': [
-          { 'key': 'BNpcID', 'value': '4C1F' },
-          { 'key': 'BNpcID', 'value': '4C20' },
+          { 'key': 'BNpcID', 'value': ['4C20', '4C1F'] }, // 4C20 导流冰球, 4C1F 导流雷球
         ],
       },
       condition: (data) => data.boss1召唤,
       run: (data, matches) => {
         if (matches.change === 'Add') {
-          // console.log(matches);
           data.boss1球.push({
             id: matches.id,
             bNpcId: matches.pairBNpcID!,
