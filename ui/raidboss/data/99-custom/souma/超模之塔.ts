@@ -11,16 +11,17 @@ export interface Data extends RaidbossData {
   // readonly triggerSetConfig: {      };
   phase: Phase;
   boss1吐息赋格: string[];
-  boss1冰焰交错: { id: string; timestamp: number }[];
+  boss1冰焰交错: { id: string; timestamp: number; color: 'green' | 'blue' }[];
   boss1双头恐惧: { id: string; x: number; sourceId: string }[];
   boss1魔法阵展开赋格: { id: string; x: number }[];
-  boss1蓝之共鸣诅咒: '西风' | '东风' | null;
+  boss1蓝之共鸣诅咒: { color: 'blue' | 'green'; wind: '西风' | '东风' } | null;
   boss1召唤: boolean;
   boss1召唤连线ID: { id: string; color: 'blue' | 'green' | undefined; x: number }[];
   boss1召唤MJ: { targetId: string }[];
   boss1召唤Res: string[];
   boss1召唤Res2?: { text: string; level: 'infoText' | 'alertText' | 'alarmText' };
   boss1球: { bNpcId: string; x: number; y: number; id: string }[];
+  boss1Boss: { [id: string]: 'green' | 'blue' };
 }
 
 const center = {
@@ -116,9 +117,23 @@ hideall "--sync--"
       boss1召唤MJ: [],
       boss1召唤Res: [],
       boss1球: [],
+      boss1Boss: {},
     };
   },
   triggers: [
+    // #region BOSS1
+    {
+      id: '超模之塔 BOSS1 决战',
+      type: 'StartsUsing',
+      netRegex: { id: 'C23E' },
+      promise: async (data, matches) => {
+        const boss = (await callOverlayHandler({
+          call: 'getCombatants',
+          ids: [parseInt(matches.sourceId, 16)],
+        })).combatants[0]!;
+        data.boss1Boss[matches.sourceId] = boss.PosX < center.boss1.x ? 'blue' : 'green';
+      },
+    },
     {
       id: '超模之塔 BOSS1 01AD',
       type: 'Tether',
@@ -189,6 +204,7 @@ hideall "--sync--"
       preRun: (data, matches) => {
         data.boss1冰焰交错.push({
           id: matches.id,
+          color: data.boss1Boss[matches.sourceId]!,
           timestamp: new Date(matches.timestamp).getTime(),
         });
       },
@@ -206,13 +222,14 @@ hideall "--sync--"
           'BA3E': ['凝环', '交错'],
         };
         if (arr.length === 2) {
-          const w = data.boss1蓝之共鸣诅咒 === null ? '' : output[data.boss1蓝之共鸣诅咒]!();
-          const [d1, d3] = d[arr[0]!.id as keyof typeof d].map((v) => output[v]!());
-          const [d2, d4] = d[arr[1]!.id as keyof typeof d].map((v) => output[v]!());
-          const g = [d1, d2, d3, d4].map((gimmick, i) =>
-            output.gimmick!({ wind: i % 2 === 1 ? '' : w, gimmick: gimmick })
+          const w = data.boss1蓝之共鸣诅咒 === null ? '' : data.boss1蓝之共鸣诅咒.wind;
+          const color = data.boss1蓝之共鸣诅咒 === null ? '' : data.boss1蓝之共鸣诅咒.color;
+          const [g1, g3] = d[arr[0]!.id as keyof typeof d].map((v) =>
+            output[`${arr[0]!.color === color ? w : ''}${v}`]!()
           );
-          const [g1, g2, g3, g4] = g;
+          const [g2, g4] = d[arr[1]!.id as keyof typeof d].map((v) =>
+            output[`${arr[1]!.color === color ? w : ''}${v}`]!()
+          );
           data.boss1冰焰交错.length = 0;
           return output.text!({ g1, g2, g3, g4 });
         }
@@ -220,9 +237,10 @@ hideall "--sync--"
       outputStrings: {
         交错: { en: '出' },
         凝环: { en: '进' },
-        西风: { en: '(右击退)' },
-        东风: { en: '(左击退)' },
-        gimmick: { en: '${wind}${gimmick}' },
+        西风交错: { en: '(右击退)+出' },
+        西风凝环: { en: '(右击退)+进' },
+        东风交错: { en: '(左击退)+出' },
+        东风凝环: { en: '(左击退)+进' },
         text: { en: '${g1} -> ${g2} -> ${g3} -> ${g4}' },
       },
     },
@@ -322,24 +340,27 @@ hideall "--sync--"
       type: 'GainsEffect',
       netRegex: {
         effectId: [
-          '13BF', // 西风
-          '13BE', // 东风
+          // 蓝击退：处理蓝头机制的时候触发
+          // 绿击退：处理绿头机制的时候触发
+          '13BD', // 西风（绿头）
+          '13BF', // 西风（蓝头）
+          '13BC', // 东风（绿头）
+          '13BE', // 东风（蓝头）
         ],
       },
       condition: (data, matches) => data.me === matches.target,
       run: (data, matches) => {
-        data.boss1蓝之共鸣诅咒 = matches.effectId === '13BF' ? '西风' : '东风';
+        data.boss1蓝之共鸣诅咒 = {
+          // color: 'blue',
+          color: ['13BF', '13BE'].includes(matches.effectId) ? 'blue' : 'green',
+          wind: ['13BF', '13BD'].includes(matches.effectId) ? '西风' : '东风',
+        };
       },
     },
     {
       id: '超模之塔 BOSS1 蓝之共鸣诅咒2',
       type: 'LosesEffect',
-      netRegex: {
-        effectId: [
-          '13BF', // 西风
-          '13BE', // 东风
-        ],
-      },
+      netRegex: { effectId: ['13BD', '13BF', '13BC', '13BE'] },
       condition: (data, matches) => data.me === matches.target,
       run: (data) => {
         data.boss1蓝之共鸣诅咒 = null;
@@ -429,7 +450,6 @@ hideall "--sync--"
       preRun: (data, matches) => data.boss1召唤MJ.push({ targetId: matches.targetId }),
       durationSeconds: (data) => data.boss1召唤Res.length === 0 ? 3 : 9,
       promise: async (data, _matches, output) => {
-        // console.log('promise', _matches.id, data.boss1召唤MJ.length);
         if (data.boss1召唤MJ.length % 2 === 0) {
           const combatants = (await callOverlayHandler({
             call: 'getCombatants',
@@ -454,7 +474,6 @@ hideall "--sync--"
           const ySafe = yType.y < center.boss1.y ? ['SW', 'SE'] : ['NW', 'NE'];
           const target = xSafe.find((q) => ySafe.includes(q))!;
           const targetStr = output[target]!();
-          // console.log(data.boss1球);
           data.boss1召唤Res.push(targetStr);
           if (data.boss1召唤Res.length === 1) {
             data.boss1召唤Res2 = { text: data.boss1召唤Res[0]!, level: 'infoText' };
@@ -488,6 +507,16 @@ hideall "--sync--"
         'text': { en: '${a} -> ${b} -> ${c} -> ${d}' },
       },
     },
+    // #endregion
+
+    // #region BOSS2
+    {
+      id: '超模之塔 BOSS2 剑刃风暴',
+      type: 'StartsUsing',
+      netRegex: { id: 'C20B', capture: false },
+      response: Responses.aoe(),
+    },
+    // #endregion
   ],
 };
 
