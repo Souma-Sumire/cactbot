@@ -588,18 +588,24 @@ hideall "--sync--"
           const xSafe = xType.x < center.boss1.x ? ['NE', 'SE'] : ['NW', 'SW'];
           const ySafe = yType.y < center.boss1.y ? ['SW', 'SE'] : ['NW', 'NE'];
           const target = xSafe.find((q) => ySafe.includes(q))!;
-          const targetStr = output[target]!();
-          data.boss1召唤Res.push(targetStr);
-          if (data.boss1召唤Res.length === 1) {
-            data.boss1召唤Res2 = { text: data.boss1召唤Res[0]!, level: 'infoText' };
-          }
-          if (data.boss1召唤Res.length === 4) {
+          data.boss1召唤Res.push(target);
+          if (data.boss1召唤Res.length === 2) {
+            const a = data.boss1召唤Res[0]!;
+            const b = data.boss1召唤Res[1]!;
+            const map = ['NE', 'SE', 'SW', 'NW'];
+            const aIndex = map.indexOf(a);
+            const bIndex = map.indexOf(b);
+            const clock = (bIndex - aIndex) === 1 || (bIndex - aIndex) === -3 ? true : false;
+            const cIndex = (bIndex + (clock ? 1 : -1)) % 4;
+            const dIndex = (bIndex + (clock ? -1 : 1)) % 4;
+            const c = map[cIndex]!;
+            const d = map[dIndex]!;
             data.boss1召唤Res2 = {
               text: output.text!({
-                a: data.boss1召唤Res[0]!,
-                b: data.boss1召唤Res[1]!,
-                c: data.boss1召唤Res[2]!,
-                d: data.boss1召唤Res[3]!,
+                a: output[a]!(),
+                b: output[b]!(),
+                c: output[c]!(),
+                d: output[d]!(),
               }),
               level: 'alertText',
             };
