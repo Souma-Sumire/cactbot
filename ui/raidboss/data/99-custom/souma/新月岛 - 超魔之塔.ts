@@ -563,7 +563,7 @@ hideall "--sync--"
       netRegex: { id: ['02D2', '02D3', '02D4', '02D5'] },
       condition: (data) => data.boss1召唤,
       preRun: (data, matches) => data.boss1召唤MJ.push({ targetId: matches.targetId }),
-      durationSeconds: (data) => data.boss1召唤Res.length === 0 ? 3 : 9,
+      durationSeconds: (data) => data.boss1召唤Res.length === 0 ? 3 : 12,
       promise: async (data, _matches, output) => {
         if (data.boss1召唤MJ.length % 2 === 0) {
           const combatants = (await callOverlayHandler({
@@ -764,25 +764,25 @@ hideall "--sync--"
       tts: null,
       outputStrings: {
         'unknown': { en: '??' },
-        'dirN': { en: '上' },
-        'dirNE': { en: '右上' },
-        'dirE': { en: '右' },
-        'dirSE': { en: '右下' },
-        'dirS': { en: '下' },
-        'dirSW': { en: '左下' },
-        'dirW': { en: '左' },
-        'dirNW': { en: '左上' },
-        '1冰1': { en: '左下(小怪处)' },
-        '1冰3': { en: '左上(小怪处)' },
-        '1冰5': { en: '右上(小怪处)' },
-        '1冰7': { en: '右下(小怪处)' },
-        '2冰1': { en: '左(偏下)' },
-        '2冰3': { en: '左(偏上)' },
-        '2冰5': { en: '右(偏上)' },
-        '2冰7': { en: '右(偏下)' },
+        'dirN': { en: 'A' },
+        'dirNE': { en: '2' },
+        'dirE': { en: 'Boy' },
+        'dirSE': { en: '3' },
+        'dirS': { en: 'C' },
+        'dirSW': { en: '4' },
+        'dirW': { en: 'Dog' },
+        'dirNW': { en: '1' },
+        '1冰1': { en: '4点(小怪处)' },
+        '1冰3': { en: '1点(小怪处)' },
+        '1冰5': { en: '2点(小怪处)' },
+        '1冰7': { en: '3点(小怪处)' },
+        '2冰1': { en: 'D(4)之间' },
+        '2冰3': { en: 'D(1)之间' },
+        '2冰5': { en: 'B(2)之间' },
+        '2冰7': { en: 'B(3)之间' },
         '火或': { en: '${r1}或${r2}' },
-        '雷dirN': { en: '上与BOSS之间' },
-        '雷dirS': { en: '下与BOSS之间' },
+        '雷dirN': { en: 'A与BOSS之间' },
+        '雷dirS': { en: 'C与BOSS之间' },
         '雷左右': { en: '左右与BOSS之间' },
         '冰最终': { en: '(稍后) 冰：${text}' },
         '火最终': { en: '(稍后) 火：${text}' },
@@ -884,17 +884,26 @@ hideall "--sync--"
           return (data.boss39F8.length === 0 ? 2 : 18);
         }
         if (data.boss3鸳鸯锅中) {
-          return 13.175;
+          return 13.695;
         }
       },
+      countdownSeconds: (data) => data.boss3鸳鸯锅中 ? 13.695 : 0,
       response: (data, matches, output) => {
         output.responseOutputStrings = {
           '雷': { en: '雷' },
           '冰': { en: '冰' },
           '火': { en: '火' },
-          'text1': { en: '${a}：${g}起跑' },
+          'text1': { en: '${a}：${g}' },
           'text3': { en: '${a1}${a2}${a3}(带地水)：${g1} -> ${g2} -> ${g3}' },
-          '鸳鸯锅1': { en: '${dir} + ${lr} (起跑)' },
+          '鸳鸯锅1': { en: '看"${dir}"去${lr}' },
+          'dirN': { en: 'A' },
+          'dirNE': { en: '2' },
+          'dirE': { en: 'Boy' },
+          'dirSE': { en: '3' },
+          'dirS': { en: 'C' },
+          'dirSW': { en: '4' },
+          'dirW': { en: 'Dog' },
+          'dirNW': { en: '1' },
         };
 
         if (data.boss3鸳鸯锅中 && ['45D', '45E'].includes(matches.count)) {
@@ -904,8 +913,10 @@ hideall "--sync--"
           // console.log(matches.timestamp, id, dir, el);
           data.boss3鸳鸯锅9F8.push({ el, dir, id });
           if (data.boss3鸳鸯锅9F8.length === 1) {
-            console.log(matches.timestamp, '第一次鸳鸯锅');
-            // return output.鸳鸯锅1!({ dir, lr });
+            const yyg = [el.at(1), el.at(3)];
+            const safe = yyg.findIndex((v) => v !== data.boss3鸳鸯锅buff) === 0 ? '左' : '右';
+            const d = Directions.outputFrom8DirNum(dir);
+            return { infoText: output.鸳鸯锅1!({ dir: output[d]!(), lr: safe }) };
           }
         }
         if (data.boss3其墓须有三 && ['45A', '45B', '45C'].includes(matches.count)) {
@@ -953,7 +964,7 @@ hideall "--sync--"
       id: '超模之塔 BOSS3 多产的土壤',
       type: 'StartsUsing',
       netRegex: { id: 'B99A' },
-      response: Responses.aoe(),
+      response: Responses.bigAoe(),
     },
     {
       id: '超模之塔 BOSS3 B99A',
