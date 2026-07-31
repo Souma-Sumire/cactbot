@@ -33,6 +33,7 @@ export interface Data extends RaidbossData {
   boss3其墓须有三: boolean;
   boss39F8: string[];
   boss3鸳鸯锅9F8: { el: string; id: string; dir: number }[];
+  boss3鸳鸯锅count: number;
   boss3地水count: number;
   boss3鸳鸯锅中: boolean;
   boss3鸳鸯锅: { dir: number; id: string }[];
@@ -224,6 +225,7 @@ hideall "--sync--"
       boss3鸳鸯锅9F8: [],
       boss3鸳鸯锅: [],
       boss3鸳鸯锅buff: undefined,
+      boss3鸳鸯锅count: 0,
     };
   },
   triggers: [
@@ -275,15 +277,15 @@ hideall "--sync--"
             return indexA - indexB;
           }) as [string, string];
           data.boss1吐息赋格.length = 0;
-          return output.text!({ g1: output[a]!(), g2: output[b]!() });
+          // return output.text!({ g1: output[a]!(), g2: output[b]!() });
+          return output[`${a}+${b}`]!();
         }
       },
       outputStrings: {
-        'BA0F': { en: '场中击退' },
-        'C61D': { en: '场中钢铁' },
-        'BA11': { en: 'BOSS钢铁' },
-        'BA10': { en: 'BOSS月环' },
-        'text': { en: '${g1} + ${g2}' },
+        'BA0F+BA11': { en: '击退到后面' },
+        'BA0F+BA10': { en: '击退到前面' },
+        'C61D+BA11': { en: '远离两次' },
+        'C61D+BA10': { en: '靠近两次' },
       },
     },
     {
@@ -727,7 +729,7 @@ hideall "--sync--"
               const s2 = (d2 - 2 + 8) % 8;
               const r1 = Directions.outputFrom8DirNum(s1);
               const r2 = Directions.outputFrom8DirNum(s2);
-              const res = output.火或!({ r1: output[r1]!(), r2: output[r2]!() });
+              const res = output.火或!({ r1: output[`火${r1}`]!(), r2: output[`火${r2}`]!() });
               data.boss3魔力注入res.火 = res;
               return output.火最终!({ text: res });
             }
@@ -735,7 +737,7 @@ hideall "--sync--"
               ? (d1 + (diff === 3 ? 5 : 3) + 8) % 8
               : (d1 + -(diff === 3 ? 5 : 3) + 8) % 8;
             const r = Directions.outputFrom8DirNum(s1);
-            const res = output[r]!();
+            const res = output[`火${r}`]!();
             data.boss3魔力注入res.火 = res;
             return output.火最终!({ text: res });
           } else if (e1.el === '冰') {
@@ -764,14 +766,10 @@ hideall "--sync--"
       tts: null,
       outputStrings: {
         'unknown': { en: '??' },
-        'dirN': { en: 'A' },
-        'dirNE': { en: '2' },
-        'dirE': { en: 'Boy' },
-        'dirSE': { en: '3' },
-        'dirS': { en: 'C' },
-        'dirSW': { en: '4' },
-        'dirW': { en: 'Dog' },
-        'dirNW': { en: '1' },
+        '火dirNE': { en: '2点外' },
+        '火dirSE': { en: '3点外' },
+        '火dirSW': { en: '4点外' },
+        '火dirNW': { en: '1点外' },
         '1冰1': { en: '4点(小怪处)' },
         '1冰3': { en: '1点(小怪处)' },
         '1冰5': { en: '2点(小怪处)' },
@@ -869,9 +867,48 @@ hideall "--sync--"
         ],
       },
       condition: Conditions.targetIsYou(),
-      run: (data, matches) => {
+      durationSeconds: 5.9,
+      infoText: (data, matches, output) => {
+        // TODO: 可优化为直接报场地半场，不用玩家自己看小怪，但现在懒得写。
         data.boss3鸳鸯锅buff = matches.effectId === '1410' ? '蓝' : '紫';
-        console.log(matches.timestamp, '获得buff', data.boss3鸳鸯锅buff);
+        if (data.boss3鸳鸯锅9F8.length > 0) {
+          data.boss3鸳鸯锅count++;
+          const yyg = data.boss3鸳鸯锅9F8[data.boss3鸳鸯锅count];
+          if (yyg === undefined) {
+            // 最后一次，不用再战斗了
+            return;
+          }
+          const { el, dir } = yyg;
+          const g = [el.at(1), el.at(3)];
+          const safe = g.findIndex((v) => v === data.boss3鸳鸯锅buff) === 0 ? '左' : '右';
+          const d = Directions.outputFrom8DirNum(dir);
+          return output.text!({ dir: output[d]!(), lr: safe });
+        }
+      },
+      outputStrings: {
+        'text': { en: '看"${dir}"去${lr}' },
+        'dirN': { en: 'A' },
+        'dirNE': { en: '2' },
+        'dirE': { en: 'Boy' },
+        'dirSE': { en: '3' },
+        'dirS': { en: 'C' },
+        'dirSW': { en: '4' },
+        'dirW': { en: 'Dog' },
+        'dirNW': { en: '1' },
+      },
+    },
+    // B9A2|古代冰封|
+    // B9A1|古代爆炎|
+    // B9A3|古代暴雷|
+    {
+      id: '超模之塔 BOSS3 古代计数',
+      type: 'StartsUsing',
+      netRegex: { id: ['B9A2', 'B9A1', 'B9A3'] },
+      alertText: (_data, matches, output) => output[matches.id]!(),
+      outputStrings: {
+        'B9A2': { en: '斜点' },
+        'B9A1': { en: '远离' },
+        'B9A3': { en: '正点' },
       },
     },
     {
@@ -914,8 +951,10 @@ hideall "--sync--"
           data.boss3鸳鸯锅9F8.push({ el, dir, id });
           if (data.boss3鸳鸯锅9F8.length === 1) {
             const yyg = [el.at(1), el.at(3)];
-            const safe = yyg.findIndex((v) => v !== data.boss3鸳鸯锅buff) === 0 ? '左' : '右';
+            // 这里不用反 因为小怪的面向已经是反的了 负负得正
+            const safe = yyg.findIndex((v) => v === data.boss3鸳鸯锅buff) === 0 ? '左' : '右';
             const d = Directions.outputFrom8DirNum(dir);
+            // console.log(data.me, data.boss3鸳鸯锅buff, yyg);
             return { infoText: output.鸳鸯锅1!({ dir: output[d]!(), lr: safe }) };
           }
         }
