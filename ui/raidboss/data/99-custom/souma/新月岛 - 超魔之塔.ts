@@ -24,13 +24,14 @@ export interface Data extends RaidbossData {
   boss1球: { bNpcId: string; x: number; y: number; id: string }[];
   boss1Boss: { [id: string]: 'green' | 'blue' };
 
-  boss3魔力注入: { [id: string]: '火' | '冰' | '雷' };
+  boss3魔力注入: { [id: string]: '火' | '冰' | '雷' | '鸳鸯锅' };
   boss3B981: { id: string; x: number; y: number; el: string }[];
   boss3魔力注入res: { '冰': string; '火': string; '雷': string };
   boss3魔力注入中: boolean;
   boss3魔力注入count: number;
   boss3其墓须有三: boolean;
   boss39F8: string[];
+  boss3地水count: number;
 }
 
 const center = {
@@ -213,6 +214,7 @@ hideall "--sync--"
       boss3魔力注入中: false,
       boss3其墓须有三: false,
       boss39F8: [],
+      boss3地水count: 0,
     };
   },
   triggers: [
@@ -620,7 +622,7 @@ hideall "--sync--"
       netRegex: { id: 'B97A', capture: false },
       durationSeconds: 10,
       infoText: (_data, _matches, output) => output.text!(),
-      outputStrings: { text: '5连aoe' },
+      outputStrings: { text: '5连AoE' },
     },
     {
       id: '超模之塔 BOSS3 魔力注入',
@@ -630,6 +632,7 @@ hideall "--sync--"
         data.boss3魔力注入 = {};
         data.boss3魔力注入中 = true;
         data.boss3魔力注入count++;
+        data.boss3魔力注入res = { '冰': '', '火': '', '雷': '' };
       },
     },
     {
@@ -640,13 +643,20 @@ hideall "--sync--"
           '0190', // 火
           '0191', // 冰
           '0192', // 雷
+          '0193', // 鸳鸯锅
         ],
       },
       run: (data, matches) => {
-        data.boss3魔力注入[matches.sourceId] = { '0190': '火', '0191': '冰', '0192': '雷' }[matches.id] as
+        data.boss3魔力注入[matches.sourceId] = {
+          '0190': '火',
+          '0191': '冰',
+          '0192': '雷',
+          '0193': '鸳鸯锅',
+        }[matches.id] as
           | '火'
           | '冰'
-          | '雷';
+          | '雷'
+          | '鸳鸯锅';
       },
     },
     {
@@ -665,14 +675,14 @@ hideall "--sync--"
           el: data.boss3魔力注入[matches.sourceId] ?? 'unknown',
         });
         if (data.boss3魔力注入[matches.sourceId] === undefined) {
-          console.error(`魔力注入属性获取出错,sourceId:${matches.sourceId}`);
+          console.error(`${matches.timestamp} 魔力注入属性获取出错,sourceId:${matches.sourceId}`);
         }
         if (data.boss3B981.length % 2 === 0) {
           const last2 = data.boss3B981.slice(-2);
           const [e1, e2] = last2 as [typeof last2[number], typeof last2[number]];
           const d1 = Directions.xyTo8DirNum(e1.x, e1.y, center.boss2.x, center.boss2.y);
           const d2 = Directions.xyTo8DirNum(e2.x, e2.y, center.boss2.x, center.boss2.y);
-          console.log(matches.timestamp, e1, d1, e2, d2);
+          // console.log(matches.timestamp, e1, d1, e2, d2);
           if (e1.el === '火') {
             // 火：如果对称刷，则报2个另外的点，如果120度刷，报另一个120度点
             const diff = Math.abs(d1 - d2);
@@ -683,38 +693,41 @@ hideall "--sync--"
               const r2 = Directions.outputFrom8DirNum(s2);
               const res = output.火或!({ r1: output[r1]!(), r2: output[r2]!() });
               data.boss3魔力注入res.火 = res;
-              return res;
+              return output.火最终!({ text: res });
             }
             const s1 = (d1 + diff + 8) % 8 === d2
               ? (d1 + (diff === 3 ? 5 : 3) + 8) % 8
               : (d1 + -(diff === 3 ? 5 : 3) + 8) % 8;
             const r = Directions.outputFrom8DirNum(s1);
-            const res = output.火!({ r: output[r]!() });
+            const res = output[r]!();
             data.boss3魔力注入res.火 = res;
-            return res;
+            return output.火最终!({ text: res });
           } else if (e1.el === '冰') {
             // 1冰：找斜点那个，去左右镜像处（然后靠近A/C）
             // 2冰：找斜点那个，去对面（然后靠近B/D）
             const e = (d1 === 0 || d1 === 4) ? d2 : d1;
-            const res = output.冰!({ r: output[`${data.boss3魔力注入count}冰${e}`]!() });
+            const res = output[`${data.boss3魔力注入count}冰${e}`]!();
             data.boss3魔力注入res.冰 = res;
-            return res;
+            return output.冰最终!({ text: res });
           } else if (e1.el === '雷') {
             // 雷：如果AC有，去他的另一边 ，如果AC没有，去左右
             const ac = [d1, d2].find((d) => d === 0 || d === 4);
             if (ac) {
               const s = (ac + 4 + 8) % 8;
               const r = Directions.outputFrom8DirNum(s);
-              const res = output.雷上下!({ r: output[`雷${r}`]!() });
+              const res = output[`雷${r}`]!();
               data.boss3魔力注入res.雷 = res;
-              return res;
+              return output.雷最终!({ text: res });
             }
             const res = output.雷左右!();
             data.boss3魔力注入res.雷 = res;
-            return res;
+            return output.雷最终!({ text: res });
+          } else if (e1.el === '鸳鸯锅') {
+            // TODO: 鸳鸯锅
           }
         }
       },
+      tts: null,
       outputStrings: {
         'unknown': { en: '??' },
         'dirN': { en: '上' },
@@ -733,13 +746,13 @@ hideall "--sync--"
         '2冰3': { en: '1D' },
         '2冰5': { en: '2B' },
         '2冰7': { en: '3B' },
-        '冰': { en: '冰：${r}' },
-        '火': { en: '火：${r}' },
-        '火或': { en: '火：${r1}或${r2}' },
+        '火或': { en: '${r1}或${r2}' },
         '雷dirN': { en: 'A与BOSS之间' },
         '雷dirS': { en: 'C与BOSS之间' },
-        '雷上下': { en: '雷：${r}' },
-        '雷左右': { en: '雷：BD与BOSS之间' },
+        '雷左右': { en: 'BD与BOSS之间' },
+        '冰最终': { en: '(稍后) 冰：${text}' },
+        '火最终': { en: '(稍后) 火：${text}' },
+        '雷最终': { en: '(稍后) 雷：${text}' },
       },
     },
     {
@@ -750,22 +763,26 @@ hideall "--sync--"
       type: 'StartsUsing',
       netRegex: { id: ['B982', 'B983', 'B984'] },
       durationSeconds: 8,
-      // eslint-disable-next-line rulesdir/cactbot-output-strings
-      alertText: (data, matches) => {
+      alertText: (data, matches, output) => {
         data.boss3魔力注入中 = false;
+        if (data.boss3其墓须有三 === true) {
+          return;
+        }
         if (matches.id === 'B982') {
           const res = data.boss3魔力注入res.火;
-          data.boss3魔力注入res.火 = '';
-          return res;
+          return output.火最终!({ text: res });
         } else if (matches.id === 'B983') {
           const res = data.boss3魔力注入res.冰;
-          data.boss3魔力注入res.冰 = '';
-          return res;
+          return output.冰最终!({ text: res });
         } else if (matches.id === 'B984') {
           const res = data.boss3魔力注入res.雷;
-          data.boss3魔力注入res.雷 = '';
-          return res;
+          return output.雷最终!({ text: res });
         }
+      },
+      outputStrings: {
+        '冰最终': { en: '冰：${text}' },
+        '火最终': { en: '火：${text}' },
+        '雷最终': { en: '雷：${text}' },
       },
     },
     {
@@ -774,14 +791,14 @@ hideall "--sync--"
       netRegex: { id: 'B98B' },
       infoText: (_data, _matches, output) => output.text!(),
       outputStrings: {
-        text: { en: '躲头+穿辣尾' },
+        text: { en: '躲头+穿地水' },
       },
     },
     {
       id: '超模之塔 BOSS3 真空波',
       type: 'StartsUsing',
       netRegex: { id: 'B98E' },
-      infoText: (_data, _matches, output) => output.text!(),
+      alarmText: (_data, _matches, output) => output.text!(),
       outputStrings: {
         text: { en: '去背后+躲头' },
       },
@@ -796,19 +813,76 @@ hideall "--sync--"
       id: '超模之塔 BOSS3 B992',
       type: 'StartsUsing',
       netRegex: { id: 'B992' },
-      preRun: (data) => data.boss3其墓须有三 = true,
-      delaySeconds: 13,
-      run: (data) => data.boss3其墓须有三 = false,
+      preRun: (data) => {
+        data.boss3其墓须有三 = true;
+        data.boss39F8.length = 0;
+        data.boss3地水count = 0;
+      },
+      delaySeconds: 30,
+      run: (data) => {
+        data.boss3其墓须有三 = false;
+        data.boss39F8.length = 0;
+        data.boss3地水count = 0;
+      },
     },
     {
       id: '超模之塔 BOSS3 9F8',
       type: 'GainsEffect',
       netRegex: { effectId: '9F8', count: ['45A', '45B', '45C'] },
+      condition: (data) => data.boss3其墓须有三,
+      durationSeconds: (data) => data.boss39F8.length === 0 ? 2 : 18,
       response: (data, matches, output) => {
-        output.responseOutputStrings = {};
-        data.boss39F8.push(matches.count);
-        return {};
+        output.responseOutputStrings = {
+          '雷': { en: '雷' },
+          '冰': { en: '冰' },
+          '火': { en: '火' },
+          'text1': { en: '${a}：${g}起跑' },
+          'text3': { en: '${a1}${a2}${a3}(带地水)：${g1} -> ${g2} -> ${g3}' },
+        };
+        data.boss39F8.push({ '45A': '火', '45B': '冰', '45C': '雷' }[matches.count]!);
+        if (data.boss39F8.length === 1) {
+          return {
+            infoText: output.text1!({
+              a: output[data.boss39F8[0]!]!(),
+              g: data.boss3魔力注入res[data.boss39F8[0]! as keyof typeof data.boss3魔力注入res],
+            }),
+          };
+        }
+        if (data.boss39F8.length === 3) {
+          const a1 = output[data.boss39F8[0]!]!();
+          const a2 = output[data.boss39F8[1]!]!();
+          const a3 = output[data.boss39F8[2]!]!();
+          const g1 = data.boss3魔力注入res[data.boss39F8[0]! as keyof typeof data.boss3魔力注入res];
+          const g2 = data.boss3魔力注入res[data.boss39F8[1]! as keyof typeof data.boss3魔力注入res];
+          const g3 = data.boss3魔力注入res[data.boss39F8[2]! as keyof typeof data.boss3魔力注入res];
+          return { alertText: output.text3!({ a1, a2, a3, g1, g2, g3 }) };
+        }
       },
+    },
+    {
+      id: '超模之塔 BOSS3 B995',
+      type: 'StartsUsing',
+      netRegex: { id: 'B995' },
+      delaySeconds: 1,
+      infoText: (data, _matches, output) => {
+        data.boss3地水count++;
+        if (data.boss3地水count === 3) {
+          return output.text3!();
+        }
+        const text = data
+          .boss3魔力注入res[data.boss39F8[data.boss3地水count]! as keyof typeof data.boss3魔力注入res];
+        return output.text!({ text });
+      },
+      outputStrings: {
+        text: '穿 => ${text} + 躲地水',
+        text3: '穿',
+      },
+    },
+    {
+      id: '超模之塔 BOSS3 多产的土壤',
+      type: 'StartsUsing',
+      netRegex: { id: 'B99A' },
+      response: Responses.aoe(),
     },
     // #endregion
   ],
