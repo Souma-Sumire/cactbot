@@ -402,15 +402,24 @@ hideall "--sync--"
     {
       id: '超模之塔 BOSS1 魔法阵展开赋格',
       type: 'StartsUsingExtra',
-      netRegex: { id: ['C624', 'BA03'] },
+      netRegex: {
+        id: [
+          'C623', // 雷电赋格 月环
+          'C624', // 冰柱赋格 钢铁
+          'BA03', // 雷电赋格 月环
+          'BA04', // 冰柱赋格 钢铁
+        ],
+      },
       preRun: (data, matches) => {
         data.boss1魔法阵展开赋格.push({ id: matches.id, x: parseFloat(matches.x) });
       },
       durationSeconds: (data) => data.boss1魔法阵展开赋格.length === 1 ? 4 : 10,
       response: (data, _matches, output) => {
         output.responseOutputStrings = {
+          'C623': { en: '靠近' },
           'C624': { en: '远离' },
           'BA03': { en: '靠近' },
+          'BA04': { en: '远离' },
           'blue': { en: '找绿' },
           'green': { en: '找蓝' },
           'mic': { en: '${gimmick}${color}' },
