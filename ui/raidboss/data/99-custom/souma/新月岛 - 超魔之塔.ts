@@ -42,7 +42,7 @@ export interface Data extends RaidbossData {
 
 const center = {
   boss1: { x: -900, y: 700 },
-  boss2: { x: 100, y: 800 },
+  boss3: { x: 100, y: 800 },
 };
 
 // x = -15  -> n= 1
@@ -284,8 +284,8 @@ hideall "--sync--"
       outputStrings: {
         'BA0F+BA11': { en: '击退到后面' },
         'BA0F+BA10': { en: '击退到前面' },
-        'C61D+BA11': { en: '远离两次' },
-        'C61D+BA10': { en: '靠近两次' },
+        'C61D+BA11': { en: '远离+两侧' },
+        'C61D+BA10': { en: '靠近+两侧' },
       },
     },
     {
@@ -710,16 +710,16 @@ hideall "--sync--"
             dir: Directions.xyTo8DirNum(
               parseFloat(matches.x),
               parseFloat(matches.y),
-              center.boss2.x,
-              center.boss2.y,
+              center.boss3.x,
+              center.boss3.y,
             ),
             id: matches.sourceId,
           });
         } else if (data.boss3B981.length % 2 === 0) {
           const last2 = data.boss3B981.slice(-2);
           const [e1, e2] = last2 as [typeof last2[number], typeof last2[number]];
-          const d1 = Directions.xyTo8DirNum(e1.x, e1.y, center.boss2.x, center.boss2.y);
-          const d2 = Directions.xyTo8DirNum(e2.x, e2.y, center.boss2.x, center.boss2.y);
+          const d1 = Directions.xyTo8DirNum(e1.x, e1.y, center.boss3.x, center.boss3.y);
+          const d2 = Directions.xyTo8DirNum(e2.x, e2.y, center.boss3.x, center.boss3.y);
           // console.log(matches.timestamp, e1, d1, e2, d2);
           if (e1.el === '火') {
             // 火：如果对称刷，则报2个另外的点，如果120度刷，报另一个120度点
@@ -766,18 +766,22 @@ hideall "--sync--"
       tts: null,
       outputStrings: {
         'unknown': { en: '??' },
+        '火dirN': { en: 'A外' },
         '火dirNE': { en: '2点外' },
+        '火dirE': { en: 'B外' },
         '火dirSE': { en: '3点外' },
+        '火dirS': { en: 'C外' },
         '火dirSW': { en: '4点外' },
+        '火dirW': { en: 'D外' },
         '火dirNW': { en: '1点外' },
         '1冰1': { en: '4点(小怪处)' },
         '1冰3': { en: '1点(小怪处)' },
         '1冰5': { en: '2点(小怪处)' },
         '1冰7': { en: '3点(小怪处)' },
-        '2冰1': { en: 'D(4)之间' },
-        '2冰3': { en: 'D(1)之间' },
-        '2冰5': { en: 'B(2)之间' },
-        '2冰7': { en: 'B(3)之间' },
+        '2冰1': { en: 'D4之间' },
+        '2冰3': { en: 'D1之间' },
+        '2冰5': { en: 'B2之间' },
+        '2冰7': { en: 'B3之间' },
         '火或': { en: '${r1}或${r2}' },
         '雷dirN': { en: 'A与BOSS之间' },
         '雷dirS': { en: 'C与BOSS之间' },
