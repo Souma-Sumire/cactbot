@@ -1,5 +1,6 @@
 import { callOverlayHandler } from '../../../../../resources/overlay_plugin_api';
 import { Responses } from '../../../../../resources/responses';
+import { Directions } from '../../../../../resources/util';
 import { RaidbossData } from '../../../../../types/data';
 import { TriggerSet } from '../../../../../types/trigger';
 
@@ -22,10 +23,19 @@ export interface Data extends RaidbossData {
   boss1召唤Res2?: { text: string; level: 'infoText' | 'alertText' | 'alarmText' };
   boss1球: { bNpcId: string; x: number; y: number; id: string }[];
   boss1Boss: { [id: string]: 'green' | 'blue' };
+
+  boss3魔力注入: { [id: string]: '火' | '冰' | '雷' };
+  boss3B981: { id: string; x: number; y: number; el: string }[];
+  boss3魔力注入res: { '冰': string; '火': string; '雷': string };
+  boss3魔力注入中: boolean;
+  boss3魔力注入count: number;
+  boss3其墓须有三: boolean;
+  boss39F8: string[];
 }
 
 const center = {
   boss1: { x: -900, y: 700 },
+  boss2: { x: 100, y: 800 },
 };
 
 // x = -15  -> n= 1
@@ -51,6 +61,7 @@ hideall "--sync--"
 0.0 "--Reset--" ActorControl { command: "4000000F" } window 0,100000 jump 0
 
 1000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1573" } window 1100,1
+3000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1575" } window 2100,1
 
 # BOSS 1
 1014.9 "决战" #Ability { id: "C23E" }
@@ -103,6 +114,82 @@ hideall "--sync--"
 1304.8 "雷霜暴风雨" #Ability { id: "BA7B" }
 1314.0 "召唤" #Ability { id: "BA5E" }
 
+# BOSS3
+3009.6 "核爆雨" Ability { id: "B97A" }
+3015.9 "魔具召唤" #Ability { id: "B97D" }
+3025.8 "魔力注入" #Ability { id: "B97E" }
+3030.5 "魔具展开" #Ability { id: "B980" }
+3045.0 "古代冰封" #Ability { id: "B987" }
+3045.0 "魔具联动：冰封" #Ability { id: "B983" }
+3052.7 "古代爆炎" #Ability { id: "B986" }
+3052.7 "魔具联动：爆炎" #Ability { id: "B982" }
+3060.2 "古代暴雷" #Ability { id: "B988" }
+3060.2 "魔具联动：暴雷" #Ability { id: "B984" }
+3061.0 "魔具联动：暴雷" #Ability { id: "C4B6" }
+3061.0 "古代暴雷" #Ability { id: "B989" }
+3069.3 "核爆雨" #Ability { id: "B97A" }
+3075.5 "魔具展开" #Ability { id: "B98F" }
+3080.8 "黑暗奔流" #Ability { id: "B98B" }
+3081.6 "黑暗奔流" #Ability { id: "B98C" }
+3088.2 "真空波" #Ability { id: "B98E" }
+3097.5 "碎尸" #Ability { id: "B991" }
+3104.8 "魔具召唤" #Ability { id: "B97D" }
+3115.5 "魔力注入" #Ability { id: "B97E" }
+3120.5 "魔具展开" #Ability { id: "B980" }
+3132.9 "其墓须有三" #Ability { id: "B992" }
+3143.2 "魔具联动：黑暗奔流" #Ability { id: "B993" }
+3143.9 "黑暗奔流" #Ability { id: "B994" }
+3145.3 "黑暗奔流" #Ability { id: "B995" }
+3145.3 "古代冰封" #Ability { id: "B997" }
+3150.2 "黑暗奔流" #Ability { id: "B994" }
+3151.0 "古代暴雷" #Ability { id: "B998" }
+3151.7 "黑暗奔流" #Ability { id: "B995" }
+3156.8 "黑暗奔流" #Ability { id: "B994" }
+3158.3 "黑暗奔流" #Ability { id: "B995" }
+3158.3 "古代爆炎" #Ability { id: "B996" }
+3163.9 "真空波" #Ability { id: "B98E" }
+3173.6 "核爆雨" #Ability { id: "B97A" }
+3184.2 "多产的土壤" #Ability { id: "B99A" }
+3185.7 "多产的土壤" #Ability { id: "BF40" }
+3187.6 "魔具召唤" #Ability { id: "B97D" }
+3197.8 "魔力注入" #Ability { id: "B97E" }
+3202.5 "魔具展开" #Ability { id: "B980" }
+3217.6 "魔力连锁" #Ability { id: "B99B" }
+3218.5 "播撒惊慌" #Ability { id: "B9D6" }
+3218.8 "播撒惊恐" #Ability { id: "B99F" }
+3218.8 "播撒恐慌" #Ability { id: "B9A0" }
+3224.0 "播撒惊慌" #Ability { id: "B9D6" }
+3224.4 "播撒恐慌" #Ability { id: "B9A0" }
+3229.3 "播撒惊慌" #Ability { id: "B9D6" }
+3229.6 "播撒惊恐" #Ability { id: "B99F" }
+3229.6 "播撒恐慌" #Ability { id: "B9A0" }
+3229.8 "古代冰封" #Ability { id: "B9A2" }
+3234.7 "播撒惊慌" #Ability { id: "B9D6" }
+3235.1 "播撒惊恐" #Ability { id: "B99F" }
+3235.1 "播撒恐慌" #Ability { id: "B9A0" }
+3240.2 "播撒惊慌" #Ability { id: "B99C" }
+3240.6 "播撒恐慌" #Ability { id: "B99E" }
+3240.6 "播撒惊恐" #Ability { id: "B99D" }
+3241.0 "古代爆炎" #Ability { id: "B9A1" }
+3245.7 "播撒惊慌" #Ability { id: "B99C" }
+3246.0 "播撒恐慌" #Ability { id: "B99E" }
+3246.0 "播撒惊恐" #Ability { id: "B99D" }
+3251.0 "播撒惊慌" #Ability { id: "B99C" }
+3251.3 "古代暴雷" #Ability { id: "B9A3" }
+3251.4 "播撒恐慌" #Ability { id: "B99E" }
+3251.4 "播撒惊恐" #Ability { id: "B99D" }
+3252.0 "古代暴雷" #Ability { id: "B985" }
+3256.8 "播撒惊慌" #Ability { id: "B9D6" }
+3257.2 "播撒惊恐" #Ability { id: "B99F" }
+3257.2 "播撒恐慌" #Ability { id: "B9A0" }
+3263.3 "核爆雨" #Ability { id: "B97A" }
+3270.2 "魔具展开" #Ability { id: "B98F" }
+3275.5 "黑暗奔流" #Ability { id: "B98B" }
+3276.8 "黑暗奔流" #Ability { id: "B98C" }
+3284.0 "真空波" #Ability { id: "B98E" }
+3293.1 "碎尸" #Ability { id: "B991" }
+3301.0 "魔具召唤" #Ability { id: "B97D" }
+
 `,
   initData: () => {
     return {
@@ -118,6 +205,14 @@ hideall "--sync--"
       boss1召唤Res: [],
       boss1球: [],
       boss1Boss: {},
+      boss3魔力注入: {},
+      boss3B981: [],
+      boss3魔力注入count: 0,
+      boss3魔力注入1: false,
+      boss3魔力注入res: { '冰': '', '火': '', '雷': '' },
+      boss3魔力注入中: false,
+      boss3其墓须有三: false,
+      boss39F8: [],
     };
   },
   triggers: [
@@ -302,6 +397,14 @@ hideall "--sync--"
       },
       durationSeconds: (data) => data.boss1魔法阵展开赋格.length === 1 ? 4 : 10,
       response: (data, _matches, output) => {
+        output.responseOutputStrings = {
+          'C624': { en: '远离' },
+          'BA03': { en: '靠近' },
+          'blue': { en: '找绿' },
+          'green': { en: '找蓝' },
+          'mic': { en: '${gimmick}${color}' },
+          'text': { en: '${a} => ${b}' },
+        };
         const arr = data.boss1魔法阵展开赋格;
         if (arr.length === 1) {
           const a = arr[0];
@@ -325,14 +428,6 @@ hideall "--sync--"
           });
           return { alertText: output.text!({ a: amic, b: bmic }) };
         }
-      },
-      outputStrings: {
-        'C624': { en: '远离' },
-        'BA03': { en: '靠近' },
-        'blue': { en: '找绿' },
-        'green': { en: '找蓝' },
-        'mic': { en: '${gimmick}${color}' },
-        'text': { en: '${a} => ${b}' },
       },
     },
     {
@@ -491,20 +586,20 @@ hideall "--sync--"
           }
         }
       },
-      response: (data) => {
+      response: (data, _matches, output) => {
+        output.responseOutputStrings = {
+          'NE': { en: '右上' },
+          'SE': { en: '右下' },
+          'NW': { en: '左上' },
+          'SW': { en: '左下' },
+          'text': { en: '${a} -> ${b} -> ${c} -> ${d}' },
+        };
         if (data.boss1召唤Res2) {
           const t = data.boss1召唤Res2.text;
           const l = data.boss1召唤Res2.level;
           data.boss1召唤Res2 = undefined;
           return { [l]: t };
         }
-      },
-      outputStrings: {
-        'NE': { en: '右上' },
-        'SE': { en: '右下' },
-        'NW': { en: '左上' },
-        'SW': { en: '左下' },
-        'text': { en: '${a} -> ${b} -> ${c} -> ${d}' },
       },
     },
     // #endregion
@@ -515,6 +610,205 @@ hideall "--sync--"
       type: 'StartsUsing',
       netRegex: { id: 'C20B', capture: false },
       response: Responses.aoe(),
+    },
+    // #endregion
+
+    // #region BOSS3
+    {
+      id: '超模之塔 BOSS3 核爆雨',
+      type: 'StartsUsing',
+      netRegex: { id: 'B97A', capture: false },
+      durationSeconds: 10,
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: { text: '5连aoe' },
+    },
+    {
+      id: '超模之塔 BOSS3 魔力注入',
+      type: 'StartsUsing',
+      netRegex: { id: 'B97E', capture: false },
+      run: (data) => {
+        data.boss3魔力注入 = {};
+        data.boss3魔力注入中 = true;
+        data.boss3魔力注入count++;
+      },
+    },
+    {
+      id: '超模之塔 BOSS3 Tether',
+      type: 'Tether',
+      netRegex: {
+        id: [
+          '0190', // 火
+          '0191', // 冰
+          '0192', // 雷
+        ],
+      },
+      run: (data, matches) => {
+        data.boss3魔力注入[matches.sourceId] = { '0190': '火', '0191': '冰', '0192': '雷' }[matches.id] as
+          | '火'
+          | '冰'
+          | '雷';
+      },
+    },
+    {
+      id: '超模之塔 BOSS3 B981',
+      type: 'AbilityExtra',
+      netRegex: { id: ['B981'] },
+      durationSeconds: 2,
+      infoText: (data, matches, output) => {
+        if (data.boss3魔力注入中 === false) {
+          return;
+        }
+        data.boss3B981.push({
+          id: matches.sourceId,
+          x: parseFloat(matches.x),
+          y: parseFloat(matches.y),
+          el: data.boss3魔力注入[matches.sourceId] ?? 'unknown',
+        });
+        if (data.boss3魔力注入[matches.sourceId] === undefined) {
+          console.error(`魔力注入属性获取出错,sourceId:${matches.sourceId}`);
+        }
+        if (data.boss3B981.length % 2 === 0) {
+          const last2 = data.boss3B981.slice(-2);
+          const [e1, e2] = last2 as [typeof last2[number], typeof last2[number]];
+          const d1 = Directions.xyTo8DirNum(e1.x, e1.y, center.boss2.x, center.boss2.y);
+          const d2 = Directions.xyTo8DirNum(e2.x, e2.y, center.boss2.x, center.boss2.y);
+          console.log(matches.timestamp, e1, d1, e2, d2);
+          if (e1.el === '火') {
+            // 火：如果对称刷，则报2个另外的点，如果120度刷，报另一个120度点
+            const diff = Math.abs(d1 - d2);
+            if (diff === 4) {
+              const s1 = (d1 - 2 + 8) % 8;
+              const s2 = (d2 - 2 + 8) % 8;
+              const r1 = Directions.outputFrom8DirNum(s1);
+              const r2 = Directions.outputFrom8DirNum(s2);
+              const res = output.火或!({ r1: output[r1]!(), r2: output[r2]!() });
+              data.boss3魔力注入res.火 = res;
+              return res;
+            }
+            const s1 = (d1 + diff + 8) % 8 === d2
+              ? (d1 + (diff === 3 ? 5 : 3) + 8) % 8
+              : (d1 + -(diff === 3 ? 5 : 3) + 8) % 8;
+            const r = Directions.outputFrom8DirNum(s1);
+            const res = output.火!({ r: output[r]!() });
+            data.boss3魔力注入res.火 = res;
+            return res;
+          } else if (e1.el === '冰') {
+            // 1冰：找斜点那个，去左右镜像处（然后靠近A/C）
+            // 2冰：找斜点那个，去对面（然后靠近B/D）
+            const e = (d1 === 0 || d1 === 4) ? d2 : d1;
+            const res = output.冰!({ r: output[`${data.boss3魔力注入count}冰${e}`]!() });
+            data.boss3魔力注入res.冰 = res;
+            return res;
+          } else if (e1.el === '雷') {
+            // 雷：如果AC有，去他的另一边 ，如果AC没有，去左右
+            const ac = [d1, d2].find((d) => d === 0 || d === 4);
+            if (ac) {
+              const s = (ac + 4 + 8) % 8;
+              const r = Directions.outputFrom8DirNum(s);
+              const res = output.雷上下!({ r: output[`雷${r}`]!() });
+              data.boss3魔力注入res.雷 = res;
+              return res;
+            }
+            const res = output.雷左右!();
+            data.boss3魔力注入res.雷 = res;
+            return res;
+          }
+        }
+      },
+      outputStrings: {
+        'unknown': { en: '??' },
+        'dirN': { en: '上' },
+        'dirNE': { en: '2' },
+        'dirE': { en: '右' },
+        'dirSE': { en: '3' },
+        'dirS': { en: '下' },
+        'dirSW': { en: '4' },
+        'dirW': { en: '左' },
+        'dirNW': { en: '1' },
+        '1冰1': { en: '1A' },
+        '1冰3': { en: '4C' },
+        '1冰5': { en: '3C' },
+        '1冰7': { en: '2A' },
+        '2冰1': { en: '4D' },
+        '2冰3': { en: '1D' },
+        '2冰5': { en: '2B' },
+        '2冰7': { en: '3B' },
+        '冰': { en: '冰：${r}' },
+        '火': { en: '火：${r}' },
+        '火或': { en: '火：${r1}或${r2}' },
+        '雷dirN': { en: 'A与BOSS之间' },
+        '雷dirS': { en: 'C与BOSS之间' },
+        '雷上下': { en: '雷：${r}' },
+        '雷左右': { en: '雷：BD与BOSS之间' },
+      },
+    },
+    {
+      // B982|魔具联动：爆炎
+      // B983|魔具联动：冰封
+      // B984|魔具联动：暴雷
+      id: '超模之塔 BOSS3 魔具联动',
+      type: 'StartsUsing',
+      netRegex: { id: ['B982', 'B983', 'B984'] },
+      durationSeconds: 8,
+      // eslint-disable-next-line rulesdir/cactbot-output-strings
+      alertText: (data, matches) => {
+        data.boss3魔力注入中 = false;
+        if (matches.id === 'B982') {
+          const res = data.boss3魔力注入res.火;
+          data.boss3魔力注入res.火 = '';
+          return res;
+        } else if (matches.id === 'B983') {
+          const res = data.boss3魔力注入res.冰;
+          data.boss3魔力注入res.冰 = '';
+          return res;
+        } else if (matches.id === 'B984') {
+          const res = data.boss3魔力注入res.雷;
+          data.boss3魔力注入res.雷 = '';
+          return res;
+        }
+      },
+    },
+    {
+      id: '超模之塔 BOSS3 黑暗奔流',
+      type: 'StartsUsing',
+      netRegex: { id: 'B98B' },
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: { en: '躲头+穿辣尾' },
+      },
+    },
+    {
+      id: '超模之塔 BOSS3 真空波',
+      type: 'StartsUsing',
+      netRegex: { id: 'B98E' },
+      infoText: (_data, _matches, output) => output.text!(),
+      outputStrings: {
+        text: { en: '去背后+躲头' },
+      },
+    },
+    {
+      id: '超模之塔 BOSS3 碎尸',
+      type: 'StartsUsing',
+      netRegex: { id: 'B991' },
+      response: Responses.tankBuster(),
+    },
+    {
+      id: '超模之塔 BOSS3 B992',
+      type: 'StartsUsing',
+      netRegex: { id: 'B992' },
+      preRun: (data) => data.boss3其墓须有三 = true,
+      delaySeconds: 13,
+      run: (data) => data.boss3其墓须有三 = false,
+    },
+    {
+      id: '超模之塔 BOSS3 9F8',
+      type: 'GainsEffect',
+      netRegex: { effectId: '9F8', count: ['45A', '45B', '45C'] },
+      response: (data, matches, output) => {
+        output.responseOutputStrings = {};
+        data.boss39F8.push(matches.count);
+        return {};
+      },
     },
     // #endregion
   ],
