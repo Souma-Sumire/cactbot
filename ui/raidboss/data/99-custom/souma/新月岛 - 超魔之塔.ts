@@ -267,9 +267,9 @@ hideall "--sync--"
         if (arr.length === 2) {
           const sortArr = [
             'BA0F', // '场中击退 // '风暴吐息',
+            'C61D', // '场中钢铁 // '剧毒吐息',
             'BA11', // 'BOSS钢铁 // '冰柱赋格',
             'BA10', // 'BOSS月环 // '雷电赋格',
-            'C61D', // '场中钢铁 // '剧毒吐息',
           ];
           const [a, b] = arr.sort((a, b) => {
             const indexA = sortArr.indexOf(a);
@@ -598,8 +598,8 @@ hideall "--sync--"
             const aIndex = map.indexOf(a);
             const bIndex = map.indexOf(b);
             const clock = (bIndex - aIndex) === 1 || (bIndex - aIndex) === -3 ? true : false;
-            const cIndex = (bIndex + (clock ? 1 : -1)) % 4;
-            const dIndex = (bIndex + (clock ? -1 : 1)) % 4;
+            const cIndex = (4 + bIndex + (clock ? 1 : -1)) % 4;
+            const dIndex = (4 + cIndex + (clock ? 1 : -1)) % 4;
             const c = map[cIndex]!;
             const d = map[dIndex]!;
             data.boss1召唤Res2 = {
