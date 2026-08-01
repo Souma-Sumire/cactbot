@@ -720,7 +720,6 @@ hideall "--sync--"
           const [e1, e2] = last2 as [typeof last2[number], typeof last2[number]];
           const d1 = Directions.xyTo8DirNum(e1.x, e1.y, center.boss3.x, center.boss3.y);
           const d2 = Directions.xyTo8DirNum(e2.x, e2.y, center.boss3.x, center.boss3.y);
-          // console.log(matches.timestamp, e1, d1, e2, d2);
           if (e1.el === '火') {
             // 火：如果对称刷，则报2个另外的点，如果120度刷，报另一个120度点
             const diff = Math.abs(d1 - d2);
@@ -747,7 +746,7 @@ hideall "--sync--"
           } else if (e1.el === '雷') {
             // 雷：如果AC有，去他的另一边 ，如果AC没有，去左右
             const ac = [d1, d2].find((d) => d === 0 || d === 4);
-            if (ac) {
+            if (ac !== undefined) {
               const s = (ac + 4 + 8) % 8;
               const r = Directions.outputFrom8DirNum(s);
               const res = output[`雷${r}`]!();
