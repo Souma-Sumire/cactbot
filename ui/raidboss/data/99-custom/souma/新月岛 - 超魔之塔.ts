@@ -721,7 +721,7 @@ hideall "--sync--"
           const d1 = Directions.xyTo8DirNum(e1.x, e1.y, center.boss3.x, center.boss3.y);
           const d2 = Directions.xyTo8DirNum(e2.x, e2.y, center.boss3.x, center.boss3.y);
           if (e1.el === '火') {
-            // 火：如果对称刷，则报2个另外的点，如果120度刷，报另一个120度点
+            // 火：如果对称刷，则报2个另外的点，如果120度刷，找斜点那个，去对面（然后靠近A/C）
             const diff = Math.abs(d1 - d2);
             if (diff === 4) {
               const s1 = (d1 - 2 + 8) % 8;
@@ -730,10 +730,8 @@ hideall "--sync--"
               data.boss3魔力注入res.火 = res;
               return output.火最终!({ text: res });
             }
-            const r = (d1 + diff + 8) % 8 === d2
-              ? (d1 + (diff === 3 ? 5 : 2.5) + 8) % 8
-              : (d1 + -(diff === 3 ? 5 : 2.5) + 8) % 8;
-            const res = output[`火${r}`]!();
+            const e = (d1 === 0 || d1 === 4) ? d2 : d1;
+            const res = output[`火${e}`]!();
             data.boss3魔力注入res.火 = res;
             return output.火最终!({ text: res });
           } else if (e1.el === '冰') {
@@ -762,22 +760,10 @@ hideall "--sync--"
       tts: null,
       outputStrings: {
         'unknown': { en: '??' },
-        '火0': { en: 'A外' },
-        '火0.5': { en: 'A2外' },
-        '火1': { en: '2点外' },
-        '火1.5': { en: 'B2外' },
-        '火2': { en: 'Boy外' },
-        '火2.5': { en: 'B3外' },
-        '火3': { en: '3点外' },
-        '火3.5': { en: 'C3外' },
-        '火4': { en: 'C外' },
-        '火4.5': { en: 'C4外' },
-        '火5': { en: '4点外' },
-        '火5.5': { en: 'D4外' },
-        '火6': { en: 'Dog外' },
-        '火6.5': { en: 'D1外' },
-        '火7': { en: '1点外' },
-        '火7.5': { en: 'A1外' },
+        '火1': { en: 'A1之间' },
+        '火3': { en: 'C4之间' },
+        '火5': { en: 'C3之间' },
+        '火7': { en: 'A2之间' },
         '1冰1': { en: '4点(头下)' },
         '1冰3': { en: '1点(头下)' },
         '1冰5': { en: '2点(头下)' },
@@ -787,9 +773,9 @@ hideall "--sync--"
         '2冰5': { en: 'B2之间' },
         '2冰7': { en: 'B3之间' },
         '火或': { en: '${r1}或${r2}' },
-        '雷dirN': { en: 'A点' },
-        '雷dirS': { en: 'C点' },
-        '雷左右': { en: 'BD点' },
+        '雷dirN': { en: 'A点(罚站位)' },
+        '雷dirS': { en: 'C点(罚站位)' },
+        '雷左右': { en: 'BD点(罚站位)' },
         '冰最终': { en: '(稍后) 冰：${text}' },
         '火最终': { en: '(稍后) 火：${text}' },
         '雷最终': { en: '(稍后) 雷：${text}' },
@@ -984,7 +970,10 @@ hideall "--sync--"
           const g1 = data.boss3魔力注入res[data.boss39F8[0]! as keyof typeof data.boss3魔力注入res];
           const g2 = data.boss3魔力注入res[data.boss39F8[1]! as keyof typeof data.boss3魔力注入res];
           const g3 = data.boss3魔力注入res[data.boss39F8[2]! as keyof typeof data.boss3魔力注入res];
-          return { alertText: output.text3!({ a1, a2, a3, g1, g2, g3 }) };
+          return {
+            alertText: output.text3!({ a1, a2, a3, g1, g2, g3 }),
+            tts: null,
+          };
         }
       },
     },
