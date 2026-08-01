@@ -727,16 +727,13 @@ hideall "--sync--"
             if (diff === 4) {
               const s1 = (d1 - 2 + 8) % 8;
               const s2 = (d2 - 2 + 8) % 8;
-              const r1 = Directions.outputFrom8DirNum(s1);
-              const r2 = Directions.outputFrom8DirNum(s2);
-              const res = output.火或!({ r1: output[`火${r1}`]!(), r2: output[`火${r2}`]!() });
+              const res = output.火或!({ r1: output[`火${s1}`]!(), r2: output[`火${s2}`]!() });
               data.boss3魔力注入res.火 = res;
               return output.火最终!({ text: res });
             }
-            const s1 = (d1 + diff + 8) % 8 === d2
-              ? (d1 + (diff === 3 ? 5 : 3) + 8) % 8
-              : (d1 + -(diff === 3 ? 5 : 3) + 8) % 8;
-            const r = Directions.outputFrom8DirNum(s1);
+            const r = (d1 + diff + 8) % 8 === d2
+              ? (d1 + (diff === 3 ? 5 : 2.5) + 8) % 8
+              : (d1 + -(diff === 3 ? 5 : 2.5) + 8) % 8;
             const res = output[`火${r}`]!();
             data.boss3魔力注入res.火 = res;
             return output.火最终!({ text: res });
@@ -766,26 +763,34 @@ hideall "--sync--"
       tts: null,
       outputStrings: {
         'unknown': { en: '??' },
-        '火dirN': { en: 'A外' },
-        '火dirNE': { en: '2点外' },
-        '火dirE': { en: 'B外' },
-        '火dirSE': { en: '3点外' },
-        '火dirS': { en: 'C外' },
-        '火dirSW': { en: '4点外' },
-        '火dirW': { en: 'D外' },
-        '火dirNW': { en: '1点外' },
-        '1冰1': { en: '4点(小怪处)' },
-        '1冰3': { en: '1点(小怪处)' },
-        '1冰5': { en: '2点(小怪处)' },
-        '1冰7': { en: '3点(小怪处)' },
+        '火0': { en: 'A外' },
+        '火0.5': { en: 'A2外' },
+        '火1': { en: '2点外' },
+        '火1.5': { en: 'B2外' },
+        '火2': { en: 'B外' },
+        '火2.5': { en: 'B3外' },
+        '火3': { en: '3点外' },
+        '火3.5': { en: 'C3外' },
+        '火4': { en: 'C外' },
+        '火4.5': { en: 'C4外' },
+        '火5': { en: '4点外' },
+        '火5.5': { en: 'D4外' },
+        '火6': { en: 'D外' },
+        '火6.5': { en: 'D1外' },
+        '火7': { en: '1点外' },
+        '火7.5': { en: 'A1外' },
+        '1冰1': { en: '4点(头下)' },
+        '1冰3': { en: '1点(头下)' },
+        '1冰5': { en: '2点(头下)' },
+        '1冰7': { en: '3点(头下)' },
         '2冰1': { en: 'D4之间' },
         '2冰3': { en: 'D1之间' },
         '2冰5': { en: 'B2之间' },
         '2冰7': { en: 'B3之间' },
         '火或': { en: '${r1}或${r2}' },
-        '雷dirN': { en: 'A与BOSS之间' },
-        '雷dirS': { en: 'C与BOSS之间' },
-        '雷左右': { en: '左右与BOSS之间' },
+        '雷dirN': { en: 'A点' },
+        '雷dirS': { en: 'C点' },
+        '雷左右': { en: 'BD点' },
         '冰最终': { en: '(稍后) 冰：${text}' },
         '火最终': { en: '(稍后) 火：${text}' },
         '雷最终': { en: '(稍后) 雷：${text}' },
