@@ -720,7 +720,6 @@ hideall "--sync--"
           y: parseFloat(matches.y),
           el: data.boss3魔力注入[matches.sourceId] ?? 'unknown',
         });
-        // console.log(data.boss3B981.length);
         if (data.boss3魔力注入[matches.sourceId] === undefined) {
           console.error(`${matches.timestamp} 魔力注入属性获取出错,sourceId:${matches.sourceId}`);
         }
@@ -742,7 +741,7 @@ hideall "--sync--"
           if (e1.el === '火') {
             // 火：如果对称刷，则报2个另外的点。如果120度刷，找斜点那个，去水平镜像的对面
             const diff = Math.abs(d1 - d2);
-            if (diff === 4) {
+            if (diff === 3) {
               const s1 = (d1 - 1.5 + 6) % 6;
               const s2 = (d2 - 1.5 + 6) % 6;
               data.boss3魔力注入temp.火 = [s1, s2];
@@ -971,10 +970,10 @@ hideall "--sync--"
           '2-2.5火': { en: 'C外' },
           '2-3.5火': { en: 'C外' },
           '2-5.5火': { en: 'A外' },
-          '2-1雷': { en: 'A外' },
-          '2-2雷': { en: 'C外' },
-          '2-4雷': { en: 'C外' },
-          '2-5雷': { en: 'A外' },
+          '2-1雷': { en: 'A中' },
+          '2-2雷': { en: 'C中' },
+          '2-4雷': { en: 'C中' },
+          '2-5雷': { en: 'A中' },
 
           // 打24
           '3-1冰': { en: 'B点' },
@@ -989,12 +988,11 @@ hideall "--sync--"
           '3-2.5火': { en: 'C外' },
           '3-3.5火': { en: 'C外' },
           '3-5.5火': { en: 'A外' },
-          '3-1雷': { en: 'A外' },
-          '3-2雷': { en: 'C外' },
-          '3-4雷': { en: 'C外' },
-          '3-5雷': { en: 'A外' },
+          '3-1雷': { en: 'A中' },
+          '3-2雷': { en: 'C中' },
+          '3-4雷': { en: 'C中' },
+          '3-5雷': { en: 'A中' },
 
-          '雷左右': { en: '左或右' },
           '雷': { en: '雷' },
           '冰': { en: '冰' },
           '火': { en: '火' },
@@ -1059,9 +1057,6 @@ hideall "--sync--"
           const [t1, t2, t3] = [g1, g2, g3].map((v, i) => {
             let d: number;
             if (Array.isArray(v) && v.length > 1) {
-              if (data.boss39F8[2] === '雷') {
-                return output.雷左右!();
-              }
               d = v.reduce((a, b) =>
                 Math.abs(a - data.boss3魔力注入正点冰!) < Math.abs(b - data.boss3魔力注入正点冰!) ? a : b
               );
