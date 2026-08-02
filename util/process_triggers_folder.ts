@@ -16,7 +16,7 @@ const __filename = url.fileURLToPath(new URL('.', import.meta.url));
 const __dirname = path.basename(__filename);
 const root = path.join(__dirname, '../ui/raidboss/data/');
 const distRoot = path.join(__dirname, '../dist/triggers/ui/raidboss/data/');
-const buildTime = new Date().toISOString();
+const buildTime = new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });
 
 fs.rmSync(distRoot, { recursive: true, force: true });
 
