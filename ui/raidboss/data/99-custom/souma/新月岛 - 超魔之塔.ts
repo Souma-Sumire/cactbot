@@ -81,7 +81,9 @@ hideall "--sync--"
 0.0 "--Reset--" ActorControl { command: "4000000F" } window 0,100000 jump 0
 
 1000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1573" } window 1100,1
-3000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1575" } window 2100,1
+2000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1574" } window 2100,1
+3000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1575" } window 3100,1
+
 
 # BOSS 1
 1014.9 "决战" #Ability { id: "C23E" }
@@ -133,6 +135,69 @@ hideall "--sync--"
 1295.0 "雷电赋格" #Ability { id: "BA03" }
 1304.8 "雷霜暴风雨" #Ability { id: "BA7B" }
 1314.0 "召唤" #Ability { id: "BA5E" }
+
+# BOSS2
+2011.0 "剑技风暴" # Ability { id: "C20B" }
+2018.3 "投剑" # Ability { id: "C1D3" }
+2019.3 "突进" # Ability { id: "C55F" }
+2026.9 "回旋" # Ability { id: "C1DC" }
+2026.9 "突进" # Ability { id: "C1D6" }
+2031.0 "回旋" # Ability { id: "C1DC" }
+2031.0 "突进" # Ability { id: "C1D6" }
+2035.2 "回旋" # Ability { id: "C1DC" }
+2035.2 "突进" # Ability { id: "C1D6" }
+2039.5 "突进" # Ability { id: "C1D6" }
+2039.5 "回旋" # Ability { id: "C1D7" }
+2039.8 "秘法剑" # Ability { id: "C1EC" }
+2047.2 "突进"
+2047.3 "回旋" # Ability { id: "C1D7" }
+2047.6 "秘法剑" # Ability { id: "C1E9" }
+2055.6 "回旋" # Ability { id: "C1D7" }
+2055.6 "突进" # Ability { id: "C1D6" }
+2055.9 "秘法剑" # Ability { id: "C1EA" }
+2068.1 "铁臂拳"
+2069.1 "剑技风暴" # Ability { id: "C20B" }
+2083.2 "风旋剑出鞘" # Ability { id: "C1EE" }
+2095.5 "风旋剑" # Ability { id: "C1EF" }
+2096.5 "回转" # Ability { id: "C1F1" }
+2100.5 "突进" # Ability { id: "C20A" }
+2107.0 "剑舞" # Ability { id: "C203" }
+2116.4 "剑舞"
+2120.7 "剑舞"
+2129.8 "剑技风暴" # Ability { id: "C20B" }
+2143.9 "跃进步法" # Ability { id: "C1F6" }
+2144.5 "戳地"
+2148.6 "跃进步法"
+2153.9 "跃进步法" # Ability { id: "C1FB" }
+2158.6 "剑技爆发" # Ability { id: "C217" }
+2160.9 "剑气冲击" # Ability { id: "C1FC" }
+2168.3 "剑气冲击"
+2175.8 "剑气冲击" # Ability { id: "C1FC" }
+2178.2 "突进" # Ability { id: "C20A" }
+2188.8 "风旋剑出鞘" # Ability { id: "C1EE" }
+2205.1 "风旋剑" # Ability { id: "C1EF" }
+2206.1 "回转" # Ability { id: "C1F3" }
+2216.3 "剑舞" # Ability { id: "C203" }
+2225.5 "剑舞"
+2229.7 "剑舞"
+2238.8 "剑技风暴" # Ability { id: "C20B" }
+2250.1 "投剑" # Ability { id: "C1D3" }
+2251.1 "突进" # Ability { id: "C560" }
+2258.8 "回旋" # Ability { id: "C1DB" }
+2258.8 "突进" # Ability { id: "C1D6" }
+2263.0 "回旋" # Ability { id: "C1DB" }
+2263.0 "突进" # Ability { id: "C1D6" }
+2271.3 "突进"
+2271.3 "回旋" # Ability { id: "C1DB" }
+2271.7 "秘法剑" # Ability { id: "C1E9" }
+2279.5 "突进" # Ability { id: "C1D6" }
+2279.6 "回旋" # Ability { id: "C1DB" }
+2280.0 "秘法剑" # Ability { id: "C1EC" }
+2287.8 "回旋" # Ability { id: "C1DB" }
+2287.8 "突进" # Ability { id: "C1D6" }
+2288.1 "秘法剑" # Ability { id: "C1EA" }
+2301.1 "剑技风暴" # Ability { id: "C20B" }
+2313.4 "风旋剑出鞘" # Ability { id: "C1EE" }
 
 # BOSS3
 3009.6 "核爆雨" Ability { id: "B97A" }

@@ -73,8 +73,9 @@ def clean_timeline(input_text):
         skill_name = parsed["skill"]
         action = parsed["action"]
 
-        # 只处理 Ability
+        # 非 Ability 类型的行（例如 SystemLogMessage, ActorControl 等）直接保留
         if action != "Ability":
+            result.append(clean_line_str)
             continue
 
         try:
