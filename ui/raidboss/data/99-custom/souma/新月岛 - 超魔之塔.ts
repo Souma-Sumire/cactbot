@@ -28,6 +28,7 @@ export interface Data extends RaidbossData {
   boss3魔力注入: { [id: string]: '火' | '冰' | '雷' | '鸳鸯锅' };
   boss3B981: { id: string; x: number; y: number; el: string }[];
   boss3魔力注入中: boolean;
+  boss3魔力注入count: number;
   boss3其墓须有三: boolean;
   boss39F8: string[];
   boss3鸳鸯锅9F8: { el: string; id: string; dir: number }[];
@@ -422,6 +423,7 @@ hideall "--sync--"
       boss3魔力注入res: [],
       boss3真空波count: 0,
       boss3魔力注入中: false,
+      boss3魔力注入count: 0,
       boss3其墓须有三: false,
       boss39F8: [],
       boss3地水count: 0,
@@ -867,6 +869,7 @@ hideall "--sync--"
       run: (data) => {
         data.boss3魔力注入 = {};
         data.boss3魔力注入中 = true;
+        data.boss3魔力注入count++;
         data.boss3B981.length = 0;
         data.boss3魔力注入res.length = 0;
         data.boss3魔力注入temp = { 火: undefined, 冰: undefined, 雷: undefined };
@@ -902,8 +905,7 @@ hideall "--sync--"
       type: 'AbilityExtra',
       netRegex: { id: ['B981'] },
       durationSeconds: 2,
-      tts: null,
-      run: (data, matches) => {
+      infoText: (data, matches, output) => {
         if (data.boss3魔力注入中 === false && data.boss3鸳鸯锅中 === false) {
           return;
         }
@@ -938,18 +940,27 @@ hideall "--sync--"
               const s1 = (d1 - 1.5 + 6) % 6;
               const s2 = (d2 - 1.5 + 6) % 6;
               data.boss3魔力注入temp.火 = [s1, s2];
-              return;
+              if (data.boss3魔力注入count === 1) {
+                const text = output.火或!({ r1: output[`火${s1}`]!(), r2: output[`火${s2}`]!() });
+                return output.火稍后!({ text });
+              }
             }
             const e = (d1 === 0 || d1 === 3) ? d2 : d1;
             data.boss3魔力注入temp.火 = [(6 - e) % 6];
-            return;
+            if (data.boss3魔力注入count === 1) {
+              const text = output[`火${data.boss3魔力注入temp.火[0]}`]!();
+              return output.火稍后!({ text });
+            }
           } else if (e1.el === '冰') {
             // 1冰：找斜点那个，去对面（与小怪重合）
             const e = (d1 === 0 || d1 === 3) ? d2 : d1;
             const z = [d1, d2].find((v) => v === 0 || v === 4);
             data.boss3魔力注入正点冰 = z;
             data.boss3魔力注入temp.冰 = (e + 3) % 6;
-            return;
+            if (data.boss3魔力注入count === 1) {
+              const text = output[`冰${data.boss3魔力注入temp.冰}`]!();
+              return output.冰稍后!({ text });
+            }
           } else if (e1.el === '雷') {
             // 雷：如果AC有，找斜点那个，去水平镜像的对面。如果AC没有，去左右
             const ac = [d1, d2].find((d) => d === 0 || d === 3);
@@ -959,8 +970,38 @@ hideall "--sync--"
             } else {
               data.boss3魔力注入temp.雷 = [2.5, 4.5];
             }
+            if (data.boss3魔力注入count === 1) {
+              const text = data.boss3魔力注入temp.雷.length === 2
+                ? output.雷左右!()
+                : output[`雷${data.boss3魔力注入temp.雷[0]}`]!();
+              return output.雷稍后!({ text });
+            }
           }
         }
+      },
+      tts: null,
+      outputStrings: {
+        '火0.5': { en: '2外' }, // A2外
+        '火2.5': { en: '3外' }, // C3外
+        '火3.5': { en: '4外' }, // C4外
+        '火5.5': { en: '1外' }, // A1外
+        '火1': { en: '2外' },
+        '火2': { en: '3外' },
+        '火4': { en: '4外' },
+        '火5': { en: '1外' },
+        '火或': { en: '${r1}或${r2}' },
+        '冰1': { en: '2点(头下)' },
+        '冰2': { en: '3点(头下)' },
+        '冰4': { en: '4点(头下)' },
+        '冰5': { en: '1点(头下)' },
+        '雷1': { en: 'A内' },
+        '雷2': { en: 'C内' },
+        '雷4': { en: 'C内' },
+        '雷5': { en: 'A内' },
+        '雷左右': { en: 'B/D中' },
+        '冰稍后': { en: '（稍后）冰：${text}' },
+        '火稍后': { en: '（稍后）火：${text}' },
+        '雷稍后': { en: '（稍后）雷：${text}' },
       },
     },
     {
@@ -1196,7 +1237,7 @@ hideall "--sync--"
           '火': { en: '火' },
           'text1': { en: '${a}：${t}' },
           'text3': { en: '${a1}${a2}${a3}(带地水)：${t1} -> ${t2} -> ${t3}' },
-          '鸳鸯锅1': { en: '看"${dir}"去${lr}' },
+          '鸳鸯锅1': { en: '准备看"${dir}"去${lr}' },
           'dirN': { en: 'A' },
           'dirNE': { en: '2' },
           'dirE': { en: 'Boy' },
@@ -1228,7 +1269,7 @@ hideall "--sync--"
           let d: number;
           if (Array.isArray(v) && v.length > 1) {
             if (data.boss39F8[0] === '雷') {
-              return { infoText: output.text1!({ a: '雷', g: output['1-左右雷']!() }) };
+              return { infoText: output.text1!({ a: '雷', t: output['1-左右雷']!() }) };
             }
             d = v.reduce((a, b) =>
               Math.abs(a - data.boss3魔力注入正点冰!) < Math.abs(b - data.boss3魔力注入正点冰!) ? a : b
