@@ -663,3 +663,12 @@ export const lookupEndStatus = (lang: Lang, status: string): string => {
   }
   return status;
 };
+
+export const deleteZoneConfirm: LocaleText = {
+  en: 'You are about to delete all encounters in zone "${zone}". Are you sure?',
+  de: 'Du bist kurz davor alle Kämpfe in der Zone "${zone}" zu löschen. Bist du sicher?',
+  fr: 'Vous êtes sur le point de supprimer tous les combats de la zone "${zone}". Êtes-vous sûr ?',
+  ja: 'ゾーン「${zone}」のすべてのエンカウントを削除します。よろしいですか？',
+  cn: '即将删除地区“${zone}”下的所有战斗记录。确定删除吗？',
+  tc: '即將刪除區域「${zone}」下的所有戰鬥記錄。確定刪除嗎？',
+};

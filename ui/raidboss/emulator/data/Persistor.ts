@@ -83,6 +83,13 @@ export default class Persistor extends Dexie {
     return this.encounters.delete(id);
   }
 
+  public async deleteZone(zoneName: string): Promise<void> {
+    const encounters = await this.encounterSummaries.where('zoneName').equals(zoneName).toArray();
+    const ids = encounters.map((e) => e.id).filter((id): id is number => id !== undefined);
+    await this.encounterSummaries.bulkDelete(ids);
+    await this.encounters.bulkDelete(ids);
+  }
+
   public async clearDB(): Promise<void> {
     await this.encounters.clear();
     await this.encounterSummaries.clear();

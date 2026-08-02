@@ -89,7 +89,16 @@ export default class EncounterTab extends EventBus {
       const $row = this.$encounterTabRowTemplate.cloneNode(true);
       if (!($row instanceof HTMLElement))
         throw new UnreachableCode();
-      $row.innerText = zone;
+      const $label = querySelectorSafe($row, '.selector-row-label');
+      $label.innerText = zone;
+
+      const $deleteBtn = querySelectorSafe($row, '.zone-delete-btn');
+      $deleteBtn.classList.remove('d-none');
+      $deleteBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        void this.dispatch('deleteZone', zone);
+      });
+
       if (zone === this.currentZone) {
         clear = false;
         $row.classList.add('selected');
@@ -105,7 +114,8 @@ export default class EncounterTab extends EventBus {
           n.classList.remove('selected');
         });
         t.classList.add('selected');
-        this.currentZone = t.textContent ?? undefined;
+        const labelElem = t.querySelector('.selector-row-label');
+        this.currentZone = labelElem?.textContent ?? t.textContent ?? undefined;
         this.refreshUI();
       });
       this.$zoneColumn.append($row);
@@ -129,7 +139,8 @@ export default class EncounterTab extends EventBus {
         const $row = this.$encounterTabRowTemplate.cloneNode(true);
         if (!($row instanceof HTMLElement))
           throw new UnreachableCode();
-        $row.innerText = date;
+        const $label = querySelectorSafe($row, '.selector-row-label');
+        $label.innerText = date;
         if (date === this.currentDate) {
           clear = false;
           $row.classList.add('selected');
@@ -145,7 +156,8 @@ export default class EncounterTab extends EventBus {
             n.classList.remove('selected');
           });
           t.classList.add('selected');
-          this.currentDate = t.textContent ?? undefined;
+          const labelElem = t.querySelector('.selector-row-label');
+          this.currentDate = labelElem?.textContent ?? t.textContent ?? undefined;
           this.refreshUI();
         });
         this.$dateColumn.append($row);

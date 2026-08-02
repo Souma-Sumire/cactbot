@@ -24,6 +24,7 @@ import RaidEmulatorTimelineController from './emulator/overrides/RaidEmulatorTim
 import RaidEmulatorTimelineUI from './emulator/overrides/RaidEmulatorTimelineUI';
 import RaidEmulatorWatchCombatantsOverride from './emulator/overrides/RaidEmulatorWatchCombatantsOverride';
 import {
+  deleteZoneConfirm,
   emulatorTemplateTranslations,
   emulatorTooltipTranslations,
   emulatorTranslations,
@@ -267,6 +268,16 @@ const raidEmulatorOnLoad = async () => {
     void persistor.deleteEncounter(id).then(() => {
       encounterTab.refresh();
     });
+  });
+
+  encounterTab.on('deleteZone', (zone: string) => {
+    const rawText = translate(options.DisplayLanguage, deleteZoneConfirm);
+    const confirmMsg = rawText.replace('${zone}', zone);
+    if (window.confirm(confirmMsg)) {
+      void persistor.deleteZone(zone).then(() => {
+        encounterTab.refresh();
+      });
+    }
   });
 
   // Listen for the emulator to event log lines, then dispatch them to the timeline controller
