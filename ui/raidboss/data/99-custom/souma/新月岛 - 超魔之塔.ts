@@ -797,10 +797,7 @@ hideall "--sync--"
           return output.冰最终!({ text });
         } else if (matches.id === 'B984') {
           const e = data.boss3魔力注入temp.雷!;
-          if (e.length === 2) {
-            return output.雷左右!();
-          }
-          const text = output[`雷${e[0]}`]!();
+          const text = e.length === 2 ? output.雷左右!() : output[`雷${e[0]}`]!();
           return output.雷最终!({ text });
         }
       },
