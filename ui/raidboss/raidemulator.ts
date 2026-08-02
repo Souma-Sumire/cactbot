@@ -314,11 +314,28 @@ const raidEmulatorOnLoad = async () => {
     }
   });
 
-  const checkFile = (file: File) => {
+  const fileQueue: File[] = [];
+  let isProcessingFile = false;
+
+  const processNextFile = () => {
+    if (isProcessingFile)
+      return;
+
+    const file = fileQueue.shift();
+    if (!file)
+      return;
+
+    isProcessingFile = true;
+
     if (file.type === 'application/json') {
       // Import a DB file by passing it to Persistor
       void persistor.importDB(file).then(() => {
         encounterTab.refresh();
+        isProcessingFile = false;
+        processNextFile();
+      }).catch(() => {
+        isProcessingFile = false;
+        processNextFile();
       });
     } else {
       // Assume it's a log file
@@ -337,7 +354,7 @@ const raidEmulatorOnLoad = async () => {
 
       const doneButtonTimeout = querySelectorSafe(doneButton, '.done-btn-timeout');
 
-      let promise: Promise<unknown> | undefined;
+      let persistChain: Promise<unknown> = Promise.resolve();
 
       logConverterWorker.onmessage = (msg: MessageEvent<ConverterWorkerMessage>) => {
         switch (msg.data.type) {
@@ -392,17 +409,11 @@ const raidEmulatorOnLoad = async () => {
                 enc.endStatus,
               );
               querySelectorSafe(encLabel, '.lineCount').innerText = enc.logLines.length.toString();
-              if (promise) {
-                void promise.then(() => {
-                  promise = persistor.persistEncounter(enc);
-                });
-              } else {
-                promise = persistor.persistEncounter(enc);
-              }
+              persistChain = persistChain.then(() => persistor.persistEncounter(enc));
             }
             break;
           case 'done':
-            void Promise.all([promise]).then(() => {
+            void persistChain.then(() => {
               encounterTab.refresh();
               doneButton.disabled = false;
               let seconds = 5;
@@ -415,6 +426,9 @@ const raidEmulatorOnLoad = async () => {
                   hideModal('.import-progress-modal');
                 }
               }, 1000);
+            }).finally(() => {
+              isProcessingFile = false;
+              processNextFile();
             });
             break;
         }
@@ -423,6 +437,11 @@ const raidEmulatorOnLoad = async () => {
         logConverterWorker.postMessage(b, [b]);
       });
     }
+  };
+
+  const checkFile = (file: File) => {
+    fileQueue.push(file);
+    processNextFile();
   };
 
   const ignoreEvent = (e: Event) => {

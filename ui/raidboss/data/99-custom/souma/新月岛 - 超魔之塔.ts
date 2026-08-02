@@ -81,13 +81,9 @@ hideall "--sync--"
 
 0.0 "--Reset--" ActorControl { command: "4000000F" } window 0,100000 jump 0
 
-1000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1573" } window 1100,1
-2000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1574" } window 2100,1
-3000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1575" } window 3100,1
-4000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1576" } window 4100,1
-
-
 # BOSS 1
+1009.9 "--sync--" StartsUsing { id: "C23E" } window 1014.9,1
+1014.9 "决战" #Ability { id: "C23E" }
 1014.9 "决战" #Ability { id: "C23E" }
 1027.3 "风暴吐息" #Ability { id: "BA0F" }
 1027.3 "冰柱赋格" #Ability { id: "BA11" }
@@ -139,7 +135,8 @@ hideall "--sync--"
 1314.0 "召唤" #Ability { id: "BA5E" }
 
 # BOSS2
-2011.0 "剑技风暴" # Ability { id: "C20B" }
+2006.0 "剑技风暴" StartsUsing { id: "C20B" } window 2009.0,1
+2011.0 "剑技风暴" Ability { id: "C20B" }
 2018.3 "投剑" # Ability { id: "C1D3" }
 2019.3 "突进" # Ability { id: "C55F" }
 2026.9 "回旋" # Ability { id: "C1DC" }
@@ -202,6 +199,7 @@ hideall "--sync--"
 2313.4 "风旋剑出鞘" # Ability { id: "C1EE" }
 
 # BOSS3
+3004.6 "核爆雨" StartsUsing { id: "B97A" }
 3009.6 "核爆雨" Ability { id: "B97A" }
 3015.9 "魔具召唤" #Ability { id: "B97D" }
 3025.8 "魔力注入" #Ability { id: "B97E" }
