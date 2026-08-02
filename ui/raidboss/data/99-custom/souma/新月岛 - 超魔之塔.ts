@@ -1142,7 +1142,7 @@ hideall "--sync--"
       id: '超模之塔 BOSS3 你撒播',
       type: 'GainsEffect',
       netRegex: { effectId: ['1410', '1411'] },
-      delaySeconds: 0.5,
+      delaySeconds: 1,
       suppressSeconds: 1,
       run: (data) => data.boss3鸳鸯锅count++,
     },
