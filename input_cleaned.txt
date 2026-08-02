@@ -1,50 +1,166 @@
-# 蛇之间 will be sealed off
-14.9 "决战" Ability { id: "C23E", source: "绿头" }
-27.3 "风暴吐息" Ability { id: "BA0F", source: "绿头" }
-27.3 "冰柱赋格" Ability { id: "BA11", source: "蓝头" }
-35.5 "雷霜暴风雨" Ability { id: "BA7B", source: "绿头" }
-51.2 "双重冰焰凝环" Ability { id: "BA38", source: "蓝头" }
-51.2 "冰焰" Ability { id: "BA43", source: "蓝头" }
-57.0 "冰焰交错" Ability { id: "BA45", source: "绿头" }
-61.5 "冰焰交错" Ability { id: "BA47", source: "绿头" }
-73.2 "太古之怒"
-89.9 "雷电赋格" Ability { id: "BA10", source: "绿头" }
-89.9 "剧毒吐息" Ability { id: "C61D", source: "蓝头" }
-97.9 "雷霜暴风雨" Ability { id: "BA7B", source: "绿头" }
-109.1 "魔法阵展开" Ability { id: "BA67", source: "绿头" }
-118.8 "魔阵光" Ability { id: "BA69", source: "立体魔法阵" }
-119.0 "双头恐惧" Ability { id: "BA51", source: "绿头" }
-128.1 "召唤" Ability { id: "BA5E", source: "绿头" }
-148.3 "双重吐息" Ability { id: "BA1E", source: "绿头" }
-148.3 "冰簇" Ability { id: "BA22", source: "蓝头" }
-148.3 "雷簇" Ability { id: "BA21", source: "绿头" }
-148.7 "冰流" Ability { id: "BA63", source: "导流冰球" }
-148.7 "雷流" Ability { id: "BA62", source: "导流雷球" }
-155.3 "冰簇" Ability { id: "BA24", source: "蓝头" }
-155.3 "雷簇" Ability { id: "BA23", source: "绿头" }
-155.7 "冰流" Ability { id: "BA63", source: "导流冰球" }
-155.7 "雷流" Ability { id: "BA62", source: "导流雷球" }
-164.4 "以太分享" Ability { id: "BE02", source: "绿头" }
-169.3 "魔法阵展开" Ability { id: "BA67", source: "绿头" }
-183.4 "魔阵光" Ability { id: "BA6A", source: "立体魔法阵" }
-183.4 "冰柱赋格" Ability { id: "C624", source: "蓝头" }
-186.5 "雷电赋格" Ability { id: "BA03", source: "绿头" }
-194.5 "雷霜暴风雨" Ability { id: "BA7B", source: "绿头" }
-202.2 "太古之怒" Ability { id: "BA85", source: "绿头" }
-213.0 "共鸣诅咒展开" Ability { id: "BA6B", source: "绿头" }
-227.2 "双重冰焰凝环" Ability { id: "BA38", source: "蓝头" }
-227.2 "冰焰" Ability { id: "BA43", source: "蓝头" }
-227.6 "突风" Ability { id: "BA70", source: "蓝头" }
-233.3 "冰焰交错" Ability { id: "BA45", source: "绿头" }
-235.7 "突风" Ability { id: "BA70", source: "蓝头" }
-238.3 "冰焰交错" Ability { id: "BA47", source: "绿头" }
-249.4 "雷霜暴风雨" Ability { id: "BA7B", source: "绿头" }
-261.0 "魔法阵展开" Ability { id: "BA67", source: "绿头" }
-271.0 "魔阵光"
-271.2 "双头恐惧" Ability { id: "BA51", source: "绿头" }
-278.8 "魔法阵展开" Ability { id: "BA67", source: "绿头" }
-291.8 "魔阵光"
-291.8 "冰柱赋格" Ability { id: "C624", source: "蓝头" }
-295.0 "雷电赋格" Ability { id: "BA03", source: "绿头" }
-304.8 "雷霜暴风雨" Ability { id: "BA7B", source: "绿头" }
-314.0 "召唤" Ability { id: "BA5E", source: "绿头" }
+### 蜃景幻界新月岛 北征之章
+# ZoneId: 1346
+
+hideall "--Reset--"
+hideall "--sync--"
+
+
+# 舞之间 will be sealed off
+3.0 "攻击" Ability { id: "C65F", source: "剑舞者" }
+11.0 "剑技风暴" Ability { id: "C20B", source: "剑舞者" }
+14.0 "攻击" Ability { id: "C65F", source: "剑舞者" }
+14.2 "--sync--" Ability { id: "C196", source: "剑舞者" }
+18.3 "投剑" Ability { id: "C1D3", source: "剑舞者" }
+18.5 "--sync--"
+19.3 "突进" Ability { id: "C55F", source: "舞动之剑" }
+23.1 "--sync--"
+24.4 "攻击" Ability { id: "C65F", source: "剑舞者" }
+26.9 "回旋" Ability { id: "C1DC", source: "舞动之剑" }
+26.9 "突进" Ability { id: "C1D6", source: "舞动之剑" }
+27.5 "--sync--"
+30.3 "攻击" Ability { id: "C65F", source: "剑舞者" }
+31.0 "回旋" Ability { id: "C1DC", source: "舞动之剑" }
+31.0 "突进" Ability { id: "C1D6", source: "舞动之剑" }
+31.6 "--sync--"
+35.2 "回旋" Ability { id: "C1DC", source: "舞动之剑" }
+35.2 "突进" Ability { id: "C1D6", source: "舞动之剑" }
+36.1 "--sync--"
+39.5 "突进" Ability { id: "C1D6", source: "舞动之剑" }
+39.5 "回旋" Ability { id: "C1D7", source: "舞动之剑" }
+39.8 "秘法剑" Ability { id: "C1EC", source: "剑舞者" }
+40.5 "--sync--"
+44.7 "--sync--"
+47.2 "突进"
+47.3 "回旋" Ability { id: "C1D7", source: "舞动之剑" }
+47.6 "秘法剑" Ability { id: "C1E9", source: "剑舞者" }
+49.1 "--sync--"
+53.6 "--sync--"
+55.6 "回旋" Ability { id: "C1D7", source: "舞动之剑" }
+55.6 "突进" Ability { id: "C1D6", source: "舞动之剑" }
+55.9 "秘法剑" Ability { id: "C1EA", source: "剑舞者" }
+58.1 "--sync--"
+58.9 "攻击" Ability { id: "C65F", source: "剑舞者" }
+62.7 "--sync--"
+66.9 "--sync--"
+68.1 "铁臂拳"
+69.1 "剑技风暴" Ability { id: "C20B", source: "剑舞者" }
+71.4 "--sync--"
+72.0 "攻击" Ability { id: "C65F", source: "剑舞者" }
+75.9 "--sync--"
+80.0 "--sync--"
+83.2 "风旋剑出鞘" Ability { id: "C1EE", source: "剑舞者" }
+84.1 "--sync--"
+86.3 "攻击" Ability { id: "C65F", source: "剑舞者" }
+88.2 "--sync--"
+92.4 "--sync--"
+92.5 "攻击" Ability { id: "C65F", source: "剑舞者" }
+95.5 "风旋剑" Ability { id: "C1EF", source: "剑舞者" }
+96.5 "回转" Ability { id: "C1F1", source: "舞动之剑" }
+96.9 "--sync--"
+98.5 "攻击" Ability { id: "C65F", source: "剑舞者" }
+100.5 "突进" Ability { id: "C20A", source: "舞动之剑" }
+101.4 "--sync--"
+105.6 "--sync--"
+107.0 "剑舞" Ability { id: "C203", source: "剑舞者" }
+109.9 "--sync--"
+113.9 "攻击" Ability { id: "C65F", source: "剑舞者" }
+114.0 "--sync--"
+116.4 "剑舞"
+118.1 "--sync--"
+119.9 "攻击" Ability { id: "C65F", source: "剑舞者" }
+120.7 "剑舞"
+122.5 "--sync--"
+126.6 "--sync--"
+129.8 "剑技风暴" Ability { id: "C20B", source: "剑舞者" }
+130.7 "--sync--"
+130.8 "攻击" Ability { id: "C65F", source: "剑舞者" }
+135.2 "--sync--"
+136.8 "攻击" Ability { id: "C65F", source: "剑舞者" }
+139.7 "--sync--"
+143.9 "--sync--"
+143.9 "跃进步法" Ability { id: "C1F6", source: "剑舞者" }
+144.5 "戳地"
+148.0 "--sync--"
+148.6 "跃进步法"
+152.5 "--sync--"
+153.9 "跃进步法" Ability { id: "C1FB", source: "剑舞者" }
+156.6 "--sync--"
+158.6 "剑技爆发" Ability { id: "C217", source: "剑舞者" }
+160.7 "--sync--"
+160.9 "剑气冲击" Ability { id: "C1FC", source: "舞动之剑" }
+165.1 "--sync--"
+168.3 "剑气冲击"
+169.2 "--sync--"
+173.8 "--sync--"
+175.8 "剑气冲击" Ability { id: "C1FC", source: "舞动之剑" }
+177.9 "--sync--"
+178.2 "突进" Ability { id: "C20A", source: "舞动之剑" }
+179.4 "攻击" Ability { id: "C65F", source: "剑舞者" }
+182.4 "--sync--"
+186.6 "--sync--"
+188.8 "风旋剑出鞘" Ability { id: "C1EE", source: "剑舞者" }
+190.7 "--sync--"
+191.9 "攻击" Ability { id: "C65F", source: "剑舞者" }
+194.9 "--sync--"
+198.0 "攻击" Ability { id: "C65F", source: "剑舞者" }
+199.5 "--sync--"
+203.6 "--sync--"
+205.1 "风旋剑" Ability { id: "C1EF", source: "剑舞者" }
+206.1 "回转" Ability { id: "C1F3", source: "舞动之剑" }
+207.0 "攻击" Ability { id: "C65F", source: "剑舞者" }
+207.8 "--sync--"
+212.4 "--sync--"
+216.3 "剑舞" Ability { id: "C203", source: "剑舞者" }
+216.5 "--sync--"
+220.9 "--sync--"
+222.1 "攻击" Ability { id: "C65F", source: "剑舞者" }
+225.4 "--sync--"
+225.5 "剑舞"
+227.8 "攻击" Ability { id: "C65F", source: "剑舞者" }
+229.7 "--sync--"
+229.7 "剑舞"
+234.3 "--sync--"
+238.5 "--sync--"
+238.8 "剑技风暴" Ability { id: "C20B", source: "剑舞者" }
+238.8 "攻击" Ability { id: "C65F", source: "剑舞者" }
+243.0 "--sync--"
+243.9 "攻击" Ability { id: "C65F", source: "剑舞者" }
+247.1 "--sync--"
+250.1 "投剑" Ability { id: "C1D3", source: "剑舞者" }
+251.1 "突进" Ability { id: "C560", source: "舞动之剑" }
+251.2 "--sync--"
+255.3 "--sync--"
+256.2 "攻击" Ability { id: "C65F", source: "剑舞者" }
+258.8 "回旋" Ability { id: "C1DB", source: "舞动之剑" }
+258.8 "突进" Ability { id: "C1D6", source: "舞动之剑" }
+259.8 "--sync--"
+262.2 "攻击" Ability { id: "C65F", source: "剑舞者" }
+263.0 "回旋" Ability { id: "C1DB", source: "舞动之剑" }
+263.0 "突进" Ability { id: "C1D6", source: "舞动之剑" }
+263.9 "--sync--"
+268.3 "--sync--"
+271.3 "突进"
+271.3 "回旋" Ability { id: "C1DB", source: "舞动之剑" }
+271.7 "秘法剑" Ability { id: "C1E9", source: "剑舞者" }
+272.9 "--sync--"
+277.3 "--sync--"
+279.5 "突进" Ability { id: "C1D6", source: "舞动之剑" }
+279.6 "回旋" Ability { id: "C1DB", source: "舞动之剑" }
+280.0 "秘法剑" Ability { id: "C1EC", source: "剑舞者" }
+281.7 "--sync--"
+286.2 "--sync--"
+287.8 "回旋" Ability { id: "C1DB", source: "舞动之剑" }
+287.8 "突进" Ability { id: "C1D6", source: "舞动之剑" }
+288.1 "秘法剑" Ability { id: "C1EA", source: "剑舞者" }
+290.4 "--sync--"
+290.8 "攻击" Ability { id: "C65F", source: "剑舞者" }
+295.0 "--sync--"
+299.2 "--sync--"
+301.1 "剑技风暴" Ability { id: "C20B", source: "剑舞者" }
+303.8 "--sync--"
+304.1 "攻击" Ability { id: "C65F", source: "剑舞者" }
+307.9 "--sync--"
+312.5 "--sync--"
+313.4 "风旋剑出鞘" Ability { id: "C1EE", source: "剑舞者" }
+316.6 "--sync--"
+317.5 "攻击" Ability { id: "C65F", source: "剑舞者" }

@@ -44,7 +44,7 @@ type FightEncInfo = ZoneEncInfo & {
 
 // TODO: Zoraal Ja is an ally combatant in Worqor Lar Dor (duty support),
 // but an enemy combatant in Everkeep. Need to figure out how to handle this.
-export const ignoredCombatants = PetData['en'].concat([
+export const ignoredCombatants = Object.values(PetData).flat().concat([
   '',
   'Alisaie',
   'Alisaie\'s Avatar',
