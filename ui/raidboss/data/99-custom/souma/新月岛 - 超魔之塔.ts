@@ -925,6 +925,7 @@ hideall "--sync--"
     },
     {
       id: '超模之塔 BOSS3 9F8',
+      comment: { en: '例如"1-4冰"代表“其墓须有三”第1轮是冰，安全区在4。\n0=北, 1=右上, 2=右下, 3=南, 4=左下, 5=左上' },
       type: 'GainsEffect',
       netRegex: { effectId: '9F8', count: ['45A', '45B', '45C', '45D', '45E'] },
       condition: (data) => data.boss3其墓须有三 || data.boss3鸳鸯锅中,
