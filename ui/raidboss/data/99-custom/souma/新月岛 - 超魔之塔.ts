@@ -83,6 +83,7 @@ hideall "--sync--"
 1000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1573" } window 1100,1
 2000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1574" } window 2100,1
 3000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1575" } window 3100,1
+4000.0 "--sync--" SystemLogMessage { id: "7DC", param1: "1576" } window 4100,1
 
 
 # BOSS 1
@@ -274,6 +275,131 @@ hideall "--sync--"
 3284.0 "真空波" #Ability { id: "B98E" }
 3293.1 "碎尸" #Ability { id: "B991" }
 3301.0 "魔具召唤" #Ability { id: "B97D" }
+
+# BOSS4
+4012.1 "连续咏唱" # Ability { id: "BD17" }
+4019.2 "核爆" # Ability { id: "BD1F" }
+4023.3 "核爆" # Ability { id: "BD48" }
+4033.6 "飞翔指令" # Ability { id: "BD13" }
+4043.9 "跳跃" # Ability { id: "BD14" }
+4050.2 "四连召唤·封印武器" # Ability { id: "BF0B" }
+4050.6 "冲击波" # Ability { id: "BD15" }
+4052.6 "盯准" # Ability { id: "BF11" }
+4054.5 "封印武器" # Ability { id: "C4BB" }
+4055.6 "居合斩" # Ability { id: "BF12" }
+4059.1 "爱之歌" # Ability { id: "BF10" }
+4060.1 "封印武器" # Ability { id: "C4BC" }
+4062.4 "镰鼬之风" # Ability { id: "BF13" }
+4068.3 "连续咏唱" # Ability { id: "BD17" }
+4075.4 "核爆" # Ability { id: "BD1F" }
+4079.5 "核爆" # Ability { id: "BD48" }
+4096.7 "全知烈火" # Ability { id: "C528" }
+4108.8 "元素控制" # Ability { id: "BD0A" }
+4114.9 "元素展开" # Ability { id: "BD0F" }
+4122.8 "冰澈" # Ability { id: "BD30" }
+4124.4 "霹雷" # Ability { id: "BD31" }
+4126.0 "炽炎" # Ability { id: "BD2F" }
+4126.3 "预言" # Ability { id: "BD1C" }
+4129.0 "冰澈" # Ability { id: "BD30" }
+4130.4 "炽炎" # Ability { id: "BD2F" }
+4137.1 "陨石" # Ability { id: "BD43" }
+4137.1 "天崩地裂" # Ability { id: "BD44" }
+4138.1 "暴雷" # Ability { id: "BD2E" }
+4138.1 "冰封" # Ability { id: "BD2D" }
+4141.4 "封印武器" # Ability { id: "BD02" }
+4143.1 "爆炎" # Ability { id: "BD2C" }
+4143.1 "暴雷" # Ability { id: "BD2E" }
+4143.5 "盯准" # Ability { id: "BD27" }
+4145.5 "冰澈" # Ability { id: "BD30" }
+4146.9 "炽炎" # Ability { id: "BD2F" }
+4148.5 "霹雷" # Ability { id: "BD31" }
+4149.9 "冰澈" # Ability { id: "BD30" }
+4151.5 "炽炎" # Ability { id: "BD2F" }
+4153.1 "霹雷" # Ability { id: "BD31" }
+4155.8 "封印武器" # Ability { id: "BD02" }
+4157.2 "冰封" # Ability { id: "BD2D" }
+4157.2 "爆炎" # Ability { id: "BD2C" }
+4157.9 "盯准"
+4163.0 "元素吸收" # Ability { id: "BD33" }
+4171.2 "冰碎" # Ability { id: "BD36" }
+4171.2 "延烧" # Ability { id: "BD35" }
+4171.2 "放电" # Ability { id: "BD37" }
+4176.8 "冰碎" # Ability { id: "BD36" }
+4176.8 "延烧" # Ability { id: "BD35" }
+4176.8 "放电" # Ability { id: "BD37" }
+4182.3 "元素整合" # Ability { id: "BD32" }
+4200.2 "全知烈火" # Ability { id: "C528" }
+4211.3 "召唤" # Ability { id: "BD18" }
+4219.5 "魔法剑·石化" # Ability { id: "BD3C" }
+4225.5 "魔法剑·石化"
+4229.6 "攻击"
+4231.5 "魔法剑·石化"
+4231.5 "全斩" # Ability { id: "BD45" }
+4234.9 "飞羽清风" # Ability { id: "BD42" }
+4238.4 "攻击"
+424.01 "全斩"
+4244.3 "攻击" # Ability { id: "1962" }
+4245.1 "全斩"
+4257.9 "四连召唤·封印武器" # Ability { id: "BF0D" }
+4260.2 "镰鼬之风" # Ability { id: "BF13" }
+4261.4 "封印武器" # Ability { id: "BF0E" }
+4263.5 "爱之歌" # Ability { id: "BF10" }
+4265.5 "封印武器" # Ability { id: "C4BB" }
+4266.6 "居合斩" # Ability { id: "BF12" }
+4269.9 "盯准" # Ability { id: "BF11" }
+4275.8 "连续咏唱" # Ability { id: "BD17" }
+4282.9 "核爆" # Ability { id: "BD1F" }
+4304.1 "全知烈火" # Ability { id: "C528" }
+4316.2 "元素控制" # Ability { id: "BD0A" }
+4322.3 "元素创造" # Ability { id: "BD10" }
+4331.8 "霹雷"
+4331.9 "炽炎" # Ability { id: "BD2F" }
+4336.2 "冰澈" # Ability { id: "BD30" }
+4336.3 "炽炎" # Ability { id: "BD2F" }
+4337.3 "飞翔指令" # Ability { id: "BD13" }
+4339.5 "跳跃" # Ability { id: "BD14" }
+4340.5 "霹雷" # Ability { id: "BD31" }
+4340.6 "冰澈" # Ability { id: "BD30" }
+4345.4 "封印武器" # Ability { id: "BD00" }
+4346.3 "冲击波" # Ability { id: "BD15" }
+4347.2 "爆炎" # Ability { id: "BD2C" }
+4347.2 "暴雷" # Ability { id: "BD2E" }
+4347.4 "爱之歌" # Ability { id: "BD26" }
+4358.1 "炽炎"
+4358.3 "霹雷" # Ability { id: "BD31" }
+4362.5 "炽炎" # Ability { id: "BD2F" }
+4362.5 "冰澈" # Ability { id: "BD30" }
+4364.4 "预言" # Ability { id: "BD1C" }
+4366.8 "冰澈" # Ability { id: "BD30" }
+4366.8 "霹雷" # Ability { id: "BD31" }
+4375.1 "陨石" # Ability { id: "BD43" }
+4375.1 "天崩地裂" # Ability { id: "BD44" }
+4375.7 "暴雷" # Ability { id: "BD2E" }
+4375.7 "冰封" # Ability { id: "BD2D" }
+4379.5 "封印武器" # Ability { id: "BD02" }
+4381.3 "冰封" # Ability { id: "BD2D" }
+4381.3 "爆炎" # Ability { id: "BD2C" }
+4381.6 "盯准" # Ability { id: "BD27" }
+4386.7 "元素吸收" # Ability { id: "BD33" }
+4394.9 "冰碎" # Ability { id: "BD36" }
+4394.9 "延烧" # Ability { id: "BD35" }
+4394.9 "放电" # Ability { id: "BD37" }
+4400.7 "冰碎" # Ability { id: "BD36" }
+4400.7 "延烧" # Ability { id: "BD35" }
+4400.7 "放电" # Ability { id: "BD37" }
+4406.2 "元素整合" # Ability { id: "BD32" }
+4424.4 "全知烈火" # Ability { id: "C528" }
+4435.5 "飞翔指令" # Ability { id: "BD13" }
+4445.7 "跳跃" # Ability { id: "BD14" }
+4452.3 "四连召唤·封印武器" # Ability { id: "BF0A" }
+4452.5 "冲击波" # Ability { id: "BD15" }
+4454.4 "爱之歌" # Ability { id: "BF10" }
+4455.3 "封印武器" # Ability { id: "BF0F" }
+4457.6 "盯准" # Ability { id: "BF11" }
+4459.6 "封印武器" # Ability { id: "C4BB" }
+4460.7 "居合斩" # Ability { id: "BF12" }
+4464.0 "镰鼬之风" # Ability { id: "BF13" }
+4469.9 "连续咏唱" # Ability { id: "BD17" }
 
 `,
   initData: () => {
