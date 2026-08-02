@@ -316,6 +316,14 @@ const raidEmulatorOnLoad = async () => {
 
   const fileQueue: File[] = [];
   let isProcessingFile = false;
+  let autoCloseInterval: number | undefined;
+
+  const cleanupAutoClose = () => {
+    if (autoCloseInterval !== undefined) {
+      window.clearInterval(autoCloseInterval);
+      autoCloseInterval = undefined;
+    }
+  };
 
   const processNextFile = () => {
     if (isProcessingFile)
@@ -326,14 +334,13 @@ const raidEmulatorOnLoad = async () => {
       return;
 
     isProcessingFile = true;
+    cleanupAutoClose();
 
     if (file.type === 'application/json') {
       // Import a DB file by passing it to Persistor
       void persistor.importDB(file).then(() => {
         encounterTab.refresh();
-        isProcessingFile = false;
-        processNextFile();
-      }).catch(() => {
+      }).finally(() => {
         isProcessingFile = false;
         processNextFile();
       });
@@ -353,6 +360,15 @@ const raidEmulatorOnLoad = async () => {
       doneButton.disabled = true;
 
       const doneButtonTimeout = querySelectorSafe(doneButton, '.done-btn-timeout');
+      doneButtonTimeout.innerText = '';
+
+      const onDoneButtonClick = () => {
+        cleanupAutoClose();
+        hideModal('.import-progress-modal');
+        doneButton.removeEventListener('click', onDoneButtonClick);
+      };
+      doneButton.removeEventListener('click', onDoneButtonClick);
+      doneButton.addEventListener('click', onDoneButtonClick);
 
       let persistChain: Promise<unknown> = Promise.resolve();
 
@@ -416,13 +432,14 @@ const raidEmulatorOnLoad = async () => {
             void persistChain.then(() => {
               encounterTab.refresh();
               doneButton.disabled = false;
+              cleanupAutoClose();
               let seconds = 5;
               doneButtonTimeout.innerText = ` (${seconds})`;
-              const interval = window.setInterval(() => {
+              autoCloseInterval = window.setInterval(() => {
                 --seconds;
                 doneButtonTimeout.innerText = ` (${seconds})`;
                 if (seconds === 0) {
-                  window.clearInterval(interval);
+                  cleanupAutoClose();
                   hideModal('.import-progress-modal');
                 }
               }, 1000);
@@ -435,6 +452,9 @@ const raidEmulatorOnLoad = async () => {
       };
       void file.arrayBuffer().then((b) => {
         logConverterWorker.postMessage(b, [b]);
+      }).catch(() => {
+        isProcessingFile = false;
+        processNextFile();
       });
     }
   };
