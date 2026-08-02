@@ -43,6 +43,7 @@ export interface Data extends RaidbossData {
   };
   boss3魔力注入正点冰: number | undefined;
   boss3魔力注入res: string[];
+  boss3真空波count: number;
 }
 
 const center = {
@@ -228,6 +229,7 @@ hideall "--sync--"
       boss3B981: [],
       boss3魔力注入1: false,
       boss3魔力注入res: [],
+      boss3真空波count: 0,
       boss3魔力注入中: false,
       boss3其墓须有三: false,
       boss39F8: [],
@@ -802,10 +804,10 @@ hideall "--sync--"
         }
       },
       outputStrings: {
-        '火0.5': { en: 'A2外' },
-        '火2.5': { en: 'C3外' },
-        '火3.5': { en: 'C4外' },
-        '火5.5': { en: 'A1外' },
+        '火0.5': { en: '2外' }, // A2外
+        '火2.5': { en: '3外' }, // C3外
+        '火3.5': { en: '4外' }, // C4外
+        '火5.5': { en: '1外' }, // A1外
         '火1': { en: '2外' },
         '火2': { en: '3外' },
         '火4': { en: '4外' },
@@ -819,7 +821,7 @@ hideall "--sync--"
         '雷2': { en: 'C内' },
         '雷4': { en: 'C内' },
         '雷5': { en: 'A内' },
-        '雷左右': { en: 'B/D内' },
+        '雷左右': { en: 'B/D中' },
         '冰最终': { en: '冰：${text}' },
         '火最终': { en: '火：${text}' },
         '雷最终': { en: '雷：${text}' },
@@ -838,9 +840,13 @@ hideall "--sync--"
       id: '超模之塔 BOSS3 真空波',
       type: 'StartsUsing',
       netRegex: { id: 'B98E' },
-      alarmText: (_data, _matches, output) => output.text!(),
+      alarmText: (data, _matches, output) => {
+        data.boss3真空波count++;
+        return data.boss3真空波count === 2 ? output.text2!() : output.text!();
+      },
       outputStrings: {
         text: { en: '去背后+躲头' },
+        text2: { en: '去背后' },
       },
     },
     {
@@ -982,13 +988,17 @@ hideall "--sync--"
           '3-4火': { en: 'C外' },
           '3-5火': { en: 'A外' },
           '3-0.5火': { en: 'A外' },
-          '3-2.5火': { en: 'C外' },
+          '3-2.5火': { en: 'C外' }, // 3C中
           '3-3.5火': { en: 'C外' },
           '3-5.5火': { en: 'A外' },
           '3-1雷': { en: 'A中' },
           '3-2雷': { en: 'C中' },
           '3-4雷': { en: 'C中' },
           '3-5雷': { en: 'A中' },
+
+          '1-左右雷': { en: 'B/D中' },
+          '2-左右雷': { en: 'B/D中' },
+          '3-左右雷': { en: 'B/D中' },
 
           '雷': { en: '雷' },
           '冰': { en: '冰' },
@@ -1010,14 +1020,12 @@ hideall "--sync--"
           const id = matches.targetId;
           const dir = data.boss3鸳鸯锅.find((v) => v.id === id)!.dir;
           const el = { '45D': '左蓝右紫', '45E': '左紫右蓝' }[matches.count]!;
-          // console.log(matches.timestamp, id, dir, el);
           data.boss3鸳鸯锅9F8.push({ el, dir, id });
           if (data.boss3鸳鸯锅9F8.length === 1) {
             const yyg = [el.at(1), el.at(3)];
             // 这里不用反 因为小怪的面向已经是反的了 负负得正
             const safe = yyg.findIndex((v) => v === data.boss3鸳鸯锅buff) === 0 ? '左' : '右';
             const d = Directions.outputFrom8DirNum(dir);
-            // console.log(data.me, data.boss3鸳鸯锅buff, yyg);
             return { infoText: output.鸳鸯锅1!({ dir: output[d]!(), lr: safe }) };
           }
         }
@@ -1028,8 +1036,8 @@ hideall "--sync--"
           const v = data.boss3魔力注入temp[data.boss39F8[0]! as keyof typeof data.boss3魔力注入temp]!;
           let d: number;
           if (Array.isArray(v) && v.length > 1) {
-            if (data.boss39F8[2] === '雷') {
-              return { infoText: output.text1!({ a: '雷', g: output.雷左右!() }) };
+            if (data.boss39F8[0] === '雷') {
+              return { infoText: output.text1!({ a: '雷', g: output['1-左右雷']!() }) };
             }
             d = v.reduce((a, b) =>
               Math.abs(a - data.boss3魔力注入正点冰!) < Math.abs(b - data.boss3魔力注入正点冰!) ? a : b
@@ -1054,11 +1062,15 @@ hideall "--sync--"
           const [t1, t2, t3] = [g1, g2, g3].map((v, i) => {
             let d: number;
             if (Array.isArray(v) && v.length > 1) {
+              if (data.boss39F8[i] === '雷') {
+                return output[`${i + 1}-左右雷`]!();
+              }
               d = v.reduce((a, b) =>
                 Math.abs(a - data.boss3魔力注入正点冰!) < Math.abs(b - data.boss3魔力注入正点冰!) ? a : b
               );
             }
             d = Array.isArray(v) ? v[0]! : v;
+            // console.log(`${matches.timestamp}, ${i + 1}-${d}${data.boss39F8[i]!}`);
             return output[`${i + 1}-${d}${data.boss39F8[i]!}`]!();
           }) as [string, string, string];
           data.boss3魔力注入res.push(t2);
