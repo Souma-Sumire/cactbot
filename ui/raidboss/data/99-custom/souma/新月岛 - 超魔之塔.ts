@@ -1258,7 +1258,7 @@ hideall "--sync--"
             // 这里不用反 因为小怪的面向已经是反的了 负负得正
             const safe = yyg.findIndex((v) => v === data.boss3鸳鸯锅buff) === 0 ? '左' : '右';
             const d = Directions.outputFrom8DirNum(dir);
-            return { infoText: output.鸳鸯锅1!({ dir: output[d]!(), lr: safe }) };
+            return { alertText: output.鸳鸯锅1!({ dir: output[d]!(), lr: safe }) };
           }
         }
         if (data.boss3其墓须有三 && ['45A', '45B', '45C'].includes(matches.count)) {
