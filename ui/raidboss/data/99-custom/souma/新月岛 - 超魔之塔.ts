@@ -1104,6 +1104,13 @@ hideall "--sync--"
       },
     },
     {
+      id: '超模之塔 BOSS3 你撒播',
+      type: 'GainsEffect',
+      netRegex: { effectId: ['1410', '1411'] },
+      preRun: (data) => data.boss3鸳鸯锅count++,
+      suppressSeconds: 1,
+    },
+    {
       id: '超模之塔 BOSS3 你撒播啊',
       type: 'GainsEffect',
       netRegex: {
@@ -1113,12 +1120,12 @@ hideall "--sync--"
         ],
       },
       condition: Conditions.targetIsYou(),
-      durationSeconds: 5.9,
+      delaySeconds: 0.2,
+      durationSeconds: 5.7,
       infoText: (data, matches, output) => {
         // TODO: 可优化为直接报场地半场，不用玩家自己看小怪，但现在懒得写。
         data.boss3鸳鸯锅buff = matches.effectId === '1410' ? '蓝' : '紫';
         if (data.boss3鸳鸯锅9F8.length > 0) {
-          data.boss3鸳鸯锅count++;
           const yyg = data.boss3鸳鸯锅9F8[data.boss3鸳鸯锅count];
           if (yyg === undefined) {
             // 最后一次，不用再战斗了
@@ -1258,7 +1265,7 @@ hideall "--sync--"
             // 这里不用反 因为小怪的面向已经是反的了 负负得正
             const safe = yyg.findIndex((v) => v === data.boss3鸳鸯锅buff) === 0 ? '左' : '右';
             const d = Directions.outputFrom8DirNum(dir);
-            return { alertText: output.鸳鸯锅1!({ dir: output[d]!(), lr: safe }) };
+            return { infoText: output.鸳鸯锅1!({ dir: output[d]!(), lr: safe }) };
           }
         }
         if (data.boss3其墓须有三 && ['45A', '45B', '45C'].includes(matches.count)) {
