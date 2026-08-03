@@ -238,7 +238,7 @@ export default class AnalyzedEncounter extends EventBus {
         triggerHelper: triggerHelper,
         status: currentTriggerStatus,
         logLine: triggeringLine,
-        resolvedOffset: log.timestamp - this.encounter.startTimestamp,
+        resolvedOffset: log.timestamp - this.encounter.initialTimestamp,
       });
     };
     popupText.triggerResolvers = [];

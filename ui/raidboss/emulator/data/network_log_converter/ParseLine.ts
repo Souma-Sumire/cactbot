@@ -5,6 +5,7 @@ import { LineEvent02 } from './LineEvent0x02';
 import { LineEvent03 } from './LineEvent0x03';
 import { LineEvent04 } from './LineEvent0x04';
 import { LineEvent12 } from './LineEvent0x0C';
+import { LineEvent260 } from './LineEvent0x104';
 import { LineEvent261 } from './LineEvent0x105';
 import { LineEvent263 } from './LineEvent0x107';
 import { LineEvent264 } from './LineEvent0x108';
@@ -127,6 +128,9 @@ export default class ParseLine {
         break;
       case 'LineEvent41':
         ret = new LineEvent41(repo, line, parts);
+        break;
+      case 'LineEvent260':
+        ret = new LineEvent260(repo, line, parts);
         break;
       case 'LineEvent261':
         ret = new LineEvent261(repo, line, parts);

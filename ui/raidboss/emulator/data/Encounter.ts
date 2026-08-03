@@ -4,7 +4,9 @@ import PetNamesByLang from '../../../../resources/pet_names';
 import EmulatorCommon, { MatchEndInfo, MatchStartInfo } from '../EmulatorCommon';
 
 import CombatantTracker from './CombatantTracker';
+import LogEventHandler from './LogEventHandler';
 import LineEvent, { isLineEventSource, isLineEventTarget } from './network_log_converter/LineEvent';
+import { LineEvent260 } from './network_log_converter/LineEvent0x104';
 import LogRepository from './network_log_converter/LogRepository';
 import NetworkLogConverter from './NetworkLogConverter';
 
@@ -27,7 +29,7 @@ const isValidTimestamp = (timestamp: number) => {
 };
 
 export default class Encounter {
-  private static readonly encounterVersion = 3;
+  private static readonly encounterVersion = 5;
   public id?: number;
   version: number;
   initialOffset = Number.MAX_SAFE_INTEGER;
@@ -57,15 +59,22 @@ export default class Encounter {
 
   initialize(): void {
     const startStatuses = new Set<string>();
+    let firstInCombatLine: LineEvent260 | undefined;
 
     for (const line of this.logLines) {
       this.tzOffsetMillis = line.tzOffsetMillis;
+
+      if (line instanceof LineEvent260) {
+        if (
+          firstInCombatLine === undefined && line.inACTCombat === '1' && line.inGameCombat === '1'
+        )
+          firstInCombatLine = line;
+      }
 
       let res: MatchStartInfo | MatchEndInfo | undefined = EmulatorCommon.matchStart(
         line.networkLine,
       );
       if (res) {
-        this.firstLineIndex = line.index;
         if (res.StartType)
           startStatuses.add(res.StartType);
         const startIn = parseInt(res.StartIn);
@@ -105,22 +114,31 @@ export default class Encounter {
     this.endTimestamp = this.combatantTracker.lastTimestamp;
     this.duration = this.endTimestamp - this.startTimestamp;
 
-    if (this.initialOffset === Number.MAX_SAFE_INTEGER) {
-      if (this.engageAt < Number.MAX_SAFE_INTEGER)
-        this.initialOffset = this.engageAt - this.startTimestamp;
-      else if (this.firstPlayerAbility < Number.MAX_SAFE_INTEGER)
-        this.initialOffset = this.firstPlayerAbility - this.startTimestamp;
-      else if (this.firstEnemyAbility < Number.MAX_SAFE_INTEGER)
-        this.initialOffset = this.firstEnemyAbility - this.startTimestamp;
-      else
-        this.initialOffset = 0;
+    if (firstInCombatLine !== undefined) {
+      this.firstLineIndex = firstInCombatLine.index;
+      this.initialTimestamp = firstInCombatLine.timestamp;
+      this.initialOffset = Math.max(0, this.initialTimestamp - this.startTimestamp);
+    } else {
+      if (this.initialOffset === Number.MAX_SAFE_INTEGER) {
+        if (this.engageAt < Number.MAX_SAFE_INTEGER)
+          this.initialOffset = Math.max(0, this.engageAt - this.startTimestamp);
+        else if (this.firstPlayerAbility < Number.MAX_SAFE_INTEGER)
+          this.initialOffset = Math.max(0, this.firstPlayerAbility - this.startTimestamp);
+        else if (this.firstEnemyAbility < Number.MAX_SAFE_INTEGER)
+          this.initialOffset = Math.max(0, this.firstEnemyAbility - this.startTimestamp);
+        else
+          this.initialOffset = 0;
+      }
+      this.initialTimestamp = this.startTimestamp + this.initialOffset;
     }
 
-    this.initialTimestamp = this.startTimestamp + this.initialOffset;
+    for (const line of this.logLines) {
+      line.offset = line.timestamp - this.initialTimestamp;
+    }
 
     const firstLine = this.logLines[this.firstLineIndex];
 
-    if (firstLine && firstLine.offset)
+    if (firstLine && firstLine.offset !== undefined)
       this.playbackOffset = firstLine.offset;
 
     this.startStatus = [...startStatuses].sort().join(', ');
@@ -136,10 +154,27 @@ export default class Encounter {
 
     const repo = new LogRepository();
     const converter = new NetworkLogConverter();
-    this.logLines = converter.convertLines(
+    const parsedLines = converter.convertLines(
       this.logLines.map((l) => l.networkLine),
       repo,
     );
+
+    const localLogHandler = new LogEventHandler();
+    let updatedLines: LineEvent[] = [];
+    localLogHandler.on(
+      'fight',
+      (_day: string, _zoneId: string, _zoneName: string, lines: LineEvent[]) => {
+        updatedLines = lines;
+      },
+    );
+    localLogHandler.parseLogs(parsedLines);
+    localLogHandler.endFight();
+
+    if (updatedLines.length > 0)
+      this.logLines = updatedLines;
+    else
+      this.logLines = parsedLines;
+
     this.version = Encounter.encounterVersion;
     this.initialize();
 

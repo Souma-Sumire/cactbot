@@ -27,8 +27,8 @@ export default class ProgressBar {
         if (!(target instanceof HTMLElement))
           throw new UnreachableCode();
         const percent = e.offsetX / target.offsetWidth;
-        const trimmedDuration = emulator.currentEncounter.encounter.duration -
-          emulator.currentEncounter.encounter.initialOffset;
+        const trimmedDuration = emulator.currentEncounter.encounter.endTimestamp -
+          emulator.currentEncounter.encounter.initialTimestamp;
         const time = Math.floor(trimmedDuration * percent);
         this.$progressBarTooltip.offset.x = e.offsetX - target.offsetWidth / 2;
         this.$progressBarTooltip.setText(DTFuncs.timeToString(time));
@@ -41,14 +41,15 @@ export default class ProgressBar {
         if (!(target instanceof HTMLElement))
           throw new UnreachableCode();
         const percent = e.offsetX / target.offsetWidth;
-        const trimmedDuration = emulator.currentEncounter.encounter.duration -
-          emulator.currentEncounter.encounter.initialOffset;
+        const trimmedDuration = emulator.currentEncounter.encounter.endTimestamp -
+          emulator.currentEncounter.encounter.initialTimestamp;
         const time = Math.floor(trimmedDuration * percent);
         void emulator.seek(emulator.currentEncounter.encounter.initialOffset + time);
       }
     });
     emulator.on('currentEncounterChanged', (encounter: AnalyzedEncounter) => {
-      const trimmedDuration = encounter.encounter.duration - encounter.encounter.initialOffset;
+      const trimmedDuration = encounter.encounter.endTimestamp -
+        encounter.encounter.initialTimestamp;
       this.$progressBarCurrent.textContent = DTFuncs.timeToString(0, false);
       this.$progressBarDuration.textContent = DTFuncs.timeToString(trimmedDuration, false);
       this.$progressBar.style.width = '0%';
@@ -58,10 +59,10 @@ export default class ProgressBar {
       const curEnc = emulator.currentEncounter;
       if (!curEnc)
         throw new UnreachableCode();
-      const currentOffset = currentLogTime - curEnc.encounter.initialTimestamp;
-      const trimmedDuration = curEnc.encounter.duration - curEnc.encounter.initialOffset;
-      const progPercent = currentOffset / trimmedDuration * 100;
-      const progValue = currentLogTime - curEnc.encounter.initialTimestamp;
+      const currentOffset = Math.max(0, currentLogTime - curEnc.encounter.initialTimestamp);
+      const trimmedDuration = curEnc.encounter.endTimestamp - curEnc.encounter.initialTimestamp;
+      const progPercent = Math.max(0, Math.min(100, currentOffset / trimmedDuration * 100));
+      const progValue = currentOffset;
       this.$progressBarCurrent.textContent = DTFuncs.timeToString(progValue, false);
       this.$progressBar.style.width = `${progPercent}%`;
     });

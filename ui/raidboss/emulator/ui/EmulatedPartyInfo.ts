@@ -498,20 +498,24 @@ export default class EmulatedPartyInfo extends EventBus {
 
     for (const trigger of per.triggers.sort((l, r) => l.resolvedOffset - r.resolvedOffset)) {
       const $triggerDataViewer = cloneSafe(this.$jsonViewerTemplate);
-      $triggerDataViewer.textContent = JSON.stringify({
-        triggerId: trigger.triggerHelper.trigger.id,
-        responseType: trigger.status.responseType,
-        responseLabel: trigger.status.responseLabel,
-        executed: trigger.status.executed,
-        condition: trigger.status.condition,
-        delay: trigger.status.delay,
-        resolvedOffset: trigger.resolvedOffset,
-        matches: trigger.triggerHelper.matches,
-        logLine: {
-          networkLine: trigger.logLine.networkLine,
-          convertedLine: trigger.logLine.convertedLine,
+      $triggerDataViewer.textContent = JSON.stringify(
+        {
+          triggerId: trigger.triggerHelper.trigger.id,
+          responseType: trigger.status.responseType,
+          responseLabel: trigger.status.responseLabel,
+          executed: trigger.status.executed,
+          condition: trigger.status.condition,
+          delay: trigger.status.delay,
+          resolvedOffset: trigger.resolvedOffset,
+          matches: trigger.triggerHelper.matches,
+          logLine: {
+            networkLine: trigger.logLine.networkLine,
+            convertedLine: trigger.logLine.convertedLine,
+          },
         },
-      }, null, 2);
+        null,
+        2,
+      );
       const triggerText = trigger.status.responseLabel;
       const type = trigger.status.responseType;
       const $trigger = this._wrapCollapse({
@@ -582,14 +586,14 @@ export default class EmulatedPartyInfo extends EventBus {
 
   getTriggerFiredLabelTime(trigger: PerspectiveTrigger): string {
     return DTFuncs.timeToString(
-      trigger.logLine.offset - (this.emulator.currentEncounter?.encounter.initialOffset ?? 0),
+      trigger.logLine.offset,
       false,
     );
   }
 
   getTriggerResolvedLabelTime(trigger: PerspectiveTrigger): string {
     return DTFuncs.timeToString(
-      trigger.resolvedOffset - (this.emulator.currentEncounter?.encounter.initialOffset ?? 0),
+      trigger.resolvedOffset,
       false,
     );
   }
