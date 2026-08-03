@@ -1416,7 +1416,12 @@ hideall "--sync--"
       id: '超模之塔 BOSS4 4连召唤',
       type: 'StartsUsing',
       netRegex: {
-        id: ['BF0B', 'BF0D', 'BF0A'],
+        id: [
+          'BF0A',
+          'BF0B',
+          'BF0C',
+          'BF0D',
+        ],
       },
       preRun: (data) => {
         data.boss4封印武器.length = 0;
