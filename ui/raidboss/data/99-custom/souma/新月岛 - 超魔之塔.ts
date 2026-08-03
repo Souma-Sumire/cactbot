@@ -201,7 +201,7 @@ hideall "--sync--"
 2313.4 "风旋剑出鞘" # Ability { id: "C1EE" }
 
 # BOSS3
-3004.6 "核爆雨" StartsUsing { id: "B97A" }
+3004.6 "核爆雨" StartsUsing { id: "B97A" } window 3010,1
 3009.6 "核爆雨" Ability { id: "B97A" }
 3015.9 "魔具召唤" #Ability { id: "B97D" }
 3025.8 "魔力注入" #Ability { id: "B97E" }
@@ -278,7 +278,8 @@ hideall "--sync--"
 3301.0 "魔具召唤" #Ability { id: "B97D" }
 
 # BOSS4
-4012.1 "连续咏唱" # Ability { id: "BD17" }
+4009.1 "连续咏唱" StartsUsing { id: "BD17" } window 4012,1
+4012.1 "连续咏唱" Ability { id: "BD17" }
 4019.2 "核爆" # Ability { id: "BD1F" }
 4023.3 "核爆" # Ability { id: "BD48" }
 4033.6 "飞翔指令" # Ability { id: "BD13" }
