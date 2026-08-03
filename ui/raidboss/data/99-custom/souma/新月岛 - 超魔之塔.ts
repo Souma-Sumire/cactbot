@@ -47,6 +47,7 @@ export interface Data extends RaidbossData {
   boss3真空波count: number;
 
   boss4封印武器: string[];
+  boss4四连召唤中: boolean;
 }
 
 const center = {
@@ -441,6 +442,7 @@ hideall "--sync--"
       boss3魔力注入正点冰: undefined,
 
       boss4封印武器: [],
+      boss4四连召唤中: false,
     };
   },
   triggers: [
@@ -478,6 +480,7 @@ hideall "--sync--"
         data.boss3魔力注入temp = { 火: undefined, 冰: undefined, 雷: undefined };
         data.boss3魔力注入正点冰 = undefined;
         data.boss4封印武器.length = 0;
+        data.boss4四连召唤中 = false;
       },
     },
     // #region BOSS1
@@ -1409,6 +1412,22 @@ hideall "--sync--"
       infoText: (_, __, output) => output.text!(),
       outputStrings: { text: 'AoE x2' },
     },
+    {
+      id: '超模之塔 BOSS4 4连召唤',
+      type: 'StartsUsing',
+      netRegex: {
+        id: ['BF0B', 'BF0D', 'BF0A'],
+      },
+      preRun: (data) => {
+        data.boss4封印武器.length = 0;
+        data.boss4四连召唤中 = true;
+      },
+      delaySeconds: 30,
+      suppressSeconds: 1,
+      run: (data) => {
+        data.boss4四连召唤中 = false;
+      },
+    },
     // 26|2026-08-01T21:20:29.0690000+08:00|159E|封印武器：弓|9999.00|E0000000||4000496D|目录|401|649637410||
     // 26|2026-08-01T21:20:32.1030000+08:00|159D|封印武器：刀|9999.00|E0000000||4000496D|目录|402|649637410||
     // 26|2026-08-01T21:20:35.0920000+08:00|159F|封印武器：琴|9999.00|E0000000||4000496D|目录|404|649637410||
@@ -1424,7 +1443,7 @@ hideall "--sync--"
           '159C', // 铃铛
         ],
       },
-      durationSeconds: (data) => data.boss4封印武器.length === 3 ? 25 : 3,
+      durationSeconds: (data) => data.boss4四连召唤中 ? (data.boss4封印武器.length === 3 ? 25 : 3) : 9,
       response: (data, matches, output) => {
         const effectName = {
           '159E': '弓',
@@ -1434,7 +1453,7 @@ hideall "--sync--"
         }[matches.effectId]!;
         data.boss4封印武器.push(effectName);
         if (data.boss4封印武器.length < 4) {
-          return { infoText: output[`预兆${effectName}`]!() };
+          return { [data.boss4四连召唤中 ? 'infoText' : 'alertText']: output[`预兆${effectName}`]!() };
         }
         if (data.boss4封印武器.length === 4) {
           const res = output.text!({
