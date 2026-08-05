@@ -1150,7 +1150,8 @@ hideall "--sync--"
       type: 'GainsEffect',
       netRegex: { effectId: ['1410', '1411'] },
       delaySeconds: 1,
-      suppressSeconds: 1,
+      // SE屎山代码，人数过多时发现有至多2.56秒的日志延迟。
+      suppressSeconds: (_data, matches) => matches.sourceId === 'E0000000' ? 30 : 3,
       run: (data) => data.boss3鸳鸯锅count++,
     },
     {
@@ -1309,6 +1310,18 @@ hideall "--sync--"
               const d = Directions.outputFrom8DirNum(dir);
               return { infoText: output.鸳鸯锅1!({ dir: output[d]!(), lr: safe }) };
             }
+            if (data.boss3鸳鸯锅9F8.length === 2) {
+              const [a1, a2] = data.boss3鸳鸯锅9F8;
+              if ((a2!.dir - a1!.dir + 8) % 8 === 2) {
+                const a3 = (a2!.dir + 2) % 8;
+                const a4 = (a2!.dir + 4) % 8;
+                console.log('顺', a1, a2, a3, a4);
+              } else {
+                const a3 = (a2!.dir - 2) % 8;
+                const a4 = (a2!.dir - 4) % 8;
+                console.log('逆', a1, a2, a3, a4);
+              }
+            }
           }
         }
         if (data.boss3其墓须有三) {
@@ -1417,9 +1430,13 @@ hideall "--sync--"
       type: 'StartsUsing',
       netRegex: {
         id: [
+          // 琴起手
           'BF0A',
+          // 弓起手
           'BF0B',
+          // 刀起手
           'BF0C',
+          // 铃铛起手
           'BF0D',
         ],
       },
@@ -1442,10 +1459,10 @@ hideall "--sync--"
       type: 'GainsEffect',
       netRegex: {
         effectId: [
-          '159E', // 弓
-          '159D', // 刀
-          '159F', // 琴
           '159C', // 铃铛
+          '159D', // 刀
+          '159E', // 弓
+          '159F', // 琴
         ],
       },
       durationSeconds: (data) => data.boss4四连召唤中 ? (data.boss4封印武器.length === 3 ? 25 : 3) : 9,
