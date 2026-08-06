@@ -1218,7 +1218,7 @@ hideall "--sync--"
           return (data.boss39F8.length === 0 ? 2 : 18);
         }
         if (data.boss3鸳鸯锅中) {
-          return 13.695;
+          return data.boss3鸳鸯锅9F8.length < 3 ? 13.695 : 45;
         }
       },
       countdownSeconds: (data) => data.boss3鸳鸯锅中 ? 13.695 : 0,
@@ -1288,6 +1288,9 @@ hideall "--sync--"
           'text1': { en: '${a}：${t}' },
           'text3': { en: '${a1}${a2}${a3}(带地水)：${t1} -> ${t2} -> ${t3}' },
           '鸳鸯锅1': { en: '准备看"${dir}"去${lr}' },
+          '鸳鸯锅转': { en: '${o1}${c1} -> ${o2}${c2}' },
+          'cw': { en: '顺' },
+          'ccw': { en: '逆' },
           'dirN': { en: 'A' },
           'dirNE': { en: '2' },
           'dirE': { en: 'Boy' },
@@ -1310,17 +1313,19 @@ hideall "--sync--"
               const d = Directions.outputFrom8DirNum(dir);
               return { infoText: output.鸳鸯锅1!({ dir: output[d]!(), lr: safe }) };
             }
-            if (data.boss3鸳鸯锅9F8.length === 2) {
-              const [a1, a2] = data.boss3鸳鸯锅9F8;
-              if ((a2!.dir - a1!.dir + 8) % 8 === 2) {
-                const a3 = (a2!.dir + 2) % 8;
-                const a4 = (a2!.dir + 4) % 8;
-                console.log('顺', a1, a2, a3, a4);
-              } else {
-                const a3 = (a2!.dir - 2) % 8;
-                const a4 = (a2!.dir - 4) % 8;
-                console.log('逆', a1, a2, a3, a4);
-              }
+            if (data.boss3鸳鸯锅9F8.length === 6) {
+              const [a1, a2] = data.boss3鸳鸯锅9F8.slice(0, 2);
+              const [a5, a6] = data.boss3鸳鸯锅9F8.slice(-2);
+              const clk1 = (a2!.dir - a1!.dir + 8) % 8 === 2 ? 1 : -1;
+              const clk2 = (a6!.dir - a5!.dir + 8) % 8 === 2 ? 1 : -1;
+              return {
+                alertText: output.鸳鸯锅转!({
+                  o1: output[Directions.outputFrom8DirNum(a1!.dir)]!(),
+                  c1: output[clk1 === 1 ? 'cw' : 'ccw']!(),
+                  o2: output[Directions.outputFrom8DirNum(a5!.dir)]!(),
+                  c2: output[clk2 === 1 ? 'cw' : 'ccw']!(),
+                }),
+              };
             }
           }
         }
